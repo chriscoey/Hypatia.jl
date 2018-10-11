@@ -19,6 +19,7 @@ mutable struct Optimizer
     alphacorr::Float64      # corrector step size
     maxcorrlsiters::Int     # maximum number of line search iterations in each corrector step
     corrlsmulti::Float64    # corrector line search step size multiplier
+    secondorder::Bool       # if true, applies second order Runge Kutta step
 
     # problem data
     c::Vector{Float64}          # linear cost vector, size n
@@ -45,7 +46,7 @@ mutable struct Optimizer
     pobj::Float64           # final primal objective value
     dobj::Float64           # final dual objective value
 
-    function Optimizer(verbose, tolrelopt, tolabsopt, tolfeas, maxiter, predlinesearch, maxpredsmallsteps, predlsmulti, corrcheck, maxcorrsteps, alphacorr, maxcorrlsiters, corrlsmulti)
+    function Optimizer(verbose, tolrelopt, tolabsopt, tolfeas, maxiter, predlinesearch, maxpredsmallsteps, predlsmulti, corrcheck, maxcorrsteps, alphacorr, maxcorrlsiters, corrlsmulti, secondorder)
         opt = new()
 
         opt.verbose = verbose
@@ -61,6 +62,7 @@ mutable struct Optimizer
         opt.alphacorr = alphacorr
         opt.maxcorrlsiters = maxcorrlsiters
         opt.corrlsmulti = corrlsmulti
+        opt.secondorder = secondorder
 
         opt.status = :NotLoaded
 
@@ -83,6 +85,7 @@ function Optimizer(;
     alphacorr = 1.0,
     maxcorrlsiters = 15,
     corrlsmulti = 0.5,
+    secondorder = true,
     )
 
     if min(tolrelopt, tolabsopt, tolfeas) < 1e-10 || max(tolrelopt, tolabsopt, tolfeas) > 1e-2
@@ -98,7 +101,7 @@ function Optimizer(;
         error("maxcorrsteps must be at least 1")
     end
 
-    return Optimizer(verbose, tolrelopt, tolabsopt, tolfeas, maxiter, predlinesearch, maxpredsmallsteps, predlsmulti, corrcheck, maxcorrsteps, alphacorr, maxcorrlsiters, corrlsmulti)
+    return Optimizer(verbose, tolrelopt, tolabsopt, tolfeas, maxiter, predlinesearch, maxpredsmallsteps, predlsmulti, corrcheck, maxcorrsteps, alphacorr, maxcorrlsiters, corrlsmulti, secondorder)
 end
 
 get_status(opt::Optimizer) = opt.status
@@ -322,6 +325,13 @@ function solve!(opt::Optimizer)
     tmp_ty = similar(ty)
     tmp_tz = similar(tz)
     tmp_ts = similar(ts)
+    # storage for derivatives
+    if opt.secondorder
+        fx = similar(tx)
+        fy = similar(ty)
+        fz = similar(tz)
+        fs = similar(ts)
+    end
 
     # find initial primal-dual iterate
     opt.verbose && println("\nfinding initial iterate")
@@ -391,26 +401,9 @@ function solve!(opt::Optimizer)
         # calculate residuals and convergence parameters
         invtau = inv(tau)
 
-        # tmp_tx = -A'*ty - G'*tz - c*tau
-        mul!(tmp_tx2, A', ty)
-        mul!(tmp_tx, G', tz)
-        @. tmp_tx = -tmp_tx2 - tmp_tx
-        nres_x = norm(tmp_tx)
-        @. tmp_tx -= c*tau
-        nres_tx = norm(tmp_tx)*invtau
-
-        # tmp_ty = A*tx - b*tau
-        mul!(tmp_ty, A, tx)
-        nres_y = norm(tmp_ty)
-        @. tmp_ty -= b*tau
-        nres_ty = norm(tmp_ty)*invtau
-
-        # tmp_tz = ts + G*tx - h*tau
-        mul!(tmp_tz, G, tx)
-        @. tmp_tz += ts
-        nres_z = norm(tmp_tz)
-        @. tmp_tz -= h*tau
-        nres_tz = norm(tmp_tz)*invtau
+        (nres_x, nres_tx) = update_tmp_tx!(tmp_tx, tmp_tx2, ty, tz, tau, invtau, opt)
+        (nres_y, nres_ty) = update_tmp_ty!(tmp_ty, tx, tau, invtau, opt)
+        (nres_z, nres_tz) = update_tmp_tz!(tmp_tz, tx, ts, tau, invtau, opt)
 
         (cx, by, hz) = (dot(c, tx), dot(b, ty), dot(h, tz))
         obj_pr = cx*invtau
@@ -502,57 +495,8 @@ function solve!(opt::Optimizer)
         @. tmp_tz = -tz
         (tmp_kap, tmp_tau) = solvelinsys6!(tmp_tx, tmp_ty, tmp_tz, tmp_ts, -kap, kap + cx + by + hz, mu, tau, opt.L)
 
-        # determine step length alpha by line search
-        alpha = alphapred
-        nbhd = Inf
-        alphaprevok = true
-        predfail = false
-        nprediters = 0
-        while true
-            nprediters += 1
+        (alpha, alphapred0, predfail, nbhd) = find_pred_alpha!(tz, ts, tmp_tz, tmp_ts, g, ls_tz, ls_ts, alphapred, tau, tmp_tau, kap, tmp_kap, beta, bnu, alphapredthres, opt)
 
-            @. ls_ts = ts + alpha*tmp_ts
-
-            # accept primal iterate if
-            # - decreased alpha and it is the first inside the cone and beta-neighborhood or
-            # - increased alpha and it is inside the cone and the first to leave beta-neighborhood
-            if incone(cone)
-                # primal iterate is inside the cone
-
-                @. ls_tz = tz + alpha*tmp_tz
-                ls_tk = (tau + alpha*tmp_tau)*(kap + alpha*tmp_kap)
-                ls_mu = (dot(ls_ts, ls_tz) + ls_tk)/bnu
-                nbhd = calcnbhd(ls_tk, ls_mu, ls_tz, g, cone)
-
-                if nbhd < abs2(beta*ls_mu)
-                    # iterate is inside the beta-neighborhood
-                    if !alphaprevok || (alpha > opt.predlsmulti)
-                        # either the previous iterate was outside the beta-neighborhood or increasing alpha again will make it > 1
-                        if opt.predlinesearch
-                            alphapred = alpha
-                        end
-                        break
-                    end
-
-                    alphaprevok = true
-                    alpha = alpha/opt.predlsmulti # increase alpha
-                    continue
-                end
-            end
-
-            # primal iterate is either
-            # - outside the cone or
-            # - inside the cone and outside the beta-neighborhood and previous iterate was outside the beta-neighborhood
-            if alpha < alphapredthres
-                # alpha is very small, so predictor has failed
-                predfail = true
-                opt.verbose && println("predictor could not improve the solution ($nprediters line search steps); terminating")
-                break
-            end
-
-            alphaprevok = false
-            alpha = opt.predlsmulti*alpha # decrease alpha
-        end
         if predfail
             opt.status = :PredictorFail
             opt.x = tx .*= invtau
@@ -560,6 +504,54 @@ function solve!(opt::Optimizer)
             opt.y = ty .*= invtau
             opt.z = tz .*= invtau
             break
+        end
+
+        if opt.secondorder
+            # save derivatives
+            @. fx = tmp_tx
+            @. fy = tmp_ty
+            @. fz = tmp_tz
+            @. fs = tmp_ts
+
+            # update RHSs
+            next_kap = kap + alpha*tmp_kap
+            next_tau = tau + alpha*tmp_tau
+            invtau = inv(next_tau)
+            @. tx += alpha*fx
+            @. ty += alpha*fy
+            @. tz += alpha*fz
+            @. ts += alpha*fs
+            (nres_x, nres_tx) = update_tmp_tx!(tmp_tx, tmp_tx2, ty, tz, next_tau, invtau, opt)
+            (nres_y, nres_ty) = update_tmp_ty!(tmp_ty, tx, next_tau, invtau, opt)
+            (nres_z, nres_tz) = update_tmp_tz!(tmp_tz, tx, ts, next_tau, invtau, opt)
+            (cx, by, hz) = (dot(c, tx), dot(b, ty), dot(h, tz))
+            mu = (dot(ts, tz) + next_tau*next_kap)/bnu
+            @. tmp_ts = tmp_tz
+            @. tmp_tz = -tz
+
+            # next approximation of derivative
+            (tmp_kap2, tmp_tau2) = solvelinsys6!(tmp_tx, tmp_ty, tmp_tz, tmp_ts, -next_kap, next_kap + cx + by + hz, mu, next_tau, opt.L)
+
+            # second order approximation of derivative
+            @. tmp_tx = 0.5 * (tmp_tx + fx)
+            @. tmp_ty = 0.5 * (tmp_ty + fy)
+            @. tmp_tz = 0.5 * (tmp_tz + fz)
+            @. tmp_ts = 0.5 * (tmp_ts + fs)
+            tmp_kap = 0.5*(tmp_kap + tmp_kap2)
+            tmp_tau = 0.5*(tmp_tau + tmp_tau2)
+
+            # Look for alpha again starting at initial point but with updated derivative. Start with alphapred from previous iteration rather than alphapred from last first order evaluation
+            @. tx -= alpha*fx
+            @. ty -= alpha*fy
+            @. tz -= alpha*fz
+            @. ts -= alpha*fs
+            alpha, alphapred, predfail, nbhd = find_pred_alpha!(tz, ts, tmp_tz, tmp_ts, g, ls_tz, ls_ts, alphapred, tau, tmp_tau, kap, tmp_kap, beta, bnu, alphapredthres, opt)
+
+            if predfail
+                break
+            end
+        else
+            alphapred = alphapred0
         end
 
         # step distance alpha in the direction
@@ -660,6 +652,94 @@ function solve!(opt::Optimizer)
     opt.solvetime = time() - starttime
 
     return nothing
+end
+
+function update_tmp_tx!(tmp_tx::Vector{Float64}, tmp_tx2::Vector{Float64}, ty::Vector{Float64}, tz::Vector{Float64}, tau::Float64, invtau::Float64, opt::Optimizer)
+    (A, G, c) = (opt.A, opt.G, opt.c)
+    # tmp_tx = -A'*ty - G'*tz - c*tau
+    mul!(tmp_tx2, A', ty)
+    mul!(tmp_tx, G', tz)
+    @. tmp_tx = -tmp_tx2 - tmp_tx
+    nres_x = norm(tmp_tx)
+    @. tmp_tx -= c*tau
+    nres_tx = norm(tmp_tx)*invtau
+    (nres_x, nres_tx)
+end
+
+function update_tmp_ty!(tmp_ty::Vector{Float64}, tx::Vector{Float64}, tau::Float64, invtau::Float64, opt::Optimizer)
+    (A, G, b) = (opt.A, opt.G, opt.b)
+    # tmp_ty = A*tx - b*tau
+    mul!(tmp_ty, A, tx)
+    nres_y = norm(tmp_ty)
+    @. tmp_ty -= b*tau
+    nres_ty = norm(tmp_ty)*invtau
+    (nres_y, nres_ty)
+end
+
+function update_tmp_tz!(tmp_tz::Vector{Float64}, tx::Vector{Float64}, ts::Vector{Float64}, tau::Float64, invtau::Float64, opt::Optimizer)
+    (A, G, h) = (opt.A, opt.G, opt.h)
+    # tmp_tz = ts + G*tx - h*tau
+    mul!(tmp_tz, G, tx)
+    @. tmp_tz += ts
+    nres_z = norm(tmp_tz)
+    @. tmp_tz -= h*tau
+    nres_tz = norm(tmp_tz)*invtau
+    (nres_z, nres_tz)
+end
+
+function find_pred_alpha!(tz::Vector{Float64}, ts::Vector{Float64}, tmp_tz::Vector{Float64}, tmp_ts::Vector{Float64}, g::Vector{Float64}, ls_tz::Vector{Float64}, ls_ts::Vector{Float64}, alphapred::Float64, tau::Float64, tmp_tau::Float64, kap::Float64, tmp_kap::Float64, beta::Float64, bnu::Float64, alphapredthres::Float64, opt::Optimizer)
+    # determine step length alpha by line search
+    alpha = alphapred
+    nbhd = Inf
+    alphaprevok = true
+    predfail = false
+    nprediters = 0
+    while true
+        nprediters += 1
+
+        @. ls_ts = ts + alpha*tmp_ts
+
+        # accept primal iterate if
+        # - decreased alpha and it is the first inside the cone and beta-neighborhood or
+        # - increased alpha and it is inside the cone and the first to leave beta-neighborhood
+        if incone(opt.cone)
+            # primal iterate is inside the cone
+
+            @. ls_tz = tz + alpha*tmp_tz
+            ls_tk = (tau + alpha*tmp_tau)*(kap + alpha*tmp_kap)
+            ls_mu = (dot(ls_ts, ls_tz) + ls_tk)/bnu
+            nbhd = calcnbhd(ls_tk, ls_mu, ls_tz, g, opt.cone)
+
+            if nbhd < abs2(beta*ls_mu)
+                # iterate is inside the beta-neighborhood
+                if !alphaprevok || (alpha > opt.predlsmulti)
+                    # either the previous iterate was outside the beta-neighborhood or increasing alpha again will make it > 1
+                    if opt.predlinesearch
+                        alphapred = alpha
+                    end
+                    break
+                end
+
+                alphaprevok = true
+                alpha = alpha/opt.predlsmulti # increase alpha
+                continue
+            end
+        end
+
+        # primal iterate is either
+        # - outside the cone or
+        # - inside the cone and outside the beta-neighborhood and previous iterate was outside the beta-neighborhood
+        if alpha < alphapredthres
+            # alpha is very small, so predictor has failed
+            predfail = true
+            opt.verbose && println("predictor could not improve the solution ($nprediters line search steps); terminating")
+            break
+        end
+
+        alphaprevok = false
+        alpha = opt.predlsmulti*alpha # decrease alpha
+    end
+    return (alpha, alphapred, predfail, nbhd)
 end
 
 # TODO put this inside the cone functions

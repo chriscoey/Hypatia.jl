@@ -106,7 +106,7 @@ function _namedpoly1(verbose::Bool, lscachetype)
     (c, A, b, G, h, cone) = build_namedpoly!(:butcher, 2)
     r = fullsolve(opt, c, A, b, G, h, cone, lscachetype)
     @test r.status == :Optimal
-    @test r.niters <= 35
+    @test r.niters <= 45
     @test r.pobj ≈ r.dobj atol=1e-4 rtol=1e-4
     @test r.pobj ≈ -1.4393333333 atol=1e-4 rtol=1e-4
 end
