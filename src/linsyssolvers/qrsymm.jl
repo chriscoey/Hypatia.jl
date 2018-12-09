@@ -137,7 +137,103 @@ QRSymmCache(
     ) = error("to use a QRSymmCache for linear system solves, the data must be preprocessed and Q2 and RiQ1 must be passed into the QRSymmCache constructor")
 
 
-# solve two symmetric systems and combine the solutions for x, y, z, s, kap, tau
+# solve symmetric 3x3 system for x, y, z
+# currently assumes H is identity
+function solvelinsys3!(
+    rhs_tx::Vector{Float64},
+    rhs_ty::Vector{Float64},
+    rhs_tz::Vector{Float64},
+    mu::Float64,
+    L::QRSymmCache,
+    )
+
+    # @. rhs_ty = -rhs_ty
+    # @. rhs_tz = -rhs_tz
+
+    # # bxGHbz = bx + G'*Hbz
+    # mul!(L.bxGHbz, L.G', rhs_tz)
+    # @. L.bxGHbz += rhs_tx
+
+    # # Q1x = Q1*Ri'*by
+    # mul!(L.Q1x, L.RiQ1', yi)
+
+    # # Q2x = Q2*(K22_F\(Q2'*(bxGHbz - GHG*Q1x)))
+    # mul!(L.GQ1x, L.G, L.Q1x)
+    # for k in eachindex(L.cone.prmtvs)
+    #     a1k = view(L.GQ1x, L.cone.idxs[k], :)
+    #     a2k = view(L.HGQ1x, L.cone.idxs[k], :)
+    #     if L.cone.prmtvs[k].usedual
+    #         calcHiarr_prmtv!(a2k, a1k, L.cone.prmtvs[k])
+    #         a2k ./= mu
+    #     else
+    #         calcHarr_prmtv!(a2k, a1k, L.cone.prmtvs[k])
+    #         a2k .*= mu
+    #     end
+    # end
+    # mul!(L.GHGQ1x, L.G', L.HGQ1x)
+    # @. L.GHGQ1x = L.bxGHbz - L.GHGQ1x
+    # mul!(L.Q2div, L.Q2', L.GHGQ1x)
+
+    # # xi = Q1x + Q2x
+    # @. rhs_tx = Q1x + L.Q2 * Q2div
+
+    # # yi = Ri*Q1'*(bxGHbz - GHG*xi)
+    # mul!(L.Gxi, L.G, rhs_tx)
+    # for k in eachindex(L.cone.prmtvs)
+    #     a1k = view(L.Gxi, L.cone.idxs[k], :)
+    #     a2k = view(L.HGxi, L.cone.idxs[k], :)
+    #     if L.cone.prmtvs[k].usedual
+    #         calcHiarr_prmtv!(a2k, a1k, L.cone.prmtvs[k])
+    #         a2k ./= mu
+    #     else
+    #         calcHarr_prmtv!(a2k, a1k, L.cone.prmtvs[k])
+    #         a2k .*= mu
+    #     end
+    # end
+    # mul!(L.GHGxi, L.G', L.HGxi)
+    # @. L.bxGHbz -= L.GHGxi
+    # mul!(yi, L.RiQ1, L.bxGHbz)
+
+    # # zi = HG*xi - Hbz
+    # @. rhs_tz = L.HGxi - rhs_tz
+
+
+    BLAS.gemv!('T', -1.0, L.G, rhs_tz, 1.0, rhs_tx)
+
+    Qx = BLAS.gemv('T', -1.0, L.RiQ1, rhs_ty)
+
+    Q2div = L.Q2' * (rhs_tx - L.G' * L.G * Qx)
+
+    if size(L.Q2div, 1) > 0
+        BLAS.syrk!('U', 'T', 1.0, L.GQ2, 0.0, L.Q2GHGQ2)
+
+        F = bunchkaufman!(Symmetric(L.Q2GHGQ2, :U), true, check=false)
+        if !issuccess(F)
+            println("linear system matrix factorization failed")
+            BLAS.syrk!('U', 'T', 1.0, L.GQ2, 0.0, L.Q2GHGQ2)
+            L.Q2GHGQ2 += 1e-6I
+            F = bunchkaufman!(Symmetric(L.Q2GHGQ2, :U), true, check=false)
+            if !issuccess(F)
+                error("could not fix failure of positive definiteness; terminating")
+            end
+        end
+        ldiv!(F, Q2div)
+    end
+
+    BLAS.gemv!('N', 1.0, L.Q2, Q2div, 1.0, Qx)
+
+    GQx = L.G * Qx
+    rhs_ty .= L.RiQ1 * (rhs_tx - L.G' * GQx)
+
+    @. rhs_tx = Qx
+    
+    @. rhs_tz += GQx
+
+    return
+end
+
+
+# solve 6x6 system for x, y, z, s, kap, tau by solving two symmetric systems and combining the solutions
 # TODO update math description
 # TODO use in-place mul-add when available in Julia, see https://github.com/JuliaLang/julia/issues/23919
 function solvelinsys6!(

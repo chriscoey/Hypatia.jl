@@ -351,6 +351,14 @@ function solve!(mdl::Model)
     @. @views tx = txty[1:n]
     @. @views ty = txty[n+1:end]
 
+    rhs_tx = -c - G'*tz
+    rhs_ty = b
+    rhs_tz = h - ts
+    solvelinsys3!(rhs_tx, rhs_ty, rhs_tz, L)
+
+    @show
+
+
     mdl.verbose && println("initial iterate found")
 
     # calculate tolerances for convergence
