@@ -42,6 +42,7 @@ function build_envelope(
 
     if primal_wsos
         # use formulation with WSOS cone in primal
+        P = spzeros(U, U)
         c = -w
         A = zeros(0, U)
         b = Float64[]
@@ -53,6 +54,7 @@ function build_envelope(
         h = c_or_h
     else
         # use formulation with WSOS cone in dual
+        P = spzeros(npoly*U, npoly*U)
         c = c_or_h
         if usedense
             A = repeat(Array(1.0I, U, U), outer=(1, npoly))
@@ -69,40 +71,41 @@ function build_envelope(
         [1+(k-1)*U:k*U for k in 1:npoly],
         )
 
-    return (c, A, b, G, h, cone)
+    return (P, c, A, b, G, h, cone)
 end
 
 function run_envelope(primal_wsos::Bool, usedense::Bool)
     # optionally use fixed data in folder
     # select number of polynomials and degrees for the envelope
     # select dimension and SOS degree (to be squared)
-    (c, A, b, G, h, cone) =
+    (P, c, A, b, G, h, cone) =
         # build_envelope(2, 5, 1, 5, use_data=true, primal_wsos=primal_wsos, usedense=usedense)
-        build_envelope(2, 5, 2, 6, primal_wsos=primal_wsos, usedense=usedense)
+        # build_envelope(2, 5, 2, 6, primal_wsos=primal_wsos, usedense=usedense)
         # build_envelope(3, 5, 3, 5, primal_wsos=primal_wsos, usedense=usedense)
-        # build_envelope(2, 30, 1, 30, primal_wsos=primal_wsos, usedense=usedense)
+        build_envelope(2, 30, 1, 30, primal_wsos=primal_wsos, usedense=usedense)
 
-    Hypatia.check_data(c, A, b, G, h, cone)
-    (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(c, A, b, G, useQR=true)
-    L = Hypatia.QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    Hypatia.check_data(P, c, A, b, G, h, cone)
+    # (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(c, A, b, G, useQR=true)
+    # L = Hypatia.QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    # L = Hypatia.NaiveCache(P, c, A, b, G, h, cone)
 
-    mdl = Hypatia.Model(maxiter=200, verbose=true)
-    Hypatia.load_data!(mdl, c1, A1, b1, G1, h, cone, L)
+    mdl = Hypatia.Model(maxiter=500, verbose=true)
+    Hypatia.load_data!(mdl, P, c, A, b, G, h, cone)
     Hypatia.solve!(mdl)
 
-    x = zeros(length(c))
-    x[dukeep] = Hypatia.get_x(mdl)
-    y = zeros(length(b))
-    y[prkeep] = Hypatia.get_y(mdl)
-    s = Hypatia.get_s(mdl)
-    z = Hypatia.get_z(mdl)
-
-    status = Hypatia.get_status(mdl)
-    solvetime = Hypatia.get_solvetime(mdl)
-    pobj = Hypatia.get_pobj(mdl)
-    dobj = Hypatia.get_dobj(mdl)
-
-    @test status == :Optimal
+    # x = zeros(length(c))
+    # x[dukeep] = Hypatia.get_x(mdl)
+    # y = zeros(length(b))
+    # y[prkeep] = Hypatia.get_y(mdl)
+    # s = Hypatia.get_s(mdl)
+    # z = Hypatia.get_z(mdl)
+    #
+    # status = Hypatia.get_status(mdl)
+    # solvetime = Hypatia.get_solvetime(mdl)
+    # pobj = Hypatia.get_pobj(mdl)
+    # dobj = Hypatia.get_dobj(mdl)
+    #
+    # @test status == :Optimal
     # @show status
     # @show x
     # @show pobj
