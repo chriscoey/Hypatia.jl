@@ -599,19 +599,23 @@ function solve!(mdl::Model)
         #     zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ;
         #     ]
 
-
+        rhs4 = [-tmp_x; -tmp_y; -tmp_z; similar(s)]
         for k in eachindex(cone.prmtvs)
             idxs = (n + p + q) .+ cone.idxs[k]
-            LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
-
+            if cone.prmtvs[k].usedual
+                LHS4[idxs, (n + p) .+ cone.idxs[k]] = mu * Symmetric(cone.prmtvs[k].H)
+                rhs4[idxs] = -s[cone.idxs[k]]
+            else
+                LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
+                rhs4[idxs] = -z[cone.idxs[k]]
+            end
             # Hk = view(LHS4, idxs, idxs)
             # dim = dimension(cone.prmtvs[k])
             # calcHarr_prmtv!(Hk, Matrix(mu*I, dim, dim), cone.prmtvs[k])
         end
 
-        rhs4 = [-tmp_x; -tmp_y; -tmp_z; -z]
 
-        soln = Symmetric(LHS4)\rhs4
+        soln = LHS4\rhs4
 
         @. @views begin
             tmp_x = soln[1:n]
@@ -717,20 +721,46 @@ function solve!(mdl::Model)
 
             # calculate correction direction
 
-            calcg!(g, cone)
+            # calcg!(g, cone)
+            #
+            # for k in eachindex(cone.prmtvs)
+            #     idxs = (n + p + q) .+ cone.idxs[k]
+            #     LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
+            #
+            #     # Hk = view(LHS4, (n + p) .+ cone.idxs[k], (n + p + q) .+ cone.idxs[k])
+            #     # dim = dimension(cone.prmtvs[k])
+            #     # calcHarr_prmtv!(Hk, Matrix(mu*I, dim, dim), cone.prmtvs[k])
+            # end
+            #
+            # rhs4 = [zeros(n); zeros(p); zeros(q); -z - mu*g]
 
+            # LHS4 = [
+            #     P           A'          G'                zeros(n,q)       ;
+            #     A           zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
+            #     G           zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
+            #     zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ;
+            #     ]
+
+            calcg!(g, cone)
+            rhs4 = zeros(n+p+2q)
             for k in eachindex(cone.prmtvs)
                 idxs = (n + p + q) .+ cone.idxs[k]
-                LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
-
-                # Hk = view(LHS4, (n + p) .+ cone.idxs[k], (n + p + q) .+ cone.idxs[k])
+                if cone.prmtvs[k].usedual
+                    LHS4[idxs, (n + p) .+ cone.idxs[k]] = mu * Symmetric(cone.prmtvs[k].H)
+                    rhs4[idxs] = -s[cone.idxs[k]] - mu*g[cone.idxs[k]]
+                else
+                    LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
+                    rhs4[idxs] = -z[cone.idxs[k]] - mu*g[cone.idxs[k]]
+                end
+                # Hk = view(LHS4, idxs, idxs)
                 # dim = dimension(cone.prmtvs[k])
                 # calcHarr_prmtv!(Hk, Matrix(mu*I, dim, dim), cone.prmtvs[k])
             end
 
-            rhs4 = [zeros(n); zeros(p); zeros(q); -z - mu*g]
 
-            soln = Symmetric(LHS4)\rhs4
+
+
+            soln = LHS4\rhs4
 
             @. @views begin
                 tmp_x = soln[1:n]

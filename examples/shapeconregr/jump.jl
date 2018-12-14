@@ -76,16 +76,19 @@ function add_loss_and_polys!(
     @polyvar x[1:n]
     @variable(model, p, PolyJuMP.Poly(monomials(x, 0:r)))
     if use_leastsqobj
+        println("using SOC formulation")
         @variable(model, z)
-        @objective(model, Min, z / npoints)
+        @objective(model, Min, z)
         @constraint(model, [z, [y[i] - p(X[i, :]) for i in 1:npoints]...] in MOI.SecondOrderCone(1+npoints))
      else
-        @variable(model, z[1:npoints])
-        @objective(model, Min, sum(z) / npoints)
-        @constraints(model, begin
-            [i in 1:npoints], z[i] >= y[i] - p(X[i, :])
-            [i in 1:npoints], z[i] >= -y[i] + p(X[i, :])
-        end)
+        println("using QP obj formulation")
+        @objective(model, Min, sum((y[i] - p(X[i, :]))^2 for i in 1:npoints))
+        # @variable(model, z[1:npoints])
+        # @objective(model, Min, sum(z) / npoints)
+        # @constraints(model, begin
+        #     [i in 1:npoints], z[i] >= y[i] - p(X[i, :])
+        #     [i in 1:npoints], z[i] >= -y[i] + p(X[i, :])
+        # end)
     end
     return (x, p)
 end
@@ -102,7 +105,7 @@ function build_shapeconregr_PSD(
 
     model = SOSModel(with_optimizer(Hypatia.Optimizer, verbose=true, usedense=usedense, lscachetype=Hypatia.QRSymmCache))
     (x, p) = add_loss_and_polys!(model, X, y, r, use_leastsqobj)
-    
+
     mono_bss = get_domain_inequalities(sd.mono_dom, x)
     conv_bss = get_domain_inequalities(sd.conv_dom, x)
 
@@ -164,20 +167,22 @@ function build_shapeconregr_WSOS(
     return (model, p)
 end
 
-function run_JuMP_shapeconregr(use_wsos::Bool; usedense::Bool=true)
+function run_JuMP_shapeconregr(
+    use_wsos::Bool;
+    use_leastsqobj::Bool = true,
+    usedense::Bool = true,
+    )
     (n, deg, npoints, signal_ratio, f) =
         # (2, 3, 100, 0.0, x -> exp(norm(x))) # no noise, monotonic function
         (2, 3, 100, 0.0, x -> sum(x.^3)) # no noise, monotonic function
         # (2, 3, 100, 0.0, x -> sum(x.^4)) # no noise, non-monotonic function
         # (2, 3, 100, 50.0, x -> sum(x.^3)) # some noise, monotonic function
         # (2, 3, 100, 50.0, x -> sum(x.^4)) # some noise, non-monotonic function
-        # (2, 8, 100, 0.0, x -> exp(norm(x))) # low n high deg, numerically harder
+        # (2, 6, 100, 0.0, x -> exp(norm(x))) # low n high deg, numerically harder
         # (5, 5, 100, 0.0, x -> exp(norm(x))) # moderate size, no noise, monotonic # out of memory with psd
 
     shapedata = ShapeData(n)
     (X, y) = generateregrdata(f, -1.0, 1.0, n, npoints, signal_ratio=signal_ratio)
-
-    use_leastsqobj = true
 
     if use_wsos
         (model, p) = build_shapeconregr_WSOS(X, y, deg, shapedata, use_leastsqobj=use_leastsqobj, usedense=usedense)
@@ -201,5 +206,7 @@ function run_JuMP_shapeconregr(use_wsos::Bool; usedense::Bool=true)
     return (pobj, p)
 end
 
-run_JuMP_shapeconregr_PSD() = run_JuMP_shapeconregr(false)
-run_JuMP_shapeconregr_WSOS() = run_JuMP_shapeconregr(true)
+run_JuMP_shapeconregr_PSD_abs() = run_JuMP_shapeconregr(false, use_leastsqobj=false)
+run_JuMP_shapeconregr_WSOS_abs() = run_JuMP_shapeconregr(true, use_leastsqobj=false)
+run_JuMP_shapeconregr_PSD_lsq() = run_JuMP_shapeconregr(false, use_leastsqobj=true)
+run_JuMP_shapeconregr_WSOS_lsq() = run_JuMP_shapeconregr(true, use_leastsqobj=true)

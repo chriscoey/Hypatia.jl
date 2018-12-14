@@ -53,20 +53,23 @@ function run_namedpoly()
         # build_namedpoly(:rosenbrock, 4)
         # build_namedpoly(:schwefel, 3)
 
-    Hypatia.check_data(c, A, b, G, h, cone)
-    (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(c, A, b, G, useQR=true)
-    L = Hypatia.QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    # Hypatia.check_data(c, A, b, G, h, cone)
+    # (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(c, A, b, G, useQR=true)
+    # L = Hypatia.QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
 
-    mdl = Hypatia.Model(maxiter=200, verbose=false)
-    Hypatia.load_data!(mdl, c1, A1, b1, G1, h, cone, L)
+    # Hypatia.check_data(P, c, A, b, G, h, cone)
+
+    mdl = Hypatia.Model(maxiter=200, verbose=true)
+    Hypatia.load_data!(mdl, zeros(length(c), length(c)), c, A, b, G, h, cone)
+    # Hypatia.load_data!(mdl, c1, A1, b1, G1, h, cone, L)
     Hypatia.solve!(mdl)
 
-    x = zeros(length(c))
-    x[dukeep] = Hypatia.get_x(mdl)
-    y = zeros(length(b))
-    y[prkeep] = Hypatia.get_y(mdl)
-    s = Hypatia.get_s(mdl)
-    z = Hypatia.get_z(mdl)
+    # x = zeros(length(c))
+    # x[dukeep] = Hypatia.get_x(mdl)
+    # y = zeros(length(b))
+    # y[prkeep] = Hypatia.get_y(mdl)
+    # s = Hypatia.get_s(mdl)
+    # z = Hypatia.get_z(mdl)
 
     status = Hypatia.get_status(mdl)
     solvetime = Hypatia.get_solvetime(mdl)
@@ -74,10 +77,10 @@ function run_namedpoly()
     dobj = Hypatia.get_dobj(mdl)
 
     @test status == :Optimal
-    # @show status
+    @show status
     # @show x
-    # @show pobj
-    # @show dobj
+    @show pobj
+    @show dobj
     return nothing
 end
 
@@ -117,3 +120,5 @@ polys = Dict{Symbol,NamedTuple}(
         fn=((x,y,z) -> (x-y^2)^2+(y-1)^2+(x-z^2)^2+(z-1)^2)
         ),
 )
+
+return
