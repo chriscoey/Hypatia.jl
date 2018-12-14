@@ -189,7 +189,7 @@ function solveandcheck_JuMP(mdl, truemin)
     dobj = JuMP.objective_bound(mdl)
     pr_status = JuMP.primal_status(mdl)
     du_status = JuMP.dual_status(mdl)
-    @test term_status == MOI.Success
+    @test term_status == MOI.Optimal
     @test pr_status == MOI.FeasiblePoint
     @test du_status == MOI.FeasiblePoint
     @test pobj ≈ dobj atol=1e-3 rtol=1e-3
@@ -310,6 +310,9 @@ function _shapeconregr2_JuMP()
     (X, y) = generateregrdata(f, -1.0, 1.0, n, npoints, signal_ratio=signal_ratio)
     (mdl, p) = build_shapeconregr_WSOS(X, y, deg, ShapeData(n), use_leastsqobj=false)
     truemin = 1.3971e-1
+    solveandcheck_JuMP(mdl, truemin)
+    # test with non-sampling based interpolation
+    (mdl, p) = build_shapeconregr_WSOS(X, y, deg, ShapeData(n), use_leastsqobj=false, sample=false)
     solveandcheck_JuMP(mdl, truemin)
 end
 

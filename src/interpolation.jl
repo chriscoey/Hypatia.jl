@@ -13,6 +13,7 @@ and Matlab files in the packages
 
 # domains
 abstract type InterpDomain end
+sampling_region(dom::InterpDomain) = dom
 
 # hyperrectangle/box domain
 mutable struct Box <: InterpDomain
@@ -28,6 +29,7 @@ mutable struct Box <: InterpDomain
 end
 
 dimension(dom::Box) = length(dom.l)
+degree(::Box) = 2
 
 function interp_sample(dom::Box, npts::Int)
     dim = dimension(dom)
@@ -58,6 +60,7 @@ mutable struct Ball <: InterpDomain
 end
 
 dimension(dom::Ball) = length(dom.c)
+degree(::Ball) = 2
 
 function interp_sample(dom::Ball, npts::Int)
     dim = dimension(dom)
@@ -92,6 +95,7 @@ mutable struct Ellipsoid <: InterpDomain
 end
 
 dimension(dom::Ellipsoid) = length(dom.c)
+degree(::Ellipsoid) = 2
 
 function interp_sample(dom::Ellipsoid, npts::Int)
     dim = dimension(dom)
@@ -125,11 +129,14 @@ mutable struct SemiFreeDomain <: InterpDomain
     sampling_region::InterpDomain
 end
 
+sampling_region(dom::SemiFreeDomain) = dom.sampling_region
+
 function add_free_vars(dom::InterpDomain)
     return SemiFreeDomain(dom)
 end
 
 dimension(dom::SemiFreeDomain) = 2*dimension(dom.sampling_region)
+degree(dom::SemiFreeDomain) = degree(dom.sampling_region)
 
 function interp_sample(dom::SemiFreeDomain, npts::Int)
     return hcat(interp_sample(dom.sampling_region, npts), interp_sample(dom.sampling_region, npts))
@@ -153,27 +160,20 @@ function interpolate(
     calc_w::Bool = false,
     sample_factor::Int = 10,
     )
-    if !sample
-        @warn "accurate methods for interpolation points are only available for box domains, using sampling instead"
-    end
-    return wsos_sample_params(dom, d, calc_w=calc_w, sample_factor=sample_factor)
-end
-function interpolate(
-    dom::Box,
-    d::Int;
-    sample::Bool = false,
-    calc_w::Bool = false,
-    sample_factor::Int = 10,
-    )
     if sample
         return wsos_sample_params(dom, d, calc_w=calc_w, sample_factor=sample_factor)
     else
-        return wsos_box_params(dom, dimension(dom), d, calc_w=calc_w)
+        return wsos_box_params(sampling_region(dom), dimension(dom), d, calc_w=calc_w)
     end
+end
+
+function wsos_box_params(dom::InterpDomain, ::Int, ::Int)
+    error("accurate methods for interpolation points are only available for box domains, use sampling instead")
 end
 
 # slow but high-quality hyperrectangle/box point selections
 function wsos_box_params(dom::Box, n::Int, d::Int; calc_w::Bool=false)
+    # n could be larger than the dimension of dom if the original domain was a SemiFreeDomain
     if n == 1
         (U, pts, P0, P0sub, w) = cheb2_data(d, calc_w)
     elseif n == 2
@@ -183,10 +183,11 @@ function wsos_box_params(dom::Box, n::Int, d::Int; calc_w::Bool=false)
     end
     # difference with sampling functions is that P0 is always formed using points in [-1, 1]
     # scale and shift points, get WSOS matrices
-    pscale = 0.5*(dom.u - dom.l)
+    pscale = [0.5*(dom.u[mod(j-1,dimension(dom))+1] - dom.l[mod(j-1,dimension(dom))+1]) for j in 1:n]
+    pshift = [0.5*(dom.u[mod(j-1,dimension(dom))+1] + dom.l[mod(j-1,dimension(dom))+1]) for j in 1:n]
     Wtsfun = (j -> sqrt.(1.0 .- abs2.(pts[:,j]))*pscale[j])
-    PWts = [Wtsfun(j) .* P0sub for j in 1:n]
-    trpts = pts .* pscale' .+ 0.5*(dom.u + dom.l)'
+    PWts = [Wtsfun(j) .* P0sub for j in 1:dimension(dom)]
+    trpts = pts .* pscale' .+ pshift'
 
     return (U=U, pts=trpts, P0=P0, PWts=PWts, w=w)
 end
@@ -208,7 +209,7 @@ function calc_u(n::Int, d::Int, pts::Matrix{Float64})
 end
 
 function cheb2_data(d::Int, calc_w::Bool)
-    @assert d > 1
+    @assert d > 0
     U = 2d + 1
 
     # Chebyshev points for degree 2d
@@ -233,7 +234,7 @@ function cheb2_data(d::Int, calc_w::Bool)
 end
 
 function padua_data(d::Int, calc_w::Bool)
-    @assert d > 1
+    @assert d > 0
     (L, U) = get_LU(2, d)
 
     # Padua points for degree 2d
@@ -300,7 +301,7 @@ function padua_data(d::Int, calc_w::Bool)
 end
 
 function approxfekete_data(n::Int, d::Int, calc_w::Bool)
-    @assert d > 1
+    @assert d > 0
     @assert n > 1
     (L, U) = get_LU(n, d)
 
@@ -365,8 +366,8 @@ function make_wsos_arrays(
     pts = candidate_pts[keep_pnt,:] # subset of points indexed with the support of w
     P0 = M[keep_pnt, 1:L] # subset of polynomial evaluations up to total degree d
 
-    # TODO take into account degree of g; currently always 2 for balls, ellipsoids, and intervals by luck
-    P0sub = view(P0, :, 1:binomial(n+d-1, n))
+    subd = d - div(degree(dom), 2)
+    P0sub = view(P0, :, 1:binomial(n+subd, n))
 
     if calc_w
         Qtm = F.Q'*m

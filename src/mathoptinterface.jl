@@ -614,7 +614,7 @@ end
 function MOI.get(opt::Optimizer, ::MOI.TerminationStatus)
     # TODO time limit etc
     if opt.status in (:Optimal, :PrimalInfeasible, :DualInfeasible, :IllPosed)
-        return MOI.Success
+        return MOI.Optimal
     elseif opt.status in (:PredictorFail, :CorrectorFail)
         return MOI.NumericalError
     elseif opt.status == :IterationLimit

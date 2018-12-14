@@ -62,7 +62,7 @@ function run_JuMP_expdesign(;rseed::Int=1)
     du_status = JuMP.dual_status(model)
     npval = JuMP.value.(np)
 
-    @test term_status == MOI.Success
+    @test term_status == MOI.Optimal
     @test pr_status == MOI.FeasiblePoint
     @test du_status == MOI.FeasiblePoint
     @test pobj ≈ dobj atol=1e-4 rtol=1e-4
