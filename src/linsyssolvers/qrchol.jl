@@ -7,7 +7,7 @@ QR plus either Cholesky factorization or iterative conjugate gradients method
 (2) solve reduced symmetric system by Cholesky or iterative method
 =#
 
-mutable struct QRSymmCache <: LinSysCache
+mutable struct QRChol <: LinSysCache
     # TODO can remove some of the prealloced arrays after github.com/JuliaLang/julia/issues/23919 is resolved
     useiterative
     userefine
@@ -51,7 +51,7 @@ mutable struct QRSymmCache <: LinSysCache
     # lprecond
     # Q2sol
 
-    function QRSymmCache(
+    function QRChol(
         c::Vector{Float64},
         A::AbstractMatrix{Float64},
         b::Vector{Float64},
@@ -125,7 +125,7 @@ mutable struct QRSymmCache <: LinSysCache
 end
 
 
-QRSymmCache(
+QRChol(
     c::Vector{Float64},
     A::AbstractMatrix{Float64},
     b::Vector{Float64},
@@ -134,7 +134,7 @@ QRSymmCache(
     cone::Cone;
     useiterative::Bool = false,
     userefine::Bool = false,
-    ) = error("to use a QRSymmCache for linear system solves, the data must be preprocessed and Q2 and RiQ1 must be passed into the QRSymmCache constructor")
+    ) = error("to use a QRChol for linear system solves, the data must be preprocessed and Q2 and RiQ1 must be passed into the QRChol constructor")
 
 
 # solve symmetric 3x3 system for x, y, z
@@ -144,7 +144,7 @@ function solvelinsys3!(
     rhs_ty::Vector{Float64},
     rhs_tz::Vector{Float64},
     mu::Float64,
-    L::QRSymmCache,
+    L::QRChol,
     )
 
     # @. rhs_ty = -rhs_ty
@@ -226,7 +226,7 @@ function solvelinsys3!(
     rhs_ty .= L.RiQ1 * (rhs_tx - L.G' * GQx)
 
     @. rhs_tx = Qx
-    
+
     @. rhs_tz += GQx
 
     return
@@ -245,7 +245,7 @@ function solvelinsys6!(
     rhs_tau::Float64,
     mu::Float64,
     tau::Float64,
-    L::QRSymmCache,
+    L::QRChol,
     )
     (zi, yi, xi) = (L.zi, L.yi, L.xi)
     @. yi[:,1] = L.b

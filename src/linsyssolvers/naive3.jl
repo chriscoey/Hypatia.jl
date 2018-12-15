@@ -11,17 +11,17 @@ G*x - (mu*H)\z = zrhs - (mu*H)\srhs  (primal barrier)
 G*x - mu*H*z = zrhs - srhs           (dual barrier)
 =#
 
-mutable struct Naive3Cache <: LinSysCache
+mutable struct Naive3 <: LinSysCache
     n
     p
     q
-    cone
     G
+    cone
     LHS
     LHScopy
     rhs
 
-    function Naive3Cache(
+    function Naive3(
         P::AbstractMatrix{Float64},
         c::Vector{Float64},
         A::AbstractMatrix{Float64},
@@ -32,8 +32,7 @@ mutable struct Naive3Cache <: LinSysCache
         )
         L = new()
         (n, p, q) = (length(c), length(b), length(h))
-        (L.n, L.p, L.q, L.cone) = (n, p, q, cone)
-        L.G = G
+        (L.n, L.p, L.q, L.G, L.cone) = (n, p, q, G, cone)
         if issparse(P) && issparse(A) && issparse(G)
             L.LHS = [
                 P  A'            G'                ;
@@ -58,9 +57,9 @@ function solvelinsys4!(
     zrhs::Vector{Float64},
     srhs::Vector{Float64},
     mu::Float64,
-    L::Naive3Cache,
+    L::Naive3,
     )
-    (n, p, q, cone) = (L.n, L.p, L.q, L.cone)
+    (n, p, q, G, cone) = (L.n, L.p, L.q, L.G, L.cone)
 
     L.rhs[1:n] = xrhs
     L.rhs[n+1:n+p] = yrhs
@@ -95,7 +94,7 @@ function solvelinsys4!(
         yrhs = L.rhs[n+1:n+p]
         zrhs = L.rhs[n+p+1:end]
     end
-    srhs .-= L.G*xrhs # TODO allocates
+    srhs .-= G*xrhs # TODO allocates
 
     return
 end

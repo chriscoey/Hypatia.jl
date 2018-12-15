@@ -41,12 +41,12 @@ function solveandcheck(
     )
     # check, preprocess, load, and solve
     Hypatia.check_data(c, A, b, G, h, cone)
-    if lscachetype == Hypatia.QRSymmCache
+    if lscachetype == Hypatia.QRChol
         (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(c, A, b, G, useQR=true)
-        L = Hypatia.QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
-    elseif lscachetype == Hypatia.NaiveCache
+        L = Hypatia.QRChol(c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    elseif lscachetype == Hypatia.Naive3
         (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(c, A, b, G, useQR=false)
-        L = Hypatia.NaiveCache(c1, A1, b1, G1, h, cone)
+        L = Hypatia.Naive3(c1, A1, b1, G1, h, cone)
     else
         error("linear system cache type $lscachetype is not recognized")
     end
@@ -107,8 +107,8 @@ include(joinpath(@__DIR__, "native.jl"))
 @info("starting native interface tests")
 verbose = false
 lscachetypes = [
-    Hypatia.QRSymmCache,
-    Hypatia.NaiveCache,
+    Hypatia.QRChol,
+    Hypatia.Naive3,
     ]
 testfuns = [
     _dimension1,
@@ -159,8 +159,8 @@ end
 @info("starting native examples tests")
 verbose = false
 lscachetypes = [
-    Hypatia.QRSymmCache,
-    # Hypatia.NaiveCache, # slow
+    Hypatia.QRChol,
+    # Hypatia.Naive3, # slow
     ]
 testfuns = [
     _envelope1,
@@ -247,8 +247,8 @@ end
 @info("starting MathOptInterface tests")
 verbose = false
 lscachetypes = [
-    Hypatia.QRSymmCache,
-    Hypatia.NaiveCache,
+    Hypatia.QRChol,
+    Hypatia.Naive3,
     ]
 @testset "MOI tests: $lscachetype, $(usedense ? "dense" : "sparse")" for lscachetype in lscachetypes, usedense in [false, true]
     testmoi(verbose=verbose, lscachetype=lscachetype, usedense=usedense)

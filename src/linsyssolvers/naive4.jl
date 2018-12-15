@@ -4,7 +4,7 @@ Copyright 2018, Chris Coey and contributors
 naive method that simply performs one 4x4 linear system solve
 =#
 
-mutable struct Naive4Cache <: LinSysCache
+mutable struct Naive4 <: LinSysCache
     n
     p
     q
@@ -14,7 +14,7 @@ mutable struct Naive4Cache <: LinSysCache
     rhs
     issymm
 
-    function Naive4Cache(
+    function Naive4(
         P::AbstractMatrix{Float64},
         c::Vector{Float64},
         A::AbstractMatrix{Float64},
@@ -53,7 +53,7 @@ function solvelinsys4!(
     zrhs::Vector{Float64},
     srhs::Vector{Float64},
     mu::Float64,
-    L::Naive4Cache,
+    L::Naive4,
     )
     (n, p, q, cone) = (L.n, L.p, L.q, L.cone)
 

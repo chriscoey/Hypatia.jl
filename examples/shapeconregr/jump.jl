@@ -103,7 +103,7 @@ function build_shapeconregr_PSD(
     )
     n = size(X, 2)
 
-    model = SOSModel(with_optimizer(Hypatia.Optimizer, verbose=true, usedense=usedense, lscachetype=Hypatia.QRSymmCache))
+    model = SOSModel(with_optimizer(Hypatia.Optimizer, verbose=true, usedense=usedense, lscachetype=Hypatia.QRChol))
     (x, p) = add_loss_and_polys!(model, X, y, r, use_leastsqobj)
 
     mono_bss = get_domain_inequalities(sd.mono_dom, x)
@@ -145,7 +145,7 @@ function build_shapeconregr_WSOS(
     mono_wsos_cone = WSOSPolyInterpCone(mono_U, [mono_P0, mono_PWts...])
     conv_wsos_cone = WSOSPolyInterpCone(conv_U, [conv_P0, conv_PWts...])
 
-    model = SOSModel(with_optimizer(Hypatia.Optimizer, verbose=true, usedense=usedense, lscachetype=Hypatia.QRSymmCache))
+    model = SOSModel(with_optimizer(Hypatia.Optimizer, verbose=true, usedense=usedense, lscachetype=Hypatia.QRChol))
     (x, p) = add_loss_and_polys!(model, X, y, r, use_leastsqobj)
     @polyvar w[1:n]
 
@@ -174,7 +174,8 @@ function run_JuMP_shapeconregr(
     )
     (n, deg, npoints, signal_ratio, f) =
         # (2, 3, 100, 0.0, x -> exp(norm(x))) # no noise, monotonic function
-        (2, 3, 100, 0.0, x -> sum(x.^3)) # no noise, monotonic function
+        # (2, 3, 100, 0.0, x -> sum(x.^3)) # no noise, monotonic function
+        (2, 5, 100, 0.0, x -> sum(x.^3)) # no noise, monotonic function
         # (2, 3, 100, 0.0, x -> sum(x.^4)) # no noise, non-monotonic function
         # (2, 3, 100, 50.0, x -> sum(x.^3)) # some noise, monotonic function
         # (2, 3, 100, 50.0, x -> sum(x.^4)) # some noise, non-monotonic function

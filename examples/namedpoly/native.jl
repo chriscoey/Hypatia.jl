@@ -55,7 +55,7 @@ function run_namedpoly()
 
     # Hypatia.check_data(c, A, b, G, h, cone)
     # (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(c, A, b, G, useQR=true)
-    # L = Hypatia.QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    # L = Hypatia.QRChol(c1, A1, b1, G1, h, cone, Q2, RiQ1)
 
     # Hypatia.check_data(P, c, A, b, G, h, cone)
 

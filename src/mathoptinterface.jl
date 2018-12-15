@@ -56,7 +56,7 @@ end
 Optimizer(;
     verbose::Bool = false,
     timelimit::Float64 = 3.6e3, # TODO should be Inf
-    lscachetype = QRSymmCache,
+    lscachetype = QRChol,
     usedense::Bool = true,
     tolrelopt::Float64 = 1e-6,
     tolabsopt::Float64 = 1e-7,
@@ -585,16 +585,18 @@ function MOI.optimize!(opt::Optimizer)
 
     # check, preprocess, load, and solve
     check_data(P, c, A, b, G, h, cone)
-    # if opt.lscachetype == QRSymmCache
+    # if opt.lscachetype == QRChol
     #     (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(c, A, b, G, useQR=true)
-    #     L = QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
-    # elseif opt.lscachetype == NaiveCache
-        (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=false)
-        L = Naive3Cache(P1, c1, A1, b1, G1, h, cone)
+    #     L = QRChol(c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    # elseif opt.lscachetype == Naive3
+        # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=false)
+        # L = Naive3(P1, c1, A1, b1, G1, h, cone)
+        L = Naive3(P, c, A, b, G, h, cone)
     # else
     #     error("linear system cache type $(opt.lscachetype) is not recognized")
     # end
-    load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
+    # load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
+    load_data!(mdl, P, c, A, b, G, h, cone, L)
 
     solve!(mdl)
 
