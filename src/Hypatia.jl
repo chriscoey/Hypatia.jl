@@ -39,7 +39,8 @@ module Hypatia
     include("linearsystem.jl")
     for linsyssolver in [
         "qrsymm",
-        "naive",
+        "naive3",
+        "naive4",
         ]
         include(joinpath(@__DIR__, "linsyssolvers", linsyssolver * ".jl"))
     end

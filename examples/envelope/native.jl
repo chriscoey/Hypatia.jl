@@ -89,7 +89,7 @@ function run_envelope(primal_wsos::Bool, usedense::Bool)
     # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(P, c, A, b, G, useQR=false)
     # L = Hypatia.QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
     # L = Hypatia.NaiveCache(P1, c1, A1, b1, G1, h, cone)
-    L = Hypatia.NaiveCache(P, c, A, b, G, h, cone)
+    L = Hypatia.Naive3Cache(P, c, A, b, G, h, cone)
 
     mdl = Hypatia.Model(maxiter=500, verbose=true)
     # Hypatia.load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
