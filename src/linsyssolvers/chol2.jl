@@ -65,19 +65,37 @@ function solvelinsys4!(
     for k in eachindex(cone.prmtvs)
         calcHarr_prmtv!(view(HG, cone.idxs[k], :), view(G, cone.idxs[k], :), cone.prmtvs[k])
     end
-    PGHG = Symmetric(P + mu*G'*HG)
-    F1 = cholesky!(PGHG)
+    GHG = mu*G'*HG
+    PGHG = Symmetric(P + GHG)
+    F1 = cholesky!(PGHG, check=false) # TODO allow pivot
+    singular = !issuccess(F1)
+
+    # TODO if singular, use the fallback at bottom of s10.1
+    if singular
+        println("singular PGHG")
+        PGHGAA = Symmetric(P + GHG + A'*A)
+        F1 = cholesky!(PGHGAA, check=false) # TODO allow pivot
+        if !issuccess(F1)
+            error("could not fix singular PGHG")
+        end
+    end
 
     LA = copy(A')
     ldiv!(F1.L, LA)
     ALLA = Symmetric(LA'*LA)
-    F2 = cholesky!(ALLA)
+    F2 = cholesky!(ALLA, check=false) # TODO allow pivot; TODO avoid if no equalities?
+    if !issuccess(F2)
+        error("singular ALLA")
+    end
 
     Hz = similar(zrhs3)
     for k in eachindex(cone.prmtvs)
         calcHarr_prmtv!(view(Hz, cone.idxs[k]), view(zrhs3, cone.idxs[k]), cone.prmtvs[k])
     end
     xGHz = xrhs + mu*G'*Hz
+    if singular
+        xGHz += A'*yrhs
+    end
     LxGHz = copy(xGHz)
     ldiv!(F1.L, LxGHz)
 
