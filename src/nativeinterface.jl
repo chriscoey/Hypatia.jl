@@ -37,13 +37,13 @@ mutable struct Model
     solvetime::Float64      # total solve time
     niters::Int             # total number of iterations
 
+    pobj::Float64           # final primal objective value
+    dobj::Float64           # final dual objective value
     x::Vector{Float64}      # final value of the primal free variables
     s::Vector{Float64}      # final value of the primal cone variables
     y::Vector{Float64}      # final value of the dual free variables
     z::Vector{Float64}      # final value of the dual cone variables
     mu::Float64             # final value of mu
-    pobj::Float64           # final primal objective value
-    dobj::Float64           # final dual objective value
 
     function Model(verbose, timelimit, tolrelopt, tolabsopt, tolfeas, maxiter, predlinesearch, maxpredsmallsteps, predlsmulti, corrcheck, maxcorrsteps, alphacorr, maxcorrlsiters, corrlsmulti)
         mdl = new()
@@ -105,16 +105,14 @@ end
 get_status(mdl::Model) = mdl.status
 get_solvetime(mdl::Model) = mdl.solvetime
 get_niters(mdl::Model) = mdl.niters
-
+get_pobj(mdl::Model) = mdl.pobj
+get_dobj(mdl::Model) = mdl.dobj
 get_x(mdl::Model) = copy(mdl.x)
 get_s(mdl::Model) = copy(mdl.s)
 get_y(mdl::Model) = copy(mdl.y)
 get_z(mdl::Model) = copy(mdl.z)
-
 get_mu(mdl::Model) = mdl.mu
 
-get_pobj(mdl::Model) = dot(mdl.c, mdl.x)
-get_dobj(mdl::Model) = -dot(mdl.b, mdl.y) - dot(mdl.h, mdl.z)
 
 # check data for consistency
 function check_data(
@@ -234,7 +232,7 @@ function preprocess_data(
     if p == 0
         # no primal equality constraints to preprocess
         # TODO use I instead of dense for Q2
-        return (c, A, b, G, 1:0, dukeep, Matrix{Float64}(I, n, n), Matrix{Float64}(I, 0, n))
+        return (P, c, A, b, G, 1:0, dukeep, Matrix{Float64}(I, n, n), Matrix{Float64}(I, 0, n))
     end
 
     # preprocess primal equality constraints
@@ -254,7 +252,7 @@ function preprocess_data(
 
     if !useQR && Arank == p
         # no primal equalities to remove and QR of A' not needed
-        return (c, A, b, G, 1:p, dukeep, Matrix{Float64}(undef, 0, 0), Matrix{Float64}(undef, 0, 0))
+        return (P, c, A, b, G, 1:p, dukeep, Matrix{Float64}(undef, 0, 0), Matrix{Float64}(undef, 0, 0))
     end
 
     # using QR of A' (requires reordering rows) and/or some primal equalities are dependent
@@ -281,9 +279,7 @@ function preprocess_data(
         println("removed $(p - Arank) out of $p primal equality constraints")
     end
 
-    A = A1
-    b = b1
-    return (P, c, A, b, G, prkeep, dukeep, AQ2, ARiQ1)
+    return (P, c, A1, b1, G, prkeep, dukeep, AQ2, ARiQ1)
 end
 
 # verify problem data and load into model object
@@ -296,20 +292,17 @@ function load_data!(
     G::AbstractMatrix{Float64},
     h::Vector{Float64},
     cone::Cone,
-    # L::LinSysCache, # linear system solver cache (see linsyssolvers folder)
+    L::LinSysCache, # linear system solver cache (see linsyssolvers folder)
     )
-    (mdl.P, mdl.c, mdl.A, mdl.b, mdl.G, mdl.h, mdl.cone) = (P, c, A, b, G, h, cone)
-    # (mdl.P, mdl.c, mdl.A, mdl.b, mdl.G, mdl.h, mdl.cone, mdl.L) = (P, c, A, b, G, h, cone, L)
+    (mdl.P, mdl.c, mdl.A, mdl.b, mdl.G, mdl.h, mdl.cone, mdl.L) = (P, c, A, b, G, h, cone, L)
     mdl.status = :Loaded
     return mdl
 end
 
-
-
+# solve cone QP without homogeneous self-dual embedding
 function solve!(mdl::Model)
     starttime = time()
-    # (P, c, A, b, G, h, cone, L) = (mdl.P, mdl.c, mdl.A, mdl.b, mdl.G, mdl.h, mdl.cone, mdl.L)
-    (P, c, A, b, G, h, cone) = (mdl.P, mdl.c, mdl.A, mdl.b, mdl.G, mdl.h, mdl.cone)
+    (P, c, A, b, G, h, cone, L) = (mdl.P, mdl.c, mdl.A, mdl.b, mdl.G, mdl.h, mdl.cone, mdl.L)
     (n, p, q) = (length(c), length(b), length(h))
     bnu = barrierpar(cone) # complexity parameter of the barrier (sum of the primitive cone barrier parameters)
 
@@ -324,7 +317,6 @@ function solve!(mdl::Model)
 
     # find initial primal-dual iterate
     mdl.verbose && println("\nfinding initial iterate")
-
 
     # TODO scale like in alfonso?
     getinitsz!(ls_s, ls_z, cone)
@@ -351,80 +343,7 @@ function solve!(mdl::Model)
     x = xy[1:n]
     y = xy[n+1:end]
 
-
-
-    # # TODO use method in cvxopt ch 5.3
-    # if issparse(P) && issparse(A) && issparse(G)
-    #     LHS = [P A' G'; A spzeros(p, p+q); G spzeros(q, p) -1.0I]
-    #     @assert issparse(LHS)
-    # else
-    #     LHS = [Matrix(P) A' G'; A zeros(p, p+q); G zeros(q, p) -1.0I]
-    #     @assert !issparse(LHS)
-    # end
-    # rhs = [-c; b; h]
-    # soln = Symmetric(LHS)\rhs
-    #
-    # x = soln[1:n]
-    # y = soln[n+1:n+p]
-    # z = soln[n+p+1:end]
-    #
-    # ls_s = -z
-    # ls_z = copy(z)
-    # loadpnt!(cone, ls_s, ls_z)
-    #
-    # tmp_s = similar(z)
-    # tmp_z = similar(z)
-    # for k in eachindex(cone.prmtvs)
-    #     v1k = view((cone.prmtvs[k].usedual ? ls_s : ls_z), cone.idxs[k])
-    #     v2k = view((cone.prmtvs[k].usedual ? ls_z : ls_s), cone.idxs[k])
-    #
-    #     if !incone_prmtv(cone.prmtvs[k], 1.0)
-    #         getintdir_prmtv!(v1k, cone.prmtvs[k])
-    #         @. v2k += v1k
-    #         steps = 1
-    #         alpha = 1.0
-    #         while !incone_prmtv(cone.prmtvs[k], 1.0)
-    #             @. v2k += alpha * v1k
-    #             steps += 1
-    #             if steps > 25
-    #                 error("cannot find initial iterate")
-    #             end
-    #             alpha *= 1.5
-    #         end
-    #         @show k, steps, alpha
-    #     end
-    #
-    #     calcg_prmtv!(v1k, cone.prmtvs[k])
-    #     @. v1k = -v1k
-    # end
-    #
-    # @assert incone(cone, 1.0) # TODO delete
-    #
-    # s = copy(ls_s)
-    # @. z = ls_z
-    #
-    # mu = dot(z, s)/bnu
-    # @assert !isnan(mu)
-    # if abs(1.0 - mu) > 1e-6
-    #     error("mu is $mu")
-    # end
-    #
-    # g = similar(z)
-    # @assert calcnbhd!(g, copy(s), copy(z), mu, cone) < 1e-6
-
     mdl.verbose && println("initial iterate found")
-
-
-
-    LHS4 = [
-        P           A'          G'                zeros(n,q)       ;
-        A           zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
-        G           zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
-        zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ;
-        ]
-
-
-
 
 
     # preallocate helper arrays
@@ -433,9 +352,6 @@ function solve!(mdl::Model)
     tmp_y = similar(y)
     tmp_z = similar(z)
     tmp_s = similar(s)
-
-
-
 
 
     # calculate tolerances for convergence
@@ -452,12 +368,14 @@ function solve!(mdl::Model)
     # main loop
     if mdl.verbose
         println("starting iteration")
-        @printf("\n%5s %12s %12s %9s %9s %9s %9s %9s\n", "iter", "p_obj", "d_obj", "abs_gap", "rel_gap", "p_inf", "d_inf", "mu")
+        @printf("\n%5s %12s %12s %9s %9s %9s %9s %9s %9s\n", "iter", "p_obj", "d_obj", "abs_gap", "rel_gap", "x_res", "y_res", "z_res", "mu")
         flush(stdout)
     end
 
     mdl.status = :StartedIterating
     alphapred = alphapredinit
+    pobj = 0.0
+    dobj = 0.0
     iter = 0
     while true
         # calculate residuals and convergence parameters
@@ -480,43 +398,33 @@ function solve!(mdl::Model)
 
         gap = dot(z, s) # TODO maybe should adapt original Alfonso condition instead of using this CVXOPT condition
 
-        # (cx, by, hz) = (dot(c, x), dot(b, y), dot(h, z))
-        obj_pr = 0.5*x'*P*x + dot(c, x)
-        obj_du = obj_pr + dot(y, tmp_y) + dot(z, tmp_z) - gap
-        # @assert obj_du ≈ obj_pr + z'*(G*x - h) + y'*(A*x - b)
+        # TODO add objective constant
+        pobj = 0.5*x'*P*x + dot(c, x) # TODO use Px calculated already for tmp_x
+        dobj = pobj + dot(y, tmp_y) + dot(z, tmp_z) - gap
+        # @assert dobj ≈ pobj + z'*(G*x - h) + y'*(A*x - b)
 
         # TODO maybe add small epsilon to denominators that are zero to avoid NaNs, and get rid of isnans further down
-        if obj_pr < 0.0
-            relgap = gap/-obj_pr
-        elseif obj_du > 0.0
-            relgap = gap/obj_du
+        if pobj < 0.0
+            relgap = gap/-pobj
+        elseif dobj > 0.0
+            relgap = gap/dobj
         else
             relgap = NaN
         end
 
-        nres_pr = max(nres_y*tol_res_y, nres_z*tol_res_z)
-        nres_du = nres_x*tol_res_x
-
-        # if hz + by < 0.0
-        #     infres_pr = nres_x*tol_res_x/(-hz - by)
-        # else
-        #     infres_pr = NaN
-        # end
-        # if cx < 0.0
-        #     infres_du = -max(nres_y*tol_res_y, nres_z*tol_res_z)/cx
-        # else
-        #     infres_du = NaN
-        # end
+        xres = nres_x*tol_res_x
+        yres = nres_y*tol_res_y
+        zres = nres_z*tol_res_z
 
         if mdl.verbose
             # print iteration statistics
-            @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e\n", iter, obj_pr, obj_du, gap, relgap, nres_pr, nres_du, mu)
+            @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e\n", iter, pobj, dobj, gap, relgap, xres, yres, zres, mu)
             flush(stdout)
         end
 
         # check convergence criteria
         # TODO nearly primal or dual infeasible or nearly optimal cases?
-        if nres_pr <= mdl.tolfeas && nres_du <= mdl.tolfeas && (gap <= mdl.tolabsopt || (!isnan(relgap) && relgap <= mdl.tolrelopt))
+        if max(xres, yres, zres) <= mdl.tolfeas && (gap <= mdl.tolabsopt || (!isnan(relgap) && relgap <= mdl.tolrelopt))
             mdl.verbose && println("optimal solution found; terminating")
             mdl.status = :Optimal
             break
@@ -527,10 +435,6 @@ function solve!(mdl::Model)
         # elseif !isnan(infres_du) && infres_du <= mdl.tolfeas
         #     mdl.verbose && println("dual infeasibility detected; terminating")
         #     mdl.status = :DualInfeasible
-        #     break
-        # elseif mu <= mdl.tolfeas*1e-2 && tau <= mdl.tolfeas*1e-2*min(1.0, kap)
-        #     mdl.verbose && println("ill-posedness detected; terminating")
-        #     mdl.status = :IllPosed
         #     break
         end
 
@@ -552,93 +456,15 @@ function solve!(mdl::Model)
         # prediction phase
         # calculate prediction direction
 
-        # @. ls_z = z
-        # @. ls_s = s
-
-        # @. tmp_s = tmp_z
-        # for k in eachindex(cone.prmtvs)
-        #     v1 = (cone.prmtvs[k].usedual ? s : z)
-        #     @. @views tmp_z[cone.idxs[k]] = -v1[cone.idxs[k]]
-        # end
-
-        # @. @views begin
-        #     rhs[1:n] = -tmp_x
-        #     rhs[n+1:n+p] = -tmp_y
-        #     rhs[n+p+1:end] = -tmp_z + s
-        # end
-        #
-        # for k in eachindex(cone.prmtvs)
-        #     idxs = (n + p) .+ cone.idxs[k]
-        #     dim = dimension(cone.prmtvs[k])
-        #     Hk = view(LHS, idxs, idxs)
-        #
-        #     if cone.prmtvs[k].usedual
-        #         @. Hk = -mu * cone.prmtvs[k].H # NOTE only upper triangle is valid
-        #         # calcHarr_prmtv!(Hk, Matrix(-mu*I, dim, dim), cone.prmtvs[k])
-        #     else
-        #         Hinv = inv(cone.prmtvs[k].F)
-        #         @. Hk = Hinv / (-mu)
-        #         # calcHiarr_prmtv!(Hk, Matrix(-inv(mu)*I, dim, dim), cone.prmtvs[k])
-        #     end
-        # end
-        #
-        # soln = Symmetric(LHS, :U)\rhs
-        # @. @views begin
-        #     tmp_x = soln[1:n]
-        #     tmp_y = soln[n+1:n+p]
-        #     tmp_s = -tmp_z + s
-        #     tmp_z = soln[n+p+1:end]
-        # end
-        # tmp_s -= G*tmp_x
-
-
-        # LHS4 = [
-        #     P           A'          G'                zeros(n,q)       ;
-        #     A           zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
-        #     G           zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
-        #     zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ;
-        #     ]
-
-        rhs4 = [-tmp_x; -tmp_y; -tmp_z; similar(s)]
+        # TODO reverse sign of residuals above
+        tmp_x .*= -1.0
+        tmp_y .*= -1.0
+        tmp_z .*= -1.0
         for k in eachindex(cone.prmtvs)
-            idxs = (n + p + q) .+ cone.idxs[k]
-            if cone.prmtvs[k].usedual
-                LHS4[idxs, (n + p) .+ cone.idxs[k]] = mu * Symmetric(cone.prmtvs[k].H)
-                rhs4[idxs] = -s[cone.idxs[k]]
-            else
-                LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
-                rhs4[idxs] = -z[cone.idxs[k]]
-            end
-            # Hk = view(LHS4, idxs, idxs)
-            # dim = dimension(cone.prmtvs[k])
-            # calcHarr_prmtv!(Hk, Matrix(mu*I, dim, dim), cone.prmtvs[k])
+            vk = view(cone.prmtvs[k].usedual ? s : z, cone.idxs[k])
+            tmp_s[cone.idxs[k]] = -vk
         end
-
-
-        soln = LHS4\rhs4
-
-        @. @views begin
-            tmp_x = soln[1:n]
-            tmp_y = soln[n+1:n+p]
-            tmp_z = soln[n+p+1:n+p+q]
-            tmp_s = soln[n+p+q+1:end]
-        end
-
-
-
-        # solvelinsys6!(tmp_x, tmp_y, tmp_z, -kap, tmp_s, kap + cx + by + hz, mu, tau, L)
-
-        # # check residual
-        # res_x = -A'*tmp_y - G'*tmp_z - c*tmp_au + copy_x
-        # res_y = A*tmp_x - b*tmp_au + copy_y
-        # # res_z = tmp_s + G*tmp_x - h*tmp_au - copy_z
-        # res_obj = dot(c, tmp_x) + dot(b, tmp_y) + dot(h, tmp_z) + tmp_kap + (kap + cx + by + hz)
-        #
-        # @show norm(res_x)
-        # @show norm(res_y)
-        # @show norm(res_z)
-        # @show norm(res_obj)
-
+        solvelinsys4!(tmp_x, tmp_y, tmp_z, tmp_s, mu, L)
 
         # determine step length alpha by line search
         alpha = alphapred
@@ -658,7 +484,7 @@ function solve!(mdl::Model)
             # accept primal iterate if
             # - decreased alpha and it is the first inside the cone and beta-neighborhood or
             # - increased alpha and it is inside the cone and the first to leave beta-neighborhood
-            if ls_mu > 0.0 && incone(cone, 1.0)
+            if ls_mu > 0.0 && incone(cone, mu)
                 # primal iterate is inside the cone
                 nbhd = calcnbhd!(g, ls_s, ls_z, ls_mu, cone)
                 # @show sqrt(nbhd)/ls_mu, beta
@@ -720,93 +546,16 @@ function solve!(mdl::Model)
             ncorrsteps += 1
 
             # calculate correction direction
-
-            # calcg!(g, cone)
-            #
-            # for k in eachindex(cone.prmtvs)
-            #     idxs = (n + p + q) .+ cone.idxs[k]
-            #     LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
-            #
-            #     # Hk = view(LHS4, (n + p) .+ cone.idxs[k], (n + p + q) .+ cone.idxs[k])
-            #     # dim = dimension(cone.prmtvs[k])
-            #     # calcHarr_prmtv!(Hk, Matrix(mu*I, dim, dim), cone.prmtvs[k])
-            # end
-            #
-            # rhs4 = [zeros(n); zeros(p); zeros(q); -z - mu*g]
-
-            # LHS4 = [
-            #     P           A'          G'                zeros(n,q)       ;
-            #     A           zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
-            #     G           zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
-            #     zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ;
-            #     ]
-
             calcg!(g, cone)
-            rhs4 = zeros(n+p+2q)
+            tmp_x .= 0.0
+            tmp_y .= 0.0
+            tmp_z .= 0.0
             for k in eachindex(cone.prmtvs)
-                idxs = (n + p + q) .+ cone.idxs[k]
-                if cone.prmtvs[k].usedual
-                    LHS4[idxs, (n + p) .+ cone.idxs[k]] = mu * Symmetric(cone.prmtvs[k].H)
-                    rhs4[idxs] = -s[cone.idxs[k]] - mu*g[cone.idxs[k]]
-                else
-                    LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
-                    rhs4[idxs] = -z[cone.idxs[k]] - mu*g[cone.idxs[k]]
-                end
-                # Hk = view(LHS4, idxs, idxs)
-                # dim = dimension(cone.prmtvs[k])
-                # calcHarr_prmtv!(Hk, Matrix(mu*I, dim, dim), cone.prmtvs[k])
+                vk = view(cone.prmtvs[k].usedual ? s : z, cone.idxs[k])
+                gk = view(g, cone.idxs[k])
+                @. tmp_s[cone.idxs[k]] = -vk - mu * gk
             end
-
-
-
-
-            soln = LHS4\rhs4
-
-            @. @views begin
-                tmp_x = soln[1:n]
-                tmp_y = soln[n+1:n+p]
-                tmp_z = soln[n+p+1:n+p+q]
-                tmp_s = soln[n+p+q+1:end]
-            end
-
-            #
-            # calcg!(g, cone)
-            # @. @views begin
-            #     rhs[1:n] = 0.0
-            #     rhs[n+1:n+p] = 0.0
-            #     rhs[n+p+1:end] = z + mu*g
-            # end
-            #
-            # for k in eachindex(cone.prmtvs)
-            #     idxs = (n + p) .+ cone.idxs[k]
-            #     # dim = dimension(cone.prmtvs[k])
-            #     # Hk = view(LHS, idxs, idxs)
-            #
-            #     if cone.prmtvs[k].usedual
-            #         @. LHS[idxs, idxs] = -mu * cone.prmtvs[k].H # NOTE only upper triangle is valid
-            #         # calcHarr_prmtv!(Hk, Matrix(-mu*I, dim, dim), cone.prmtvs[k])
-            #     else
-            #         Hinv = inv(cone.prmtvs[k].F)
-            #         @. LHS[idxs, idxs] = Hinv / (-mu)
-            #         # calcHiarr_prmtv!(Hk, Matrix(-inv(mu)*I, dim, dim), cone.prmtvs[k])
-            #     end
-            # end
-            #
-            # soln = Symmetric(LHS, :U)\rhs
-            # @. @views begin
-            #     tmp_x = soln[1:n]
-            #     tmp_y = soln[n+1:n+p]
-            #     tmp_s = -z - mu*g
-            #     tmp_z = soln[n+p+1:end]
-            # end
-            # tmp_s -= G*tmp_x
-            #
-            #
-
-
-
-            # (tmp_kap, tmp_tau) = solvelinsys6!(tmp_x, tmp_y, tmp_z, -kap + mu/tau, tmp_s, 0.0, mu, tau, L)
-
+            solvelinsys4!(tmp_x, tmp_y, tmp_z, tmp_s, mu, L)
 
             # determine step length alpha by line search
             alpha = mdl.alphacorr
@@ -818,7 +567,7 @@ function solve!(mdl::Model)
                 @. ls_s = s + alpha*tmp_s
                 ls_mu = dot(ls_s, ls_z)/bnu
 
-                if ls_mu > 0.0 && incone(cone, 1.0)
+                if ls_mu > 0.0 && incone(cone, mu)
                     # primal iterate x is inside the cone, so terminate line search
                     break
                 end
@@ -871,7 +620,9 @@ function solve!(mdl::Model)
         end
     end
 
-    # calculate result and iteration statistics
+    # store result and iteration statistics
+    mdl.pobj = pobj
+    mdl.dobj = dobj
     mdl.x = x
     mdl.s = s
     mdl.y = y
@@ -879,8 +630,7 @@ function solve!(mdl::Model)
     mdl.mu = mu
     mdl.niters = iter
     mdl.solvetime = time() - starttime
-
-    mdl.verbose && println("\nstatus is $(mdl.status) after $iter iterations and $(trunc(mdl.solvetime, digits=3)) seconds\n")
+    mdl.verbose && println("\nstatus is $(mdl.status) after $(mdl.niters) iterations and $(trunc(mdl.solvetime, digits=3)) seconds\n")
 
     return nothing
 end
@@ -914,3 +664,187 @@ function getbetaeta(maxcorrsteps::Int, bnu::Float64)
         end
     end
 end
+
+
+
+
+# TODO delete later
+
+
+# # TODO use method in cvxopt ch 5.3
+# if issparse(P) && issparse(A) && issparse(G)
+#     LHS = [P A' G'; A spzeros(p, p+q); G spzeros(q, p) -1.0I]
+#     @assert issparse(LHS)
+# else
+#     LHS = [Matrix(P) A' G'; A zeros(p, p+q); G zeros(q, p) -1.0I]
+#     @assert !issparse(LHS)
+# end
+# rhs = [-c; b; h]
+# soln = Symmetric(LHS)\rhs
+#
+# x = soln[1:n]
+# y = soln[n+1:n+p]
+# z = soln[n+p+1:end]
+#
+# ls_s = -z
+# ls_z = copy(z)
+# loadpnt!(cone, ls_s, ls_z)
+#
+# tmp_s = similar(z)
+# tmp_z = similar(z)
+# for k in eachindex(cone.prmtvs)
+#     v1k = view((cone.prmtvs[k].usedual ? ls_s : ls_z), cone.idxs[k])
+#     v2k = view((cone.prmtvs[k].usedual ? ls_z : ls_s), cone.idxs[k])
+#
+#     if !incone_prmtv(cone.prmtvs[k], 1.0)
+#         getintdir_prmtv!(v1k, cone.prmtvs[k])
+#         @. v2k += v1k
+#         steps = 1
+#         alpha = 1.0
+#         while !incone_prmtv(cone.prmtvs[k], 1.0)
+#             @. v2k += alpha * v1k
+#             steps += 1
+#             if steps > 25
+#                 error("cannot find initial iterate")
+#             end
+#             alpha *= 1.5
+#         end
+#         @show k, steps, alpha
+#     end
+#
+#     calcg_prmtv!(v1k, cone.prmtvs[k])
+#     @. v1k = -v1k
+# end
+#
+# @assert incone(cone, 1.0) # TODO delete
+#
+# s = copy(ls_s)
+# @. z = ls_z
+#
+# mu = dot(z, s)/bnu
+# @assert !isnan(mu)
+# if abs(1.0 - mu) > 1e-6
+#     error("mu is $mu")
+# end
+#
+# g = similar(z)
+# @assert calcnbhd!(g, copy(s), copy(z), mu, cone) < 1e-6
+
+
+
+# @. ls_z = z
+# @. ls_s = s
+
+# @. tmp_s = tmp_z
+# for k in eachindex(cone.prmtvs)
+#     v1 = (cone.prmtvs[k].usedual ? s : z)
+#     @. @views tmp_z[cone.idxs[k]] = -v1[cone.idxs[k]]
+# end
+
+# @. @views begin
+#     rhs[1:n] = -tmp_x
+#     rhs[n+1:n+p] = -tmp_y
+#     rhs[n+p+1:end] = -tmp_z + s
+# end
+#
+# for k in eachindex(cone.prmtvs)
+#     idxs = (n + p) .+ cone.idxs[k]
+#     dim = dimension(cone.prmtvs[k])
+#     Hk = view(LHS, idxs, idxs)
+#
+#     if cone.prmtvs[k].usedual
+#         @. Hk = -mu * cone.prmtvs[k].H # NOTE only upper triangle is valid
+#         # calcHarr_prmtv!(Hk, Matrix(-mu*I, dim, dim), cone.prmtvs[k])
+#     else
+#         Hinv = inv(cone.prmtvs[k].F)
+#         @. Hk = Hinv / (-mu)
+#         # calcHiarr_prmtv!(Hk, Matrix(-inv(mu)*I, dim, dim), cone.prmtvs[k])
+#     end
+# end
+#
+# soln = Symmetric(LHS, :U)\rhs
+# @. @views begin
+#     tmp_x = soln[1:n]
+#     tmp_y = soln[n+1:n+p]
+#     tmp_s = -tmp_z + s
+#     tmp_z = soln[n+p+1:end]
+# end
+# tmp_s -= G*tmp_x
+
+
+
+# solvelinsys6!(tmp_x, tmp_y, tmp_z, -kap, tmp_s, kap + cx + by + hz, mu, tau, L)
+
+# # check residual
+# res_x = -A'*tmp_y - G'*tmp_z - c*tmp_au + copy_x
+# res_y = A*tmp_x - b*tmp_au + copy_y
+# # res_z = tmp_s + G*tmp_x - h*tmp_au - copy_z
+# res_obj = dot(c, tmp_x) + dot(b, tmp_y) + dot(h, tmp_z) + tmp_kap + (kap + cx + by + hz)
+#
+# @show norm(res_x)
+# @show norm(res_y)
+# @show norm(res_z)
+# @show norm(res_obj)
+
+
+
+# calcg!(g, cone)
+#
+# for k in eachindex(cone.prmtvs)
+#     idxs = (n + p + q) .+ cone.idxs[k]
+#     LHS4[idxs, idxs] = mu * Symmetric(cone.prmtvs[k].H)
+#
+#     # Hk = view(LHS4, (n + p) .+ cone.idxs[k], (n + p + q) .+ cone.idxs[k])
+#     # dim = dimension(cone.prmtvs[k])
+#     # calcHarr_prmtv!(Hk, Matrix(mu*I, dim, dim), cone.prmtvs[k])
+# end
+#
+# rhs4 = [zeros(n); zeros(p); zeros(q); -z - mu*g]
+
+# LHS4 = [
+#     P           A'          G'                zeros(n,q)       ;
+#     A           zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
+#     G           zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
+#     zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ;
+#     ]
+
+
+
+
+#
+# calcg!(g, cone)
+# @. @views begin
+#     rhs[1:n] = 0.0
+#     rhs[n+1:n+p] = 0.0
+#     rhs[n+p+1:end] = z + mu*g
+# end
+#
+# for k in eachindex(cone.prmtvs)
+#     idxs = (n + p) .+ cone.idxs[k]
+#     # dim = dimension(cone.prmtvs[k])
+#     # Hk = view(LHS, idxs, idxs)
+#
+#     if cone.prmtvs[k].usedual
+#         @. LHS[idxs, idxs] = -mu * cone.prmtvs[k].H # NOTE only upper triangle is valid
+#         # calcHarr_prmtv!(Hk, Matrix(-mu*I, dim, dim), cone.prmtvs[k])
+#     else
+#         Hinv = inv(cone.prmtvs[k].F)
+#         @. LHS[idxs, idxs] = Hinv / (-mu)
+#         # calcHiarr_prmtv!(Hk, Matrix(-inv(mu)*I, dim, dim), cone.prmtvs[k])
+#     end
+# end
+#
+# soln = Symmetric(LHS, :U)\rhs
+# @. @views begin
+#     tmp_x = soln[1:n]
+#     tmp_y = soln[n+1:n+p]
+#     tmp_s = -z - mu*g
+#     tmp_z = soln[n+p+1:end]
+# end
+# tmp_s -= G*tmp_x
+#
+#
+
+
+
+# (tmp_kap, tmp_tau) = solvelinsys6!(tmp_x, tmp_y, tmp_z, -kap + mu/tau, tmp_s, 0.0, mu, tau, L)

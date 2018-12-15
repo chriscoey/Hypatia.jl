@@ -127,9 +127,9 @@ function factH(prmtv::PrimitiveCone)
     # return true
 end
 
-calcg_prmtv!(g::AbstractVector{Float64}, prmtv::PrimitiveCone) = (@. g = prmtv.g; g)
-calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = ldiv!(prod, prmtv.F, arr)
-calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = mul!(prod, prmtv.H, arr)
+# calcg_prmtv!(g::AbstractVector{Float64}, prmtv::PrimitiveCone) = (@. g = prmtv.g; g)
+# calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = ldiv!(prod, prmtv.F, arr)
+# calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = mul!(prod, prmtv.H, arr)
 
 # calcg_prmtv!(g::AbstractVector{Float64}, prmtv::PrimitiveCone) = (@. g = prmtv.g; lmul!(prmtv.iscal, g); g)
 # calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = (ldiv!(prod, prmtv.F, arr); lmul!(prmtv.scal, prod); lmul!(prmtv.scal, prod); prod)

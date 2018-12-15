@@ -2,10 +2,12 @@
 Copyright 2018, Chris Coey and contributors
 
 naive method that simply performs one high-dimensional linear system solve
-TODO should allow LHS6 to be sparse
 =#
 
 mutable struct NaiveCache <: LinSysCache
+    n
+    p
+    q
     P
     c
     A
@@ -13,20 +15,10 @@ mutable struct NaiveCache <: LinSysCache
     G
     h
     cone
-
-    # LHS3
-    # LHS3copy
-    # rhs3
-
-    LHS6
-    LHS6copy
-    rhs6
-
-    tyk
-    tzk
-    tkk
-    tsk
-    ttk
+    LHS4
+    LHS4copy
+    rhs4
+    issymm
 
     function NaiveCache(
         P::AbstractMatrix{Float64},
@@ -37,8 +29,9 @@ mutable struct NaiveCache <: LinSysCache
         h::Vector{Float64},
         cone::Cone,
         )
-        (n, p, q) = (length(c), length(b), length(h))
         L = new()
+        (n, p, q) = (length(c), length(b), length(h))
+        (L.n, L.p, L.q) = (n, p, q)
         L.P = P
         L.c = c
         L.A = A
@@ -47,103 +40,68 @@ mutable struct NaiveCache <: LinSysCache
         L.h = h
         L.cone = cone
 
-        L.tyk = n + 1
-        L.tzk = L.tyk + p
-        L.tkk = L.tzk + q
-        L.tsk = L.tkk + 1
-        L.ttk = L.tsk + q
-
-        # tx ty tz
-        L.LHS3 = [
-            P  A'          G';
-            A  zeros(p,p)  zeros(p,q);
-            G  zeros(q,p)  -1.0I;
-            ]
-        L.LHS3copy = similar(L.LHS3)
-        L.rhs3 = zeros(L.tkk-1)
+        # tx ty tz ts
+        if issparse(P) && issparse(A) && issparse(G)
+            L.LHS4 = [
+                P             A'            G'                spzeros(n,q)     ;
+                A             spzeros(p,p)  spzeros(p,q)      spzeros(p,q)     ;
+                G             spzeros(q,p)  spzeros(q,q)      sparse(1.0I,q,q) ;
+                spzeros(q,n)  spzeros(q,p)  sparse(1.0I,q,q)  sparse(1.0I,q,q) ]
+        else
+            L.LHS4 = [
+                P           A'          G'                zeros(n,q)       ;
+                A           zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
+                G           zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
+                zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ]
+        end
+        L.LHS4copy = similar(L.LHS4)
+        L.rhs4 = zeros(n+p+2q)
+        L.issymm = !any(cone.prmtvs[k].usedual for k in eachindex(cone.prmtvs))
 
         return L
     end
 end
 
-# solve system for x, y, z
-function solvelinsys3!(
-    rhs_tx::Vector{Float64},
-    rhs_ty::Vector{Float64},
-    rhs_tz::Vector{Float64},
+# solve system for x, y, z, s
+function solvelinsys4!(
+    xrhs::Vector{Float64},
+    yrhs::Vector{Float64},
+    zrhs::Vector{Float64},
+    srhs::Vector{Float64},
     mu::Float64,
-    L::NaiveCache;
-    identityH::Bool = false,
+    L::NaiveCache,
     )
+    (cone, n, p, q) = (L.cone, L.n, L.p, L.q)
 
-    rhs = L.rhs3
-    rhs[1:L.tyk-1] = rhs_tx
-    @. rhs[L.tyk:L.tzk-1] = -rhs_ty
-    @. rhs[L.tzk:L.tkk-1] = -rhs_tz
+    L.rhs4[1:n] = xrhs
+    L.rhs4[n+1:n+p] = yrhs
+    L.rhs4[n+p+1:n+p+q] = zrhs
+    L.rhs4[n+p+q+1:end] = srhs
 
-    @. L.LHS3copy = L.LHS3
-    @assert identityH
-    # TODO update for prim or dual cones
-    # if !identityH
-    #     for k in eachindex(L.cone.prmtvs)
-    #         idxs = L.tzk - 1 .+ L.cone.idxs[k]
-    #         dim = dimension(L.cone.prmtvs[k])
-    #         calcHiarr_prmtv!(view(L.LHS3copy, idxs, idxs), Matrix(-inv(mu)*I, dim, dim), L.cone.prmtvs[k])
-    #     end
-    # end
+    @. L.LHS4copy = L.LHS4
 
-    F = bunchkaufman!(Symmetric(L.LHS3copy))
-    ldiv!(F, rhs)
-
-    @. @views begin
-        rhs_tx = rhs[1:L.tyk-1]
-        rhs_ty = rhs[L.tyk:L.tzk-1]
-        rhs_tz = rhs[L.tzk:L.tkk-1]
+    for k in eachindex(cone.prmtvs)
+        rows = (n + p + q) .+ cone.idxs[k]
+        cols = cone.prmtvs[k].usedual ? (rows .- q) : rows
+        Hview = view(L.LHS4copy, rows, cols)
+        calcHarr_prmtv!(Hview, mu*I, cone.prmtvs[k])
     end
 
-    return nothing
-end
+    if issparse(L.LHS4copy)
+        F = lu(L.LHS4copy)
+    elseif L.issymm
+        F = bunchkaufman!(L.LHS4copy)
+    else
+        F = lu!(L.LHS4copy)
+    end
+    ldiv!(F, L.rhs4)
 
-# # solve system for x, y, z, kap, s, tau
-# function solvelinsys6!(
-#     rhs_tx::Vector{Float64},
-#     rhs_ty::Vector{Float64},
-#     rhs_tz::Vector{Float64},
-#     rhs_kap::Float64,
-#     rhs_ts::Vector{Float64},
-#     rhs_tau::Float64,
-#     mu::Float64,
-#     tau::Float64,
-#     L::NaiveCache,
-#     )
-#     rhs = L.rhs6
-#     rhs[1:L.tyk-1] = rhs_tx
-#     rhs[L.tyk:L.tzk-1] = rhs_ty
-#     rhs[L.tzk:L.tkk-1] = rhs_tz
-#     rhs[L.tkk] = rhs_kap
-#     rhs[L.tsk:L.ttk-1] = rhs_ts
-#     rhs[end] = rhs_tau
-#
-#     @. L.LHS6copy = L.LHS6
-#     L.LHS6copy[L.tkk, end] = mu/tau/tau # TODO note in CVXOPT coneprog doc, there is no rescaling by tau, they to kap*dtau + tau*dkap = -rhskap
-#     for k in eachindex(L.cone.prmtvs)
-#         dim = dimension(L.cone.prmtvs[k])
-#         coloffset = (L.cone.prmtvs[k].usedual ? L.tzk : L.tsk)
-#         # TODO don't use Matrix(mu*I, dim, dim) because it allocates and is slow
-#         calcHarr_prmtv!(view(L.LHS6copy, L.tzk - 1 .+ L.cone.idxs[k], coloffset - 1 .+ L.cone.idxs[k]), Matrix(mu*I, dim, dim), L.cone.prmtvs[k])
-#     end
-#
-#     F = lu!(L.LHS6copy)
-#     ldiv!(F, rhs)
-#
-#     @. @views begin
-#         rhs_tx = rhs[1:L.tyk-1]
-#         rhs_ty = rhs[L.tyk:L.tzk-1]
-#         rhs_tz = rhs[L.tzk:L.tkk-1]
-#         rhs_ts = rhs[L.tsk:L.ttk-1]
-#     end
-#     dir_kap = rhs[L.tkk]
-#     dir_tau = rhs[end]
-#
-#     return (dir_kap, dir_tau)
-# end
+    @. @views begin
+        xrhs = L.rhs4[1:n]
+        yrhs = L.rhs4[n+1:n+p]
+        zrhs = L.rhs4[n+p+1:n+p+q]
+        srhs = L.rhs4[n+p+q+1:end]
+    end
+
+    return
+end

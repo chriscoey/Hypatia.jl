@@ -589,13 +589,12 @@ function MOI.optimize!(opt::Optimizer)
     #     (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(c, A, b, G, useQR=true)
     #     L = QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
     # elseif opt.lscachetype == NaiveCache
-    #     (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(c, A, b, G, useQR=false)
-    #     L = NaiveCache(c1, A1, b1, G1, h, cone)
+        (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=false)
+        L = NaiveCache(P1, c1, A1, b1, G1, h, cone)
     # else
     #     error("linear system cache type $(opt.lscachetype) is not recognized")
     # end
-    # load_data!(mdl, c1, A1, b1, G1, h, cone, L)
-    load_data!(mdl, P, c, A, b, G, h, cone)
+    load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
 
     solve!(mdl)
 
