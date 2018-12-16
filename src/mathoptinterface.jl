@@ -591,7 +591,8 @@ function MOI.optimize!(opt::Optimizer)
     # elseif opt.lscachetype == Naive3
         # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=false)
         # L = Naive3(P1, c1, A1, b1, G1, h, cone)
-        L = Naive3(P, c, A, b, G, h, cone)
+        # L = Naive3(P, c, A, b, G, h, cone)
+        L = Chol2(P, c, A, b, G, h, cone)
     # else
     #     error("linear system cache type $(opt.lscachetype) is not recognized")
     # end

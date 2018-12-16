@@ -39,7 +39,7 @@ module Hypatia
     include("linearsystem.jl")
     for linsyssolver in [
         "chol2",
-        # "qrchol",
+        "qrchol",
         "naive3",
         "naive4",
         ]

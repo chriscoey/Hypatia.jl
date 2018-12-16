@@ -44,59 +44,71 @@ function solvelinsys4!(
     )
     (n, p, q, P, A, G, cone) = (L.n, L.p, L.q, L.P, L.A, L.G, L.cone)
 
+    # TODO refactor the conversion to 3x3 system and back (start and end)
     zrhs3 = copy(zrhs)
     for k in eachindex(cone.prmtvs)
         sview = view(srhs, cone.idxs[k])
-        calcHiarr_prmtv!(sview, cone.prmtvs[k])
-        @. zrhs3[cone.idxs[k]] -= sview / mu
+        zview = view(zrhs3, cone.idxs[k])
+        if cone.prmtvs[k].usedual # G*x - mu*H*z = zrhs - srhs
+            zview .-= sview
+        else # G*x - (mu*H)\z = zrhs - (mu*H)\srhs
+            calcHiarr_prmtv!(sview, cone.prmtvs[k])
+            @. zview -= sview / mu
+        end
     end
-
-    # if cone.prmtvs[k].usedual # G*x - mu*H*z = zrhs - srhs
-    #     calcHarr_prmtv!(Hview, -mu*I, cone.prmtvs[k])
-    #     @. @views L.rhs[idxs] -= srhs[cone.idxs[k]]
-    # else # G*x - (mu*H)\z = zrhs - (mu*H)\srhs
-    #     calcHiarr_prmtv!(Hview, -inv(mu)*I, cone.prmtvs[k])
-    #     sview = view(srhs, cone.idxs[k])
-    #     calcHiarr_prmtv!(sview, cone.prmtvs[k])
-    #     @. L.rhs[idxs] -= sview / mu
-    # end
 
     HG = Matrix{Float64}(undef, q, n)
     for k in eachindex(cone.prmtvs)
-        calcHarr_prmtv!(view(HG, cone.idxs[k], :), view(G, cone.idxs[k], :), cone.prmtvs[k])
+        Gview = view(G, cone.idxs[k], :)
+        HGview = view(HG, cone.idxs[k], :)
+        if cone.prmtvs[k].usedual
+            calcHiarr_prmtv!(HGview, Gview, cone.prmtvs[k])
+            HGview ./= mu
+        else
+            calcHarr_prmtv!(HGview, Gview, cone.prmtvs[k])
+            HGview .*= mu
+        end
     end
-    GHG = mu*G'*HG
+    GHG = G'*HG
     PGHG = Symmetric(P + GHG)
-    F1 = cholesky!(PGHG, check=false) # TODO allow pivot
-    singular = !issuccess(F1)
+    F1 = cholesky!(PGHG, Val(true), check=false) # TODO allow pivot
+    singular = !isposdef(F1)
 
     # TODO if singular, use the fallback at bottom of s10.1
     if singular
         println("singular PGHG")
         PGHGAA = Symmetric(P + GHG + A'*A)
-        F1 = cholesky!(PGHGAA, check=false) # TODO allow pivot
-        if !issuccess(F1)
+        F1 = cholesky!(PGHGAA, Val(true), check=false) # TODO allow pivot
+        if !isposdef(F1)
             error("could not fix singular PGHG")
         end
     end
 
-    LA = copy(A')
+    LA = A'[F1.p,:]
     ldiv!(F1.L, LA)
     ALLA = Symmetric(LA'*LA)
-    F2 = cholesky!(ALLA, check=false) # TODO allow pivot; TODO avoid if no equalities?
-    if !issuccess(F2)
+    F2 = cholesky!(ALLA, Val(true), check=false) # TODO allow pivot; TODO avoid if no equalities?
+    if !isposdef(F2)
         error("singular ALLA")
     end
 
     Hz = similar(zrhs3)
     for k in eachindex(cone.prmtvs)
-        calcHarr_prmtv!(view(Hz, cone.idxs[k]), view(zrhs3, cone.idxs[k]), cone.prmtvs[k])
+        zview = view(zrhs3, cone.idxs[k], :)
+        Hzview = view(Hz, cone.idxs[k], :)
+        if cone.prmtvs[k].usedual
+            calcHiarr_prmtv!(Hzview, zview, cone.prmtvs[k])
+            Hzview ./= mu
+        else
+            calcHarr_prmtv!(Hzview, zview, cone.prmtvs[k])
+            Hzview .*= mu
+        end
     end
-    xGHz = xrhs + mu*G'*Hz
+    xGHz = xrhs + G'*Hz
     if singular
         xGHz += A'*yrhs
     end
-    LxGHz = copy(xGHz)
+    LxGHz = xGHz[F1.p]
     ldiv!(F1.L, LxGHz)
 
     y = LA'*LxGHz - yrhs
@@ -106,9 +118,17 @@ function solvelinsys4!(
     ldiv!(F1, x)
 
     z = similar(zrhs3)
-    Gxz = mu*(G*x - zrhs3)
+    Gxz = G*x - zrhs3
     for k in eachindex(cone.prmtvs)
-        calcHarr_prmtv!(view(z, cone.idxs[k]), view(Gxz, cone.idxs[k]), cone.prmtvs[k])
+        Gxzview = view(Gxz, cone.idxs[k], :)
+        zview = view(z, cone.idxs[k], :)
+        if cone.prmtvs[k].usedual
+            calcHiarr_prmtv!(zview, Gxzview, cone.prmtvs[k])
+            zview ./= mu
+        else
+            calcHarr_prmtv!(zview, Gxzview, cone.prmtvs[k])
+            zview .*= mu
+        end
     end
 
     srhs .= zrhs # G*x + s = zrhs
