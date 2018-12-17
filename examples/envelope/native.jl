@@ -86,15 +86,15 @@ function run_envelope(primal_wsos::Bool, usedense::Bool)
 
     Hypatia.check_data(P, c, A, b, G, h, cone)
 
-    # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(P, c, A, b, G, useQR=false)
-    # L = Hypatia.QRChol(c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = Hypatia.preprocess_data(P, c, A, b, G, useQR=true)
+    L = Hypatia.QRChol(P1, c1, A1, b1, G1, h, cone, Q2, RiQ1)
     # L = Hypatia.Naive3(P1, c1, A1, b1, G1, h, cone)
     # L = Hypatia.Naive3(P, c, A, b, G, h, cone)
-    L = Hypatia.Chol2(P, c, A, b, G, h, cone)
+    # L = Hypatia.Chol2(P, c, A, b, G, h, cone)
 
-    mdl = Hypatia.Model(maxiter=500, verbose=true)
-    # Hypatia.load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
-    Hypatia.load_data!(mdl, P, c, A, b, G, h, cone, L)
+    mdl = Hypatia.Model(maxiter=200, verbose=true)
+    Hypatia.load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
+    # Hypatia.load_data!(mdl, P, c, A, b, G, h, cone, L)
     Hypatia.solve!(mdl)
 
     # x = zeros(length(c))

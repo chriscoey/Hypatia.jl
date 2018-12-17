@@ -6,6 +6,7 @@ reduces 3x3 system to a 2x2 system and solves via two sequential (dense) cholesk
 if there are no equality constraints, only one cholesky is needed
 
 TODO are there cases where a sparse cholesky would perform better?
+TODO refactor many common elements with qrchol
 =#
 
 mutable struct Chol2 <: LinSysCache
@@ -69,12 +70,11 @@ function solvelinsys4!(
             HGview .*= mu
         end
     end
-    GHG = G'*HG
+    GHG = Symmetric(G'*HG)
     PGHG = Symmetric(P + GHG)
     F1 = cholesky!(PGHG, Val(true), check=false) # TODO allow pivot
     singular = !isposdef(F1)
 
-    # TODO if singular, use the fallback at bottom of s10.1
     if singular
         println("singular PGHG")
         PGHGAA = Symmetric(P + GHG + A'*A)
@@ -106,8 +106,9 @@ function solvelinsys4!(
     end
     xGHz = xrhs + G'*Hz
     if singular
-        xGHz += A'*yrhs
+        xGHz += A'*yrhs # TODO should this be minus
     end
+
     LxGHz = xGHz[F1.p]
     ldiv!(F1.L, LxGHz)
 
