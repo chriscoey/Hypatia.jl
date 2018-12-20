@@ -99,6 +99,7 @@ function solveandcheck(
     return (x=x, y=y, s=s, z=z, pobj=pobj, dobj=dobj, status=status, stime=stime, niters=niters)
 end
 
+include("interpolation.jl")
 
 @testset begin
 

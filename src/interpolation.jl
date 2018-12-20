@@ -147,6 +147,21 @@ function get_weights(dom::SemiFreeDomain, pts::Matrix{Float64})
     return get_weights(dom.sampling_region, view(pts, : ,1:count))
 end
 
+mutable struct FreeDomain <: InterpDomain
+    n::Int
+end
+
+dimension(dom::FreeDomain) = dom.n
+degree(::FreeDomain) = 0
+
+function interp_sample(dom::FreeDomain, npts::Int)
+    return interp_sample(Box(-ones(dom.n), ones(dom.n)), npts)
+end
+
+function get_weights(::FreeDomain, ::AbstractMatrix{Float64})
+    return []
+end
+
 function get_LU(n::Int, d::Int)
     L = binomial(n+d,n)
     U = binomial(n+2d, n)
@@ -167,21 +182,15 @@ function interpolate(
     end
 end
 
-function wsos_box_params(dom::InterpDomain, ::Int, ::Int)
+# slow but high-quality hyperrectangle/box point selections
+function wsos_box_params(::InterpDomain, ::Int, ::Int)
     error("accurate methods for interpolation points are only available for box domains, use sampling instead")
 end
 
-# slow but high-quality hyperrectangle/box point selections
+# difference with sampling functions is that P0 is always formed using points in [-1, 1]
 function wsos_box_params(dom::Box, n::Int, d::Int; calc_w::Bool=false)
     # n could be larger than the dimension of dom if the original domain was a SemiFreeDomain
-    if n == 1
-        (U, pts, P0, P0sub, w) = cheb2_data(d, calc_w)
-    elseif n == 2
-        (U, pts, P0, P0sub, w) = padua_data(d, calc_w) # or approxfekete_data(n, d)
-    elseif n > 2
-        (U, pts, P0, P0sub, w) = approxfekete_data(n, d, calc_w)
-    end
-    # difference with sampling functions is that P0 is always formed using points in [-1, 1]
+    (U, pts, P0, P0sub, w) = wsos_box_params(n, d, calc_w)
     # scale and shift points, get WSOS matrices
     pscale = [0.5*(dom.u[mod(j-1,dimension(dom))+1] - dom.l[mod(j-1,dimension(dom))+1]) for j in 1:n]
     pshift = [0.5*(dom.u[mod(j-1,dimension(dom))+1] + dom.l[mod(j-1,dimension(dom))+1]) for j in 1:n]
@@ -190,6 +199,22 @@ function wsos_box_params(dom::Box, n::Int, d::Int; calc_w::Bool=false)
     trpts = pts .* pscale' .+ pshift'
 
     return (U=U, pts=trpts, P0=P0, PWts=PWts, w=w)
+end
+
+function wsos_box_params(dom::FreeDomain, n::Int, d::Int; calc_w::Bool=false)
+    # n could be larger than the dimension of dom if the original domain was a SemiFreeDomain
+    (U, pts, P0, P0sub, w) = wsos_box_params(n, d, calc_w)
+    return (U=U, pts=pts, P0=P0, PWts=[], w=w)
+end
+
+function wsos_box_params(n::Int, d::Int, calc_w::Bool)
+    if n == 1
+        return cheb2_data(d, calc_w)
+    elseif n == 2
+        return padua_data(d, calc_w) # or approxfekete_data(n, d)
+    elseif n > 2
+        return approxfekete_data(n, d, calc_w)
+    end
 end
 
 # return k Chebyshev points of the second kind

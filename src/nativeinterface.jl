@@ -129,7 +129,7 @@ function check_data(
     #     error("P matrix is zero, so perhaps you meant to use the cone LP algorithm")
     # end
     if n == 0
-        error("c vector is empty, but number of primal variables must be positive")
+        println("no variables were specified; proceeding anyway")
     end
     if q == 0
         println("no conic constraints were specified; proceeding anyway")
