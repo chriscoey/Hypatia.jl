@@ -21,9 +21,6 @@ include(joinpath(egs_dir, "shapeconregr/jump.jl"))
 include(joinpath(egs_dir, "densityest/jump.jl"))
 include(joinpath(@__DIR__, "examples.jl"))
 
-# load MathOptInterface test functions
-include(joinpath(@__DIR__, "moi.jl"))
-
 
 # TODO make first part a native interface function eventually
 # TODO maybe build a new high-level model struct; the current model struct is low-level
@@ -99,11 +96,13 @@ function solveandcheck(
     return (x=x, y=y, s=s, z=z, pobj=pobj, dobj=dobj, status=status, stime=stime, niters=niters)
 end
 
-include("interpolation.jl")
 
 @testset begin
 
-# native interface tests
+@info("starting interpolation tests")
+include(joinpath(@__DIR__, "interpolation.jl"))
+
+
 include(joinpath(@__DIR__, "native.jl"))
 @info("starting native interface tests")
 verbose = false
@@ -244,8 +243,8 @@ testfuns = [
 end
 
 
-# MathOptInterface tests
 @info("starting MathOptInterface tests")
+include(joinpath(@__DIR__, "MOI_wrapper.jl"))
 verbose = false
 lscachetypes = [
     Hypatia.QRChol,
@@ -256,4 +255,3 @@ lscachetypes = [
 end
 
 end
-return nothing

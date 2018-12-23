@@ -301,6 +301,7 @@ end
 
 # solve cone QP without homogeneous self-dual embedding
 function solve!(mdl::Model)
+    mdl.status = :SolveCalled
     starttime = time()
     (P, c, A, b, G, h, cone, L) = (mdl.P, mdl.c, mdl.A, mdl.b, mdl.G, mdl.h, mdl.cone, mdl.L)
     (n, p, q) = (length(c), length(b), length(h))
@@ -372,7 +373,6 @@ function solve!(mdl::Model)
         flush(stdout)
     end
 
-    mdl.status = :StartedIterating
     alphapred = alphapredinit
     pobj = 0.0
     dobj = 0.0

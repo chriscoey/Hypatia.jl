@@ -49,6 +49,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
         opt.timelimit = timelimit
         opt.lscachetype = lscachetype
         opt.usedense = usedense
+        opt.status = :NotLoaded
         return opt
     end
 end
@@ -65,8 +66,8 @@ Optimizer(;
 
 MOI.get(::Optimizer, ::MOI.SolverName) = "Hypatia"
 
-MOI.is_empty(opt::Optimizer) = (get_status(opt.mdl) == :NotLoaded)
-MOI.empty!(opt::Optimizer) = Optimizer() # TODO empty the data and results, or just create a new one? keep options?
+MOI.is_empty(opt::Optimizer) = (opt.status == :NotLoaded)
+MOI.empty!(opt::Optimizer) = (opt.status = :NotLoaded) # TODO empty the data and results? keep options?
 
 MOI.supports(::Optimizer, ::Union{
     MOI.ObjectiveSense,
@@ -218,7 +219,7 @@ function MOI.copy_to(
     end
 
     opt.objsense = MOI.get(src, MOI.ObjectiveSense())
-    if opt.objsense == MOI.MaxSense
+    if opt.objsense == MOI.MAX_SENSE
         Vc .= -Vc
         VP .= -VP
     end
@@ -575,6 +576,7 @@ function MOI.copy_to(
     opt.cone = cone
     opt.constroffsetcone = constroffsetcone
     opt.constrprimcone = Vector(sparsevec(Icpc, Vcpc, q))
+    opt.status = :Loaded
 
     return idxmap
 end
@@ -640,24 +642,32 @@ end
 # function MOI.free!(opt::Optimizer) # TODO call gc on opt.mdl?
 
 function MOI.get(opt::Optimizer, ::MOI.TerminationStatus)
-    # TODO time limit etc
-    if opt.status in (:Optimal, :PrimalInfeasible, :DualInfeasible, :IllPosed)
-        return MOI.Optimal
+    if opt.status in (:NotLoaded, :Loaded)
+        return MOI.OPTIMIZE_NOT_CALLED
+    elseif opt.status == :Optimal
+        return MOI.OPTIMAL
+    elseif opt.status == :PrimalInfeasible
+        return MOI.INFEASIBLE
+    elseif opt.status == :DualInfeasible
+        return MOI.DUAL_INFEASIBLE
+    elseif opt.status == :IllPosed
+        error("MOI did not have a TerminationStatusCode for ill-posed")
     elseif opt.status in (:PredictorFail, :CorrectorFail)
-        return MOI.NumericalError
+        return MOI.SLOW_PROGRESS
     elseif opt.status == :IterationLimit
-        return MOI.IterationLimit
+        return MOI.ITERATION_LIMIT
     elseif opt.status == :TimeLimit
-        return MOI.TimeLimit
+        return MOI.TIME_LIMIT
     else
-        return MOI.OtherError
+        @warn("Hypatia status $(opt.status) not handled")
+        return MOI.OTHER_ERROR
     end
 end
 
 function MOI.get(opt::Optimizer, ::MOI.ObjectiveValue)
-    if opt.objsense == MOI.MinSense
+    if opt.objsense == MOI.MIN_SENSE
         return opt.pobj + opt.objconst
-    elseif opt.objsense == MOI.MaxSense
+    elseif opt.objsense == MOI.MAX_SENSE
         return -opt.pobj + opt.objconst
     else
         error("no objective sense is set")
@@ -665,9 +675,9 @@ function MOI.get(opt::Optimizer, ::MOI.ObjectiveValue)
 end
 
 function MOI.get(opt::Optimizer, ::MOI.ObjectiveBound)
-    if opt.objsense == MOI.MinSense
+    if opt.objsense == MOI.MIN_SENSE
         return opt.dobj + opt.objconst
-    elseif opt.objsense == MOI.MaxSense
+    elseif opt.objsense == MOI.MAX_SENSE
         return -opt.dobj + opt.objconst
     else
         error("no objective sense is set")
@@ -683,29 +693,29 @@ end
 
 function MOI.get(opt::Optimizer, ::MOI.PrimalStatus)
     if opt.status == :Optimal
-        return MOI.FeasiblePoint
+        return MOI.FEASIBLE_POINT
     elseif opt.status == :PrimalInfeasible
-        return MOI.InfeasiblePoint
+        return MOI.INFEASIBLE_POINT
     elseif opt.status == :DualInfeasible
-        return MOI.InfeasibilityCertificate
+        return MOI.INFEASIBILITY_CERTIFICATE
     elseif opt.status == :IllPosed
-        return MOI.UnknownResultStatus # TODO later distinguish primal/dual ill posed certificates
+        return MOI.OTHER_RESULT_STATUS # TODO later distinguish primal/dual ill posed certificates
     else
-        return MOI.UnknownResultStatus
+        return MOI.UNKNOWN_RESULT_STATUS
     end
 end
 
 function MOI.get(opt::Optimizer, ::MOI.DualStatus)
     if opt.status == :Optimal
-        return MOI.FeasiblePoint
+        return MOI.FEASIBLE_POINT
     elseif opt.status == :PrimalInfeasible
-        return MOI.InfeasibilityCertificate
+        return MOI.INFEASIBILITY_CERTIFICATE
     elseif opt.status == :DualInfeasible
-        return MOI.InfeasiblePoint
+        return MOI.INFEASIBLE_POINT
     elseif opt.status == :IllPosed
-        return MOI.UnknownResultStatus # TODO later distinguish primal/dual ill posed certificates
+        return MOI.OTHER_RESULT_STATUS # TODO later distinguish primal/dual ill posed certificates
     else
-        return MOI.UnknownResultStatus
+        return MOI.UNKNOWN_RESULT_STATUS
     end
 end
 

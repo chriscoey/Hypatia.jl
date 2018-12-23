@@ -131,7 +131,7 @@ version = "0.20.0"
 
 [[JuMP]]
 deps = ["Calculus", "DataStructures", "ForwardDiff", "LinearAlgebra", "MathOptInterface", "NaNMath", "Printf", "Random", "SparseArrays", "Statistics", "Test"]
-git-tree-sha1 = "ab05b8a5a70661a4f3227d695fa132d9cdf9b7b0"
+git-tree-sha1 = "f66e3d42b79195f99107d61cd87e5eca3fab5fee"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaOpt/JuMP.jl.git"
 uuid = "4076af6c-e467-56ae-b986-b466b2749572"
@@ -156,11 +156,11 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[MathOptInterface]]
 deps = ["Compat", "Unicode"]
-git-tree-sha1 = "f1528064a19bacb9076b02127cf5cbb3aa9b8004"
+git-tree-sha1 = "e88e00ffef6e4cdd515b1b3f4be84b55ff664379"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaOpt/MathOptInterface.jl.git"
 uuid = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
-version = "0.7.0+"
+version = "0.8.0+"
 
 [[Missings]]
 deps = ["Dates", "InteractiveUtils", "SparseArrays", "Test"]
@@ -286,7 +286,7 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialFunctions]]
 deps = ["BinDeps", "BinaryProvider", "Libdl", "Test"]
-git-tree-sha1 = "27818861f26eba4e825608c762fe4323b48f0fcb"
+git-tree-sha1 = "e4bb224c46aae15d68fa91f4ba156a1e13d9ce86"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaMath/SpecialFunctions.jl.git"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
@@ -320,9 +320,9 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[SumOfSquares]]
 deps = ["JuMP", "LinearAlgebra", "MathOptInterface", "MultivariateMoments", "MultivariatePolynomials", "PolyJuMP", "SemialgebraicSets", "SparseArrays", "Test"]
-git-tree-sha1 = "e4f3ded32e9493f0316d06de9b20d89e802e60b5"
+git-tree-sha1 = "272113c8da055d4e5d0db45b9569d1462d3f0b2d"
 repo-rev = "master"
-repo-url = "https://github.com/JuliaOpt/SumOfSquares.jl"
+repo-url = "https://github.com/JuliaOpt/SumOfSquares.jl.git"
 uuid = "4b9e565b-77fc-50a5-a571-1244f986bda1"
 version = "0.2.1+"
 

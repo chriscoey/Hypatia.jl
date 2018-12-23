@@ -62,9 +62,9 @@ function run_JuMP_expdesign(;rseed::Int=1)
     du_status = JuMP.dual_status(model)
     npval = JuMP.value.(np)
 
-    @test term_status == MOI.Optimal
-    @test pr_status == MOI.FeasiblePoint
-    @test du_status == MOI.FeasiblePoint
+    @test term_status == MOI.OPTIMAL
+    @test pr_status == MOI.FEASIBLE_POINT
+    @test du_status == MOI.FEASIBLE_POINT
     @test pobj ≈ dobj atol=1e-4 rtol=1e-4
     @test pobj ≈ logdet(V*Diagonal(npval)*V') atol=1e-4 rtol=1e-4
     @test sum(npval) ≈ n atol=1e-4 rtol=1e-4

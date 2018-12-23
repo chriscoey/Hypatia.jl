@@ -51,7 +51,7 @@ conic_exclude = String[
     # "exp",
     # "geomean",
     # "sdp",
-    "logdet", # TODO broken until https://github.com/JuliaOpt/MathOptInterface.jl/pull/553 is merged
+    # "logdet",
     # "rootdet",
     # TODO MOI bridges don't support square logdet or rootdet
     "logdets",
