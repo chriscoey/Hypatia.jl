@@ -167,6 +167,16 @@ function check_data(
     return nothing
 end
 
+check_data(
+    c::Vector{Float64},
+    A::AbstractMatrix{Float64},
+    b::Vector{Float64},
+    G::AbstractMatrix{Float64},
+    h::Vector{Float64},
+    cone::Cone,
+    ) = check_data(Symmetric(spzeros(length(c), length(c))), c, A, b, G, h, cone)
+
+
 # preprocess data (optional)
 function preprocess_data(
     P::AbstractMatrix{Float64},
@@ -282,6 +292,15 @@ function preprocess_data(
     return (P, c, A1, b1, G, prkeep, dukeep, AQ2, ARiQ1)
 end
 
+preprocess_data(
+    c::Vector{Float64},
+    A::AbstractMatrix{Float64},
+    b::Vector{Float64},
+    G::AbstractMatrix{Float64};
+    tol::Float64 = 1e-13, # presolve tolerance
+    useQR::Bool = false, # returns QR fact of A' for use in a QR-based linear system solver
+    ) = preprocess_data(Symmetric(spzeros(length(c), length(c))), c, A, b, G, tol=tol, useQR=useQR)
+
 # verify problem data and load into model object
 function load_data!(
     mdl::Model,
@@ -298,6 +317,18 @@ function load_data!(
     mdl.status = :Loaded
     return mdl
 end
+
+load_data!(
+    mdl::Model,
+    c::Vector{Float64},
+    A::AbstractMatrix{Float64},
+    b::Vector{Float64},
+    G::AbstractMatrix{Float64},
+    h::Vector{Float64},
+    cone::Cone,
+    L::LinSysCache, # linear system solver cache (see linsyssolvers folder)
+    ) = load_data!(mdl, Symmetric(spzeros(length(c), length(c))), c, A, b, G, h, cone, L)
+
 
 # solve cone QP without homogeneous self-dual embedding
 function solve!(mdl::Model)

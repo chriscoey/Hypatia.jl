@@ -37,7 +37,7 @@ function build_JuMP_namedpoly_WSOS(
     d::Int = div(maxdegree(f) + 1, 2),
     sample_factor = 25,
     rseed::Int = 1,
-    primal_wsos::Bool = false,
+    primal_wsos::Bool = true,
     )
     (U, pts, P0, PWts, _) = Hypatia.interpolate(dom, d, sample=true)
 

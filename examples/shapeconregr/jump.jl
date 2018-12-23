@@ -175,7 +175,7 @@ function run_JuMP_shapeconregr(
     (n, deg, npoints, signal_ratio, f) =
         # (2, 3, 100, 0.0, x -> exp(norm(x))) # no noise, monotonic function
         # (2, 3, 100, 0.0, x -> sum(x.^3)) # no noise, monotonic function
-        (2, 5, 100, 0.0, x -> sum(x.^3)) # no noise, monotonic function
+        (2, 3, 100, 0.0, x -> sum(x.^3)) # no noise, monotonic function
         # (2, 3, 100, 0.0, x -> sum(x.^4)) # no noise, non-monotonic function
         # (2, 3, 100, 50.0, x -> sum(x.^3)) # some noise, monotonic function
         # (2, 3, 100, 50.0, x -> sum(x.^4)) # some noise, non-monotonic function

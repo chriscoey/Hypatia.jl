@@ -38,6 +38,18 @@ mutable struct QRChol <: LinSysCache
     end
 end
 
+QRChol(
+    c::Vector{Float64},
+    A::AbstractMatrix{Float64},
+    b::Vector{Float64},
+    G::AbstractMatrix{Float64},
+    h::Vector{Float64},
+    cone::Cone,
+    Q2::AbstractMatrix{Float64},
+    RiQ1::AbstractMatrix{Float64},
+    ) = QRChol(Symmetric(spzeros(length(c), length(c))), c, A, b, G, h, cone, Q2, RiQ1)
+
+
 # solve system for x, y, z, s
 function solvelinsys4!(
     xrhs::Vector{Float64},
@@ -79,14 +91,21 @@ function solvelinsys4!(
     Q2PGHGQ2 = Symmetric(Q2'*PGHG*Q2)
     F = cholesky!(Q2PGHGQ2, Val(true), check=false)
     singular = !isposdef(F)
+    # F = bunchkaufman!(Q2PGHGQ2, true, check=false)
+    # singular = !issuccess(F)
 
     if singular
         println("singular Q2PGHGQ2")
         Q2PGHGQ2 = Symmetric(Q2'*(PGHG + A'*A)*Q2)
+        # @show eigvals(Q2PGHGQ2)
         F = cholesky!(Q2PGHGQ2, Val(true), check=false)
         if !isposdef(F)
             error("could not fix singular Q2PGHGQ2")
         end
+        # F = bunchkaufman!(Q2PGHGQ2, true, check=false)
+        # if !issuccess(F)
+        #     error("could not fix singular Q2PGHGQ2")
+        # end
     end
 
     Hz = similar(zrhs3)

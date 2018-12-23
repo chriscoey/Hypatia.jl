@@ -588,18 +588,21 @@ function MOI.optimize!(opt::Optimizer)
     # check, preprocess, load, and solve
     check_data(P, c, A, b, G, h, cone)
     # if opt.lscachetype == QRChol
-        (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=true)
-        L = QRChol(P1, c1, A1, b1, G1, h, cone, Q2, RiQ1)
+        # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=true)
+        # L = QRChol(P1, c1, A1, b1, G1, h, cone, Q2, RiQ1)
     # elseif opt.lscachetype == Naive3
         # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=false)
         # L = Naive3(P1, c1, A1, b1, G1, h, cone)
-        # L = Naive3(P, c, A, b, G, h, cone)
+        L = Naive3(P, c, A, b, G, h, cone)
         # L = Chol2(P, c, A, b, G, h, cone)
     # else
     #     error("linear system cache type $(opt.lscachetype) is not recognized")
     # end
-    load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
-    # load_data!(mdl, P, c, A, b, G, h, cone, L)
+    # load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
+
+    load_data!(mdl, P, c, A, b, G, h, cone, L)
+    prkeep = 1:length(b)
+    dukeep = 1:length(c)
 
     solve!(mdl)
 

@@ -55,7 +55,7 @@ getintdir_prmtv!(arr::AbstractVector{Float64}, prmtv::WSOSPolyInterp) = (@. arr 
 loadpnt_prmtv!(prmtv::WSOSPolyInterp, pnt::AbstractVector{Float64}) = (prmtv.pnt = pnt)
 
 function incone_prmtv(prmtv::WSOSPolyInterp, scal::Float64)
-    prmtv.scal = scal
+    prmtv.scal = 1.0
     @. prmtv.scalpnt = prmtv.pnt/prmtv.scal
 
     @. prmtv.g = 0.0
@@ -103,8 +103,12 @@ function incone_prmtv(prmtv::WSOSPolyInterp, scal::Float64)
     return factH(prmtv)
 end
 
-calcg_prmtv!(g::AbstractVector{Float64}, prmtv::WSOSPolyInterp) = (@. g = prmtv.g/prmtv.scal; g)
-calcHarr_prmtv!(prod::AbstractArray{Float64}, arr, prmtv::WSOSPolyInterp) = (mul!(prod, Symmetric(prmtv.H), arr); @. prod = prod / prmtv.scal / prmtv.scal; prod)
-calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr, prmtv::WSOSPolyInterp) = (ldiv!(prod, prmtv.F, arr); @. prod = prod * prmtv.scal * prmtv.scal; prod)
-calcHarr_prmtv!(arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (lmul!(Symmetric(prmtv.H), arr); @. arr = arr / prmtv.scal / prmtv.scal; arr)
-calcHiarr_prmtv!(arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (ldiv!(prmtv.F, arr); @. arr = arr * prmtv.scal * prmtv.scal; arr)
+# calcg_prmtv!(g::AbstractVector{Float64}, prmtv::WSOSPolyInterp) = (@. g = prmtv.g/prmtv.scal; g)
+#
+# calcHarr_prmtv!(arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (lmul!(Symmetric(prmtv.H), arr); @. arr = arr / prmtv.scal / prmtv.scal; arr)
+# calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::WSOSPolyInterp) = (prod .= Symmetric(prmtv.H); @. prod = prod * arr.λ / prmtv.scal / prmtv.scal; prod)
+# calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (mul!(prod, Symmetric(prmtv.H), arr); @. prod = prod / prmtv.scal / prmtv.scal; prod)
+#
+# calcHiarr_prmtv!(arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (ldiv!(prmtv.F, arr); @. arr = arr * prmtv.scal * prmtv.scal; arr)
+# calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::WSOSPolyInterp) = (prod .= inv(prmtv.F); @. prod = prod / arr.λ * prmtv.scal * prmtv.scal; prod)
+# calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (ldiv!(prod, prmtv.F, arr); @. prod = prod * prmtv.scal * prmtv.scal; prod)

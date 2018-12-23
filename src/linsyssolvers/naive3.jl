@@ -50,6 +50,16 @@ mutable struct Naive3 <: LinSysCache
     end
 end
 
+Naive3(
+    c::Vector{Float64},
+    A::AbstractMatrix{Float64},
+    b::Vector{Float64},
+    G::AbstractMatrix{Float64},
+    h::Vector{Float64},
+    cone::Cone,
+    ) = Naive3(Symmetric(spzeros(length(c), length(c))), c, A, b, G, h, cone)
+
+
 # solve system for x, y, z, s
 function solvelinsys4!(
     xrhs::Vector{Float64},
@@ -83,10 +93,11 @@ function solvelinsys4!(
 
     if issparse(L.LHScopy)
         F = ldlt(L.LHScopy)
+        L.rhs = F \ L.rhs
     else
         F = bunchkaufman!(L.LHScopy)
+        ldiv!(F, L.rhs)
     end
-    ldiv!(F, L.rhs)
 
     srhs .= zrhs # G*x + s = zrhs
     @. @views begin
