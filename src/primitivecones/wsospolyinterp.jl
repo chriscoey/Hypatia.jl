@@ -56,6 +56,7 @@ loadpnt_prmtv!(prmtv::WSOSPolyInterp, pnt::AbstractVector{Float64}) = (prmtv.pnt
 
 function incone_prmtv(prmtv::WSOSPolyInterp, scal::Float64)
     prmtv.scal = 1.0
+    # prmtv.scal = scal
     @. prmtv.scalpnt = prmtv.pnt/prmtv.scal
 
     @. prmtv.g = 0.0

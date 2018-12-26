@@ -78,31 +78,31 @@ function solveandcheck(
     status = Hypatia.get_status(mdl)
 
     # check conic certificates are valid; conditions are described by CVXOPT at https://github.com/cvxopt/cvxopt/blob/master/src/python/coneprog.py
-    Hypatia.loadpnt!(cone, s, z)
-    if status == :Optimal
-        # @test Hypatia.incone(cone)
-        @test pobj ≈ dobj atol=atol rtol=rtol
-        @test A*x ≈ b atol=atol rtol=rtol
-        @test G*x + s ≈ h atol=atol rtol=rtol
-        @test P*x + G'*z + A'*y ≈ -c atol=atol rtol=rtol
-        @test dot(s, z) ≈ 0.0 atol=atol rtol=rtol
-        @test 0.5*dot(x, P*x) + dot(c, x) ≈ pobj atol=1e-8 rtol=1e-8
-        # @test dot(b, y) + dot(h, z) ≈ -dobj atol=1e-8 rtol=1e-8
-    elseif status == :PrimalInfeasible
-        # @test Hypatia.incone(cone)
-        @test isnan(pobj)
-        @test dobj > 0
-        @test P*x + G'*z ≈ -A'*y atol=atol rtol=rtol
-    elseif status == :DualInfeasible
-        # @test Hypatia.incone(cone)
-        @test isnan(dobj)
-        @test pobj < 0
-        @test G*x ≈ -s atol=atol rtol=rtol
-        @test A*x ≈ zeros(length(y)) atol=atol rtol=rtol
-    elseif status == :IllPosed
-        # @test Hypatia.incone(cone)
-        # TODO primal vs dual ill-posed statuses and conditions
-    end
+    # Hypatia.loadpnt!(cone, s, z)
+    # if status == :Optimal
+    #     # @test Hypatia.incone(cone)
+    #     @test pobj ≈ dobj atol=atol rtol=rtol
+    #     @test A*x ≈ b atol=atol rtol=rtol
+    #     @test G*x + s ≈ h atol=atol rtol=rtol
+    #     @test P*x + G'*z + A'*y ≈ -c atol=atol rtol=rtol
+    #     @test dot(s, z) ≈ 0.0 atol=atol rtol=rtol
+    #     @test 0.5*dot(x, P*x) + dot(c, x) ≈ pobj atol=1e-8 rtol=1e-8
+    #     # @test dot(b, y) + dot(h, z) ≈ -dobj atol=1e-8 rtol=1e-8
+    # elseif status == :PrimalInfeasible
+    #     # @test Hypatia.incone(cone)
+    #     @test isnan(pobj)
+    #     @test dobj > 0
+    #     @test P*x + G'*z ≈ -A'*y atol=atol rtol=rtol
+    # elseif status == :DualInfeasible
+    #     # @test Hypatia.incone(cone)
+    #     @test isnan(dobj)
+    #     @test pobj < 0
+    #     @test G*x ≈ -s atol=atol rtol=rtol
+    #     @test A*x ≈ zeros(length(y)) atol=atol rtol=rtol
+    # elseif status == :IllPosed
+    #     # @test Hypatia.incone(cone)
+    #     # TODO primal vs dual ill-posed statuses and conditions
+    # end
 
     stime = Hypatia.get_solvetime(mdl)
     niters = Hypatia.get_niters(mdl)
@@ -136,24 +136,24 @@ verbose = true
 lscachetypes = [
     # Hypatia.Chol2,
     # Hypatia.Naive3,
-    # Hypatia.Naive4,
-    Hypatia.QRChol,
+    Hypatia.Naive4,
+    # Hypatia.QRChol,
     ]
 testfuns = [
-    _dimension1,
-    _consistent1,
-    _inconsistent1,
-    _inconsistent2,
-    _orthant1,
-    _orthant2,
-    _orthant3,
-    _orthant4,
-    _epinorminf1,
-    _epinorminf2,
-    _epinorminf3,
-    _epinorminf4,
-    _epinorminf5,
-    _epinorminf6,
+    # _dimension1,
+    # _consistent1,
+    # _inconsistent1,
+    # _inconsistent2,
+    # _orthant1,
+    # _orthant2,
+    # _orthant3,
+    # _orthant4,
+    # _epinorminf1,
+    # _epinorminf2,
+    # _epinorminf3,
+    # _epinorminf4,
+    # _epinorminf5,
+    # _epinorminf6,
     # _epinormeucl1,
     # _epinormeucl2,
     # _epipersquare1,
@@ -163,22 +163,22 @@ testfuns = [
     # _semidefinite2,
     # _semidefinite3,
     _hypoperlog1,
-    _hypoperlog2,
-    _hypoperlog3,
+    # _hypoperlog2,
+    # _hypoperlog3,
     _hypoperlog4,
-    _epiperpower1,
-    _epiperpower2,
-    _epiperpower3,
-    _hypogeomean1,
-    _hypogeomean2,
-    _hypogeomean3,
-    _hypogeomean4,
-    _epinormspectral1,
-    _hypoperlogdet1,
-    _hypoperlogdet2,
-    _hypoperlogdet3,
-    _epipersumexp1,
-    _epipersumexp2,
+    # _epiperpower1,
+    # _epiperpower2,
+    # _epiperpower3,
+    # _hypogeomean1,
+    # _hypogeomean2,
+    # _hypogeomean3,
+    # _hypogeomean4,
+    # _epinormspectral1,
+    # _hypoperlogdet1,
+    # _hypoperlogdet2,
+    # _hypoperlogdet3,
+    # _epipersumexp1,
+    # _epipersumexp2,
     ]
 @testset "native tests: $testfun, $lscachetype" for testfun in testfuns, lscachetype in lscachetypes
     testfun(verbose=verbose, lscachetype=lscachetype)
@@ -198,8 +198,8 @@ end
 #     _envelope2,
 #     _envelope3,
 #     _envelope4,
-#     _linearopt1,
-#     _linearopt2,
+#     # _linearopt1,
+#     # _linearopt2,
 #     _namedpoly1,
 #     _namedpoly2,
 #     _namedpoly3,

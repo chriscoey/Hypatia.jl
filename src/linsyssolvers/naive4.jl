@@ -67,8 +67,9 @@ function solvelinsys4!(
     for k in eachindex(cone.prmtvs)
         rows = (n + p + q) .+ cone.idxs[k]
         cols = cone.prmtvs[k].usedual ? (rows .- q) : rows
-        Hview = view(L.LHScopy, rows, cols)
-        calcHarr_prmtv!(Hview, mu*I, cone.prmtvs[k])
+        # Hview = view(L.LHScopy, rows, cols)
+        # calcHarr_prmtv!(Hview, mu*I, cone.prmtvs[k])
+        L.LHScopy[rows, cols] = Symmetric(cone.prmtvs[k].H) / mu
     end
 
     if issparse(L.LHScopy)

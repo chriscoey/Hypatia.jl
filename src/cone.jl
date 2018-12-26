@@ -69,8 +69,8 @@ function calcnbhd!(g, ts, tz, mu, cone)
     for k in eachindex(cone.prmtvs)
         calcg_prmtv!(view(g, cone.idxs[k]), cone.prmtvs[k])
         (v1, v2) = (cone.prmtvs[k].usedual ? (ts, tz) : (tz, ts))
-        @. @views v1[cone.idxs[k]] += mu*g[cone.idxs[k]]
-        # @. @views v1[cone.idxs[k]] += g[cone.idxs[k]]
+        # @. @views v1[cone.idxs[k]] += mu*g[cone.idxs[k]]
+        @. @views v1[cone.idxs[k]] += g[cone.idxs[k]]
         calcHiarr_prmtv!(view(v2, cone.idxs[k]), view(v1, cone.idxs[k]), cone.prmtvs[k])
     end
     return dot(ts, tz)
@@ -115,16 +115,19 @@ end
 function factH(prmtv::PrimitiveCone)
     @. prmtv.H2 = prmtv.H
 
-    prmtv.F = bunchkaufman!(Symmetric(prmtv.H2, :U), true, check=false)
-    return issuccess(prmtv.F)
+    # prmtv.F = bunchkaufman!(Symmetric(prmtv.H2, :U), true, check=false)
+    # return issuccess(prmtv.F)
 
-    # prmtv.F = cholesky!(Symmetric(prmtv.H2), Val(true), check=false)
+    # @show eigvals(prmtv.H)
+
+    prmtv.F = cholesky!(Symmetric(prmtv.H2), Val(true), check=false)
     # if !isposdef(prmtv.F)
     #     println("primitive cone Hessian was singular")
     #     @. prmtv.H2 = prmtv.H
     #     prmtv.F = PositiveFactorizations.cholesky!(PositiveFactorizations.Positive, prmtv.H2)
     # end
     # return true
+    return isposdef(prmtv.F)
 end
 
 

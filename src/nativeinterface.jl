@@ -519,7 +519,7 @@ function solve!(mdl::Model)
                 # primal iterate is inside the cone
                 nbhd = calcnbhd!(g, ls_s, ls_z, ls_mu, cone)
                 # @show sqrt(nbhd)/ls_mu, beta
-                if nbhd < abs2(beta*ls_mu)
+                if nbhd < abs2(beta)
                     # iterate is inside the beta-neighborhood
                     if !alphaprevok || alpha > mdl.predlsmulti
                         # either the previous iterate was outside the beta-neighborhood or increasing alpha again will make it > 1
@@ -566,7 +566,7 @@ function solve!(mdl::Model)
         # @show sqrt(nbhd)/mu
 
         # skip correction phase if allowed and current iterate is in the eta-neighborhood
-        if mdl.corrcheck && nbhd <= abs2(eta*mu)
+        if mdl.corrcheck && nbhd <= abs2(eta)
             continue
         end
 
@@ -584,7 +584,8 @@ function solve!(mdl::Model)
             for k in eachindex(cone.prmtvs)
                 vk = view(cone.prmtvs[k].usedual ? s : z, cone.idxs[k])
                 gk = view(g, cone.idxs[k])
-                @. tmp_s[cone.idxs[k]] = -vk - mu * gk
+                # @. tmp_s[cone.idxs[k]] = -vk - mu * gk
+                @. tmp_s[cone.idxs[k]] = -vk - gk
             end
             solvelinsys4!(tmp_x, tmp_y, tmp_z, tmp_s, mu, L)
 
@@ -635,7 +636,7 @@ function solve!(mdl::Model)
                 # @show mu
                 # @show sqrt(nbhd)/mu
 
-                if nbhd <= abs2(eta*mu)
+                if nbhd <= abs2(eta)
                     break
                 elseif ncorrsteps == mdl.maxcorrsteps
                     # outside eta neighborhood, so corrector failed
