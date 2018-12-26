@@ -33,17 +33,17 @@ mutable struct Naive3 <: LinSysCache
         L = new()
         (n, p, q) = (length(c), length(b), length(h))
         (L.n, L.p, L.q, L.G, L.cone) = (n, p, q, G, cone)
-        if issparse(P) && issparse(A) && issparse(G)
-            L.LHS = [
-                P  A'            G'                ;
-                A  spzeros(p,p)  spzeros(p,q)      ;
-                G  spzeros(q,p)  sparse(1.0I,q,q)  ]
-        else
+        # if issparse(P) && issparse(A) && issparse(G)
+        #     L.LHS = [
+        #         P  A'            G'                ;
+        #         A  spzeros(p,p)  spzeros(p,q)      ;
+        #         G  spzeros(q,p)  sparse(1.0I,q,q)  ]
+        # else
             L.LHS = [
                 Matrix(P)  Matrix(A')  Matrix(G')        ;
                 Matrix(A)  zeros(p,p)  zeros(p,q)        ;
                 Matrix(G)  zeros(q,p)  Matrix(1.0I,q,q)  ]
-        end
+        # end
         L.LHScopy = similar(L.LHS)
         L.rhs = zeros(n+p+q)
         return L
@@ -81,13 +81,13 @@ function solvelinsys4!(
         idxs = (n + p) .+ cone.idxs[k]
         Hview = view(L.LHScopy, idxs, idxs)
         if cone.prmtvs[k].usedual # G*x - mu*H*z = zrhs - srhs
-            calcHarr_prmtv!(Hview, -mu*I, cone.prmtvs[k])
+            calcHarr_prmtv!(Hview, -inv(mu)*I, cone.prmtvs[k])
             @. @views L.rhs[idxs] -= srhs[cone.idxs[k]]
         else # G*x - (mu*H)\z = zrhs - (mu*H)\srhs
-            calcHiarr_prmtv!(Hview, -inv(mu)*I, cone.prmtvs[k])
+            calcHiarr_prmtv!(Hview, -mu*I, cone.prmtvs[k])
             sview = view(srhs, cone.idxs[k])
             calcHiarr_prmtv!(sview, cone.prmtvs[k])
-            @. L.rhs[idxs] -= sview / mu
+            @. L.rhs[idxs] -= sview * mu
         end
     end
 

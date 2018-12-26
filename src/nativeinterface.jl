@@ -73,7 +73,7 @@ function Model(;
     tolrelopt = 1e-6,
     tolabsopt = 1e-7,
     tolfeas = 1e-7,
-    maxiter = 1e4,
+    maxiter = 2e2,
     predlinesearch = true,
     maxpredsmallsteps = 15,
     predlsmulti = 0.7,
@@ -393,6 +393,12 @@ function solve!(mdl::Model)
 
     # calculate prediction and correction step parameters
     (beta, eta, cpredfix) = getbetaeta(mdl.maxcorrsteps, bnu) # beta: large neighborhood parameter, eta: small neighborhood parameter
+
+    # (beta, eta, cpredfix) = (10.0*beta, eta, 10.0*cpredfix)
+    # @show beta
+    # beta = 100.0
+    # eta = 0.01
+
     alphapredfix = cpredfix/(eta + sqrt(2.0*abs2(eta) + bnu)) # fixed predictor step size
     alphapredthres = (mdl.predlsmulti^mdl.maxpredsmallsteps)*alphapredfix # minimum predictor step size
     alphapredinit = (mdl.predlinesearch ? min(1e2*alphapredfix, 0.99999) : alphapredfix) # predictor step size
@@ -411,7 +417,7 @@ function solve!(mdl::Model)
     while true
         # calculate residuals and convergence parameters
         # tmp_x = P*x + A'*y + G'*z + c
-        tmp_x .= P*x + A'*y + G'*z + c
+        tmp_x .= Symmetric(P)*x + A'*y + G'*z + c
         # mul!(tmp_x2, A', y)
         # mul!(tmp_x, G', z)
         # @. tmp_x = -tmp_x2 - tmp_x - c
@@ -430,7 +436,7 @@ function solve!(mdl::Model)
         gap = dot(z, s) # TODO maybe should adapt original Alfonso condition instead of using this CVXOPT condition
 
         # TODO add objective constant
-        pobj = 0.5*x'*P*x + dot(c, x) # TODO use Px calculated already for tmp_x
+        pobj = 0.5*dot(x, Symmetric(P)*x) + dot(c, x) # TODO use Px calculated already for tmp_x
         dobj = pobj + dot(y, tmp_y) + dot(z, tmp_z) - gap
         # @assert dobj ≈ pobj + z'*(G*x - h) + y'*(A*x - b)
 
@@ -515,11 +521,11 @@ function solve!(mdl::Model)
             # accept primal iterate if
             # - decreased alpha and it is the first inside the cone and beta-neighborhood or
             # - increased alpha and it is inside the cone and the first to leave beta-neighborhood
-            if ls_mu > 0.0 && incone(cone, mu)
+            if ls_mu > 0.0 && incone(cone, ls_mu)
                 # primal iterate is inside the cone
                 nbhd = calcnbhd!(g, ls_s, ls_z, ls_mu, cone)
-                # @show sqrt(nbhd)/ls_mu, beta
-                if nbhd < abs2(beta)
+                # @show nbhd, beta
+                if nbhd < beta
                     # iterate is inside the beta-neighborhood
                     if !alphaprevok || alpha > mdl.predlsmulti
                         # either the previous iterate was outside the beta-neighborhood or increasing alpha again will make it > 1
@@ -553,6 +559,8 @@ function solve!(mdl::Model)
             break
         end
 
+        # @show alpha
+
         # step distance alpha in the direction
         @. x += alpha*tmp_x
         @. y += alpha*tmp_y
@@ -562,11 +570,10 @@ function solve!(mdl::Model)
         @. s = ls_s
         mu = ls_mu
 
-        # @show mu
-        # @show sqrt(nbhd)/mu
+        # @show nbhd, eta
 
         # skip correction phase if allowed and current iterate is in the eta-neighborhood
-        if mdl.corrcheck && nbhd <= abs2(eta)
+        if mdl.corrcheck && nbhd <= eta
             continue
         end
 
@@ -575,6 +582,8 @@ function solve!(mdl::Model)
         ncorrsteps = 0
         while true
             ncorrsteps += 1
+
+            incone(cone, mu)
 
             # calculate correction direction
             calcg!(g, cone)
@@ -599,7 +608,7 @@ function solve!(mdl::Model)
                 @. ls_s = s + alpha*tmp_s
                 ls_mu = dot(ls_s, ls_z)/bnu
 
-                if ls_mu > 0.0 && incone(cone, mu)
+                if ls_mu > 0.0 && incone(cone, ls_mu)
                     # primal iterate x is inside the cone, so terminate line search
                     break
                 end
@@ -632,11 +641,9 @@ function solve!(mdl::Model)
                 nbhd = calcnbhd!(g, ls_s, ls_z, mu, cone)
                 @. ls_z = z
                 @. ls_s = s
+                # @show nbhd, eta
 
-                # @show mu
-                # @show sqrt(nbhd)/mu
-
-                if nbhd <= abs2(eta)
+                if nbhd <= eta
                     break
                 elseif ncorrsteps == mdl.maxcorrsteps
                     # outside eta neighborhood, so corrector failed

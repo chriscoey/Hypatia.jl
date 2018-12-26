@@ -63,7 +63,7 @@ end
 loadpnt_prmtv!(prmtv::HypoPerLogdet, pnt::AbstractVector{Float64}) = (prmtv.pnt = pnt)
 
 function incone_prmtv(prmtv::HypoPerLogdet, scal::Float64)
-    pnt = prmtv.pnt
+    pnt = prmtv.pnt/scal
     u = pnt[1]
     v = pnt[2]
     W = prmtv.mat
@@ -73,7 +73,7 @@ function incone_prmtv(prmtv::HypoPerLogdet, scal::Float64)
     end
 
     # TODO check allocations, check with Jarrett if this is most efficient way to use DiffResults
-    prmtv.diffres = ForwardDiff.hessian!(prmtv.diffres, prmtv.barfun, prmtv.pnt)
+    prmtv.diffres = ForwardDiff.hessian!(prmtv.diffres, prmtv.barfun, pnt)
     prmtv.g .= DiffResults.gradient(prmtv.diffres)
     prmtv.H .= DiffResults.hessian(prmtv.diffres)
 

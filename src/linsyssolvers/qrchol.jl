@@ -70,7 +70,7 @@ function solvelinsys4!(
             zview .-= sview
         else # G*x - (mu*H)\z = zrhs - (mu*H)\srhs
             calcHiarr_prmtv!(sview, cone.prmtvs[k])
-            @. zview -= sview / mu
+            @. zview -= sview * mu
         end
     end
 
@@ -80,32 +80,32 @@ function solvelinsys4!(
         HGview = view(HG, cone.idxs[k], :)
         if cone.prmtvs[k].usedual
             calcHiarr_prmtv!(HGview, Gview, cone.prmtvs[k])
-            HGview ./= mu
+            HGview .*= mu
         else
             calcHarr_prmtv!(HGview, Gview, cone.prmtvs[k])
-            HGview .*= mu
+            HGview ./= mu
         end
     end
     GHG = Symmetric(G'*HG)
-    PGHG = Symmetric(P + GHG)
+    PGHG = Symmetric(Symmetric(P) + GHG)
     Q2PGHGQ2 = Symmetric(Q2'*PGHG*Q2)
-    F = cholesky!(Q2PGHGQ2, Val(true), check=false)
-    singular = !isposdef(F)
-    # F = bunchkaufman!(Q2PGHGQ2, true, check=false)
-    # singular = !issuccess(F)
+    # F = cholesky!(Q2PGHGQ2, Val(true), check=false)
+    # singular = !isposdef(F)
+    F = bunchkaufman!(Q2PGHGQ2, true, check=false)
+    singular = !issuccess(F)
 
     if singular
         println("singular Q2PGHGQ2")
-        Q2PGHGQ2 = Symmetric(Q2'*(PGHG + A'*A)*Q2)
+        Q2PGHGQ2 = Symmetric(Q2'*Symmetric(PGHG + Symmetric(A'*A))*Q2)
         # @show eigvals(Q2PGHGQ2)
-        F = cholesky!(Q2PGHGQ2, Val(true), check=false)
-        if !isposdef(F)
-            error("could not fix singular Q2PGHGQ2")
-        end
-        # F = bunchkaufman!(Q2PGHGQ2, true, check=false)
-        # if !issuccess(F)
+        # F = cholesky!(Q2PGHGQ2, Val(true), check=false)
+        # if !isposdef(F)
         #     error("could not fix singular Q2PGHGQ2")
         # end
+        F = bunchkaufman!(Q2PGHGQ2, true, check=false)
+        if !issuccess(F)
+            error("could not fix singular Q2PGHGQ2")
+        end
     end
 
     Hz = similar(zrhs3)
@@ -114,10 +114,10 @@ function solvelinsys4!(
         Hzview = view(Hz, cone.idxs[k], :)
         if cone.prmtvs[k].usedual
             calcHiarr_prmtv!(Hzview, zview, cone.prmtvs[k])
-            Hzview ./= mu
+            Hzview .*= mu
         else
             calcHarr_prmtv!(Hzview, zview, cone.prmtvs[k])
-            Hzview .*= mu
+            Hzview ./= mu
         end
     end
     xGHz = xrhs + G'*Hz
@@ -139,10 +139,10 @@ function solvelinsys4!(
         zview = view(z, cone.idxs[k], :)
         if cone.prmtvs[k].usedual
             calcHiarr_prmtv!(zview, Gxzview, cone.prmtvs[k])
-            zview ./= mu
+            zview .*= mu
         else
             calcHarr_prmtv!(zview, Gxzview, cone.prmtvs[k])
-            zview .*= mu
+            zview ./= mu
         end
     end
 

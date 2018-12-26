@@ -65,15 +65,19 @@ function calcg!(g::Vector{Float64}, cone::Cone)
 end
 
 # calculate neighborhood distance to central path
+# TODO remove mu argument
 function calcnbhd!(g, ts, tz, mu, cone)
     for k in eachindex(cone.prmtvs)
-        calcg_prmtv!(view(g, cone.idxs[k]), cone.prmtvs[k])
+        gk = view(g, cone.idxs[k])
+        calcg_prmtv!(gk, cone.prmtvs[k])
         (v1, v2) = (cone.prmtvs[k].usedual ? (ts, tz) : (tz, ts))
-        # @. @views v1[cone.idxs[k]] += mu*g[cone.idxs[k]]
-        @. @views v1[cone.idxs[k]] += g[cone.idxs[k]]
-        calcHiarr_prmtv!(view(v2, cone.idxs[k]), view(v1, cone.idxs[k]), cone.prmtvs[k])
+        v1k = view(v1, cone.idxs[k])
+        v2k = view(v2, cone.idxs[k])
+        # @. @views v1[cone.idxs[k]] += mu*gk
+        @. @views v1k += gk
+        calcHiarr_prmtv!(v2k, v1k, cone.prmtvs[k])
     end
-    return dot(ts, tz)
+    return sqrt(dot(ts, tz))
 end
 
 # utilities for converting between smat and svec forms (lower triangle) for symmetric matrices
@@ -133,12 +137,12 @@ end
 
 calcg_prmtv!(g::AbstractVector{Float64}, prmtv::PrimitiveCone) = (@. g = prmtv.g; g)
 
-calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::PrimitiveCone) = (prod .= Symmetric(prmtv.H); prod .*= arr.λ; prod)
 calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = mul!(prod, Symmetric(prmtv.H), arr)
+# calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::PrimitiveCone) = (prod .= Symmetric(prmtv.H); prod .*= arr.λ; prod)
 calcHarr_prmtv!(arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = lmul!(Symmetric(prmtv.H), arr)
 
 calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr, prmtv::PrimitiveCone) = ldiv!(prod, prmtv.F, arr)
-calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::PrimitiveCone) = (prod .= inv(prmtv.F); prod ./= arr.λ; prod)
+# calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::PrimitiveCone) = (prod .= inv(prmtv.F); prod ./= arr.λ; prod)
 calcHiarr_prmtv!(arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = ldiv!(prmtv.F, arr)
 
 

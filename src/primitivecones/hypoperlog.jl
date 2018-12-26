@@ -40,8 +40,8 @@ getintdir_prmtv!(arr::AbstractVector{Float64}, prmtv::HypoPerLog) = (arr[1] = -1
 loadpnt_prmtv!(prmtv::HypoPerLog, pnt::AbstractVector{Float64}) = (prmtv.pnt = pnt)
 
 function incone_prmtv(prmtv::HypoPerLog, scal::Float64)
-    @show prmtv.pnt
-    @show scal
+    # @show prmtv.pnt
+    # @show scal
 
     u = prmtv.pnt[1]/scal; v = prmtv.pnt[2]/scal; w = prmtv.pnt[3]/scal
     if (v <= 0.0) || (w <= 0.0)
@@ -50,7 +50,9 @@ function incone_prmtv(prmtv::HypoPerLog, scal::Float64)
     lwv = log(w/v)
     vlwv = v*lwv
     vlwvu = vlwv - u
-    @show vlwvu
+    # @show vlwvu
+    # @show v
+    # @show w
     if vlwvu <= 0.0
         return false
     end
@@ -62,7 +64,7 @@ function incone_prmtv(prmtv::HypoPerLog, scal::Float64)
     g[2] = ivlwvu*(v - u - 2.0*vlwvu)/v
     g[3] = -(1.0 + v*ivlwvu)/w
 
-    @show g
+    # @show g
 
     # Hessian
     vw = v/w
@@ -75,7 +77,8 @@ function incone_prmtv(prmtv::HypoPerLog, scal::Float64)
     H[2,3] = H[3,2] = vw*(lwv - 1.0)*ivlwvu2 - ivlwvu/w
     H[3,3] = abs2(vw)*ivlwvu2 + vw/w*ivlwvu + inv(abs2(w))
 
-    @show H
+    # @show H
+    # @show eigvals(H)
 
     return factH(prmtv)
 end

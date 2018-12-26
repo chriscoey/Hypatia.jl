@@ -34,7 +34,7 @@ function solveandcheck(
     h,
     cone,
     lscachetype;
-    preprocess = true,
+    preprocess = false,
     atol = 1e-4,
     rtol = 1e-4,
     )
@@ -79,30 +79,30 @@ function solveandcheck(
 
     # check conic certificates are valid; conditions are described by CVXOPT at https://github.com/cvxopt/cvxopt/blob/master/src/python/coneprog.py
     # Hypatia.loadpnt!(cone, s, z)
-    # if status == :Optimal
-    #     # @test Hypatia.incone(cone)
-    #     @test pobj ≈ dobj atol=atol rtol=rtol
-    #     @test A*x ≈ b atol=atol rtol=rtol
-    #     @test G*x + s ≈ h atol=atol rtol=rtol
-    #     @test P*x + G'*z + A'*y ≈ -c atol=atol rtol=rtol
-    #     @test dot(s, z) ≈ 0.0 atol=atol rtol=rtol
-    #     @test 0.5*dot(x, P*x) + dot(c, x) ≈ pobj atol=1e-8 rtol=1e-8
-    #     # @test dot(b, y) + dot(h, z) ≈ -dobj atol=1e-8 rtol=1e-8
-    # elseif status == :PrimalInfeasible
-    #     # @test Hypatia.incone(cone)
-    #     @test isnan(pobj)
-    #     @test dobj > 0
-    #     @test P*x + G'*z ≈ -A'*y atol=atol rtol=rtol
-    # elseif status == :DualInfeasible
-    #     # @test Hypatia.incone(cone)
-    #     @test isnan(dobj)
-    #     @test pobj < 0
-    #     @test G*x ≈ -s atol=atol rtol=rtol
-    #     @test A*x ≈ zeros(length(y)) atol=atol rtol=rtol
-    # elseif status == :IllPosed
-    #     # @test Hypatia.incone(cone)
-    #     # TODO primal vs dual ill-posed statuses and conditions
-    # end
+    if status == :Optimal
+        # @test Hypatia.incone(cone)
+        @test pobj ≈ dobj atol=atol rtol=rtol
+        @test A*x ≈ b atol=atol rtol=rtol
+        @test G*x + s ≈ h atol=atol rtol=rtol
+        @test Symmetric(P)*x + G'*z + A'*y ≈ -c atol=atol rtol=rtol
+        @test dot(s, z) ≈ 0.0 atol=atol rtol=rtol
+        @test 0.5*dot(x, Symmetric(P)*x) + dot(c, x) ≈ pobj atol=1e-8 rtol=1e-8
+        # @test dot(b, y) + dot(h, z) ≈ -dobj atol=1e-8 rtol=1e-8
+    elseif status == :PrimalInfeasible
+        # @test Hypatia.incone(cone)
+        @test isnan(pobj)
+        @test dobj > 0
+        @test Symmetric(P)*x + G'*z ≈ -A'*y atol=atol rtol=rtol
+    elseif status == :DualInfeasible
+        # @test Hypatia.incone(cone)
+        @test isnan(dobj)
+        @test pobj < 0
+        @test G*x ≈ -s atol=atol rtol=rtol
+        @test A*x ≈ zeros(length(y)) atol=atol rtol=rtol
+    elseif status == :IllPosed
+        # @test Hypatia.incone(cone)
+        # TODO primal vs dual ill-posed statuses and conditions
+    end
 
     stime = Hypatia.get_solvetime(mdl)
     niters = Hypatia.get_niters(mdl)

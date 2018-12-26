@@ -26,20 +26,21 @@ mutable struct Naive4 <: LinSysCache
         L = new()
         (n, p, q) = (length(c), length(b), length(h))
         (L.n, L.p, L.q, L.cone) = (n, p, q, cone)
-        if issparse(P) && issparse(A) && issparse(G)
+        # if issparse(P) && issparse(A) && issparse(G)
+        #     L.LHS = [
+        #         Symmetric(P)             A'            G'                spzeros(n,q)     ;
+        #         A             spzeros(p,p)  spzeros(p,q)      spzeros(p,q)     ;
+        #         G             spzeros(q,p)  spzeros(q,q)      sparse(1.0I,q,q) ;
+        #         spzeros(q,n)  spzeros(q,p)  sparse(1.0I,q,q)  sparse(1.0I,q,q) ]
+        # else
             L.LHS = [
-                P             A'            G'                spzeros(n,q)     ;
-                A             spzeros(p,p)  spzeros(p,q)      spzeros(p,q)     ;
-                G             spzeros(q,p)  spzeros(q,q)      sparse(1.0I,q,q) ;
-                spzeros(q,n)  spzeros(q,p)  sparse(1.0I,q,q)  sparse(1.0I,q,q) ]
-        else
-            L.LHS = [
-                P           A'          G'                zeros(n,q)       ;
-                A           zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
-                G           zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
+                Symmetric(Matrix(P))   Matrix(A')  Matrix(G')        zeros(n,q)       ;
+                Matrix(A)   zeros(p,p)  zeros(p,q)        zeros(p,q)       ;
+                Matrix(G)   zeros(q,p)  zeros(q,q)        Matrix(1.0I,q,q) ;
                 zeros(q,n)  zeros(q,p)  Matrix(1.0I,q,q)  Matrix(1.0I,q,q) ]
-        end
+        # end
         L.LHScopy = similar(L.LHS)
+        @show typeof(L.LHS)
         L.rhs = zeros(n+p+2q)
         L.issymm = !any(cone.prmtvs[k].usedual for k in eachindex(cone.prmtvs))
         return L
