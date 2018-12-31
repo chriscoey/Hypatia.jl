@@ -17,6 +17,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     timelimit::Float64
     lscachetype
     usedense::Bool
+    P::AbstractMatrix{Float64}  # quadratic cost matrix, size n*n
     c::Vector{Float64}          # linear cost vector, size n
     A::AbstractMatrix{Float64}  # equality constraint matrix, size p*n
     b::Vector{Float64}          # equality constraint vector, size p
@@ -56,7 +57,7 @@ end
 Optimizer(;
     verbose::Bool = false,
     timelimit::Float64 = 3.6e3, # TODO should be Inf
-    lscachetype = QRSymmCache,
+    lscachetype = QRChol,
     usedense::Bool = true,
     tolrelopt::Float64 = 1e-6,
     tolabsopt::Float64 = 1e-7,
@@ -71,8 +72,9 @@ MOI.empty!(opt::Optimizer) = (opt.status = :NotLoaded) # TODO empty the data and
 MOI.supports(::Optimizer, ::Union{
     MOI.ObjectiveSense,
     MOI.ObjectiveFunction{MOI.SingleVariable},
-    MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}},
-    ) = true
+    MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}},
+    MOI.ObjectiveFunction{MOI.ScalarQuadraticFunction{Float64}}
+    }) = true
 
 # TODO don't restrict to Float64 type
 SupportedFuns = Union{
@@ -188,22 +190,44 @@ function MOI.copy_to(
     @assert j == n
 
     # objective function
+    (IP, JP, VP) = (Int[], Int[], Float64[]) # quadratic terms
+    (Jc, Vc) = (Int[], Float64[]) # affine terms
+
     F = MOI.get(src, MOI.ObjectiveFunctionType())
+    obj = MOI.get(src, MOI.ObjectiveFunction{F}())
     if F == MOI.SingleVariable
-        obj = MOI.ScalarAffineFunction{Float64}(MOI.get(src, MOI.ObjectiveFunction{F}()))
+        push!(Jc, idxmap[obj.variable].value)
+        push!(Vc, 1.0)
     elseif F == MOI.ScalarAffineFunction{Float64}
-        obj = MOI.get(src, MOI.ObjectiveFunction{F}())
+        append!(Jc, idxmap[t.variable_index].value for t in obj.terms)
+        append!(Vc, t.coefficient for t in obj.terms)
+        opt.objconst = obj.constant
+    elseif F == MOI.ScalarQuadraticFunction{Float64}
+        append!(Jc, idxmap[t.variable_index].value for t in obj.affine_terms)
+        append!(Vc, t.coefficient for t in obj.affine_terms)
+        for t in obj.quadratic_terms # set upper triangle of P
+            (i,j) = (idxmap[t.variable_index_1].value, idxmap[t.variable_index_2].value)
+            if i > j
+                (i,j) = (j,i)
+            end
+            push!(IP, i)
+            push!(JP, j)
+            push!(VP, t.coefficient)
+        end
+        opt.objconst = obj.constant
+        @show opt.objconst
     end
-    (Jc, Vc) = (Int[], Float64[])
-    for t in obj.terms
-        push!(Jc, idxmap[t.variable_index].value)
-        push!(Vc, t.coefficient)
-    end
-    if MOI.get(src, MOI.ObjectiveSense()) == MOI.MAX_SENSE
-        Vc .*= -1.0
-    end
-    opt.objconst = obj.constant
+
     opt.objsense = MOI.get(src, MOI.ObjectiveSense())
+    if opt.objsense == MOI.MAX_SENSE
+        Vc .= -Vc
+        VP .= -VP
+    end
+    if opt.usedense
+        opt.P = Symmetric(Matrix(sparse(IP, JP, VP, n, n)), :U)
+    else
+        opt.P = Symmetric(dropzeros!(sparse(IP, JP, VP, n, n)), :U)
+    end
     opt.c = Vector(sparsevec(Jc, Vc, n))
 
     # constraints
@@ -559,20 +583,27 @@ end
 
 function MOI.optimize!(opt::Optimizer)
     mdl = opt.mdl
-    (c, A, b, G, h, cone) = (opt.c, opt.A, opt.b, opt.G, opt.h, opt.cone)
+    (P, c, A, b, G, h, cone) = (opt.P, opt.c, opt.A, opt.b, opt.G, opt.h, opt.cone)
 
     # check, preprocess, load, and solve
-    check_data(c, A, b, G, h, cone)
-    if opt.lscachetype == QRSymmCache
-        (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(c, A, b, G, useQR=true)
-        L = QRSymmCache(c1, A1, b1, G1, h, cone, Q2, RiQ1)
-    elseif opt.lscachetype == NaiveCache
-        (c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(c, A, b, G, useQR=false)
-        L = NaiveCache(c1, A1, b1, G1, h, cone)
-    else
-        error("linear system cache type $(opt.lscachetype) is not recognized")
-    end
-    load_data!(mdl, c1, A1, b1, G1, h, cone, L)
+    check_data(P, c, A, b, G, h, cone)
+    # if opt.lscachetype == QRChol
+        # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=true)
+        # L = QRChol(P1, c1, A1, b1, G1, h, cone, Q2, RiQ1)
+    # elseif opt.lscachetype == Naive3
+        # (P1, c1, A1, b1, G1, prkeep, dukeep, Q2, RiQ1) = preprocess_data(P, c, A, b, G, useQR=false)
+        # L = Naive3(P1, c1, A1, b1, G1, h, cone)
+        L = Naive3(P, c, A, b, G, h, cone)
+        # L = Chol2(P, c, A, b, G, h, cone)
+    # else
+    #     error("linear system cache type $(opt.lscachetype) is not recognized")
+    # end
+    # load_data!(mdl, P1, c1, A1, b1, G1, h, cone, L)
+
+    load_data!(mdl, P, c, A, b, G, h, cone, L)
+    prkeep = 1:length(b)
+    dukeep = 1:length(c)
+
     solve!(mdl)
 
     opt.status = get_status(mdl)

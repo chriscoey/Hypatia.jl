@@ -65,15 +65,19 @@ function calcg!(g::Vector{Float64}, cone::Cone)
 end
 
 # calculate neighborhood distance to central path
+# TODO remove mu argument
 function calcnbhd!(g, ts, tz, mu, cone)
     for k in eachindex(cone.prmtvs)
-        calcg_prmtv!(view(g, cone.idxs[k]), cone.prmtvs[k])
+        gk = view(g, cone.idxs[k])
+        calcg_prmtv!(gk, cone.prmtvs[k])
         (v1, v2) = (cone.prmtvs[k].usedual ? (ts, tz) : (tz, ts))
-        @. @views v1[cone.idxs[k]] += mu*g[cone.idxs[k]]
-        # @. @views v1[cone.idxs[k]] += g[cone.idxs[k]]
-        calcHiarr_prmtv!(view(v2, cone.idxs[k]), view(v1, cone.idxs[k]), cone.prmtvs[k])
+        v1k = view(v1, cone.idxs[k])
+        v2k = view(v2, cone.idxs[k])
+        # @. @views v1[cone.idxs[k]] += mu*gk
+        @. @views v1k += gk
+        calcHiarr_prmtv!(v2k, v1k, cone.prmtvs[k])
     end
-    return dot(ts, tz)
+    return sqrt(dot(ts, tz))
 end
 
 # utilities for converting between smat and svec forms (lower triangle) for symmetric matrices
@@ -115,22 +119,46 @@ end
 function factH(prmtv::PrimitiveCone)
     @. prmtv.H2 = prmtv.H
 
-    prmtv.F = bunchkaufman!(Symmetric(prmtv.H2, :U), true, check=false)
-    return issuccess(prmtv.F)
+    # prmtv.F = bunchkaufman!(Symmetric(prmtv.H2, :U), true, check=false)
+    # return issuccess(prmtv.F)
 
-    # prmtv.F = cholesky!(Symmetric(prmtv.H2), Val(true), check=false)
+    # @show eigvals(prmtv.H)
+
+    prmtv.F = cholesky!(Symmetric(prmtv.H2), Val(true), check=false)
     # if !isposdef(prmtv.F)
     #     println("primitive cone Hessian was singular")
     #     @. prmtv.H2 = prmtv.H
     #     prmtv.F = PositiveFactorizations.cholesky!(PositiveFactorizations.Positive, prmtv.H2)
     # end
     # return true
+    return isposdef(prmtv.F)
 end
 
+
 calcg_prmtv!(g::AbstractVector{Float64}, prmtv::PrimitiveCone) = (@. g = prmtv.g; g)
-calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = ldiv!(prod, prmtv.F, arr)
-calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = mul!(prod, prmtv.H, arr)
+
+calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = mul!(prod, Symmetric(prmtv.H), arr)
+# calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::PrimitiveCone) = (prod .= Symmetric(prmtv.H); prod .*= arr.λ; prod)
+calcHarr_prmtv!(arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = lmul!(Symmetric(prmtv.H), arr)
+
+calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr, prmtv::PrimitiveCone) = ldiv!(prod, prmtv.F, arr)
+# calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::PrimitiveCone) = (prod .= inv(prmtv.F); prod ./= arr.λ; prod)
+calcHiarr_prmtv!(arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = ldiv!(prmtv.F, arr)
+
+
 
 # calcg_prmtv!(g::AbstractVector{Float64}, prmtv::PrimitiveCone) = (@. g = prmtv.g; lmul!(prmtv.iscal, g); g)
 # calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = (ldiv!(prod, prmtv.F, arr); lmul!(prmtv.scal, prod); lmul!(prmtv.scal, prod); prod)
 # calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::PrimitiveCone) = (mul!(prod, prmtv.H, arr); lmul!(prmtv.iscal, prod); lmul!(prmtv.iscal, prod); prod)
+
+
+#
+# calcg_prmtv!(g::AbstractVector{Float64}, prmtv::WSOSPolyInterp) = (@. g = prmtv.g/prmtv.scal; g)
+#
+# calcHarr_prmtv!(arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (lmul!(Symmetric(prmtv.H), arr); @. arr = arr / prmtv.scal / prmtv.scal; arr)
+# calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::WSOSPolyInterp) = (prod .= Symmetric(prmtv.H); @. prod = prod * arr.λ / prmtv.scal / prmtv.scal; prod)
+# calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (mul!(prod, Symmetric(prmtv.H), arr); @. prod = prod / prmtv.scal / prmtv.scal; prod)
+#
+# calcHiarr_prmtv!(arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (ldiv!(prmtv.F, arr); @. arr = arr * prmtv.scal * prmtv.scal; arr)
+# calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::WSOSPolyInterp) = (prod .= inv(prmtv.F); @. prod = prod / arr.λ * prmtv.scal * prmtv.scal; prod)
+# calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::WSOSPolyInterp) = (ldiv!(prod, prmtv.F, arr); @. prod = prod * prmtv.scal * prmtv.scal; prod)

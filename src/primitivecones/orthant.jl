@@ -65,5 +65,10 @@ function calcg_prmtv!(g::AbstractVector{Float64}, prmtv::OrthantCone)
     return g
 end
 
-calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::OrthantCone) = (@. prod = abs2(prmtv.pnt)*arr; prod)
-calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::OrthantCone) = (@. prod = abs2(prmtv.invpnt)*arr; prod)
+calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::OrthantCone) = (@. prod = abs2(prmtv.invpnt) * arr.λ; prod)
+calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::OrthantCone) = (@. prod = abs2(prmtv.invpnt) * arr; prod)
+calcHarr_prmtv!(arr::AbstractArray{Float64}, prmtv::OrthantCone) = (@. arr = abs2(prmtv.invpnt) * arr; arr)
+
+calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::UniformScaling{Float64}, prmtv::OrthantCone) = (@. prod = abs2(prmtv.pnt) / arr.λ; prod)
+calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::OrthantCone) = (@. prod = abs2(prmtv.pnt) * arr; prod)
+calcHiarr_prmtv!(arr::AbstractArray{Float64}, prmtv::OrthantCone) = (@. arr = abs2(prmtv.pnt) * arr; arr)

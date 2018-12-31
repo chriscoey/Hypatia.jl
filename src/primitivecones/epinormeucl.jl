@@ -62,5 +62,5 @@ function incone_prmtv(prmtv::EpiNormEucl, scal::Float64)
 end
 
 calcg_prmtv!(g::AbstractVector{Float64}, prmtv::EpiNormEucl) = (@. g = prmtv.pnt/prmtv.dist; g[1] = -g[1]; g)
-calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::EpiNormEucl) = mul!(prod, prmtv.Hi, arr)
-calcHarr_prmtv!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, prmtv::EpiNormEucl) = mul!(prod, prmtv.H, arr)
+calcHiarr_prmtv!(prod::AbstractArray{Float64}, arr, prmtv::EpiNormEucl) = mul!(prod, prmtv.Hi, arr)
+calcHarr_prmtv!(prod::AbstractArray{Float64}, arr, prmtv::EpiNormEucl) = mul!(prod, prmtv.H, arr)

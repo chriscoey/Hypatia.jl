@@ -38,8 +38,10 @@ module Hypatia
     # import IterativeSolvers
     include("linearsystem.jl")
     for linsyssolver in [
-        "qrsymm",
-        "naive",
+        "chol2",
+        "qrchol",
+        "naive3",
+        "naive4",
         ]
         include(joinpath(@__DIR__, "linsyssolvers", linsyssolver * ".jl"))
     end
