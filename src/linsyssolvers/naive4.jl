@@ -73,6 +73,9 @@ function solvelinsys4!(
         L.LHScopy[rows, cols] = Symmetric(cone.prmtvs[k].H) / mu
     end
 
+    # @show L.LHScopy
+    # @show L.rhs
+
     if issparse(L.LHScopy)
         F = lu(L.LHScopy)
     elseif L.issymm
@@ -81,6 +84,8 @@ function solvelinsys4!(
         F = lu!(L.LHScopy)
     end
     ldiv!(F, L.rhs)
+
+    # @show L.rhs
 
     @. @views begin
         xrhs = L.rhs[1:n]

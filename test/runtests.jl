@@ -34,7 +34,7 @@ function solveandcheck(
     h,
     cone,
     lscachetype;
-    preprocess = false,
+    preprocess = true,
     atol = 1e-4,
     rtol = 1e-4,
     )
@@ -136,8 +136,8 @@ verbose = true
 lscachetypes = [
     # Hypatia.Chol2,
     # Hypatia.Naive3,
-    Hypatia.Naive4,
-    # Hypatia.QRChol,
+    # Hypatia.Naive4,
+    Hypatia.QRChol,
     ]
 testfuns = [
     # _dimension1,
@@ -163,7 +163,7 @@ testfuns = [
     # _semidefinite2,
     # _semidefinite3,
     _hypoperlog1,
-    # _hypoperlog2,
+    _hypoperlog2,
     # _hypoperlog3,
     _hypoperlog4,
     # _epiperpower1,
