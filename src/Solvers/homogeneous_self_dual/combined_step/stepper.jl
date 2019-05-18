@@ -198,7 +198,10 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
             end
 
             if in_cones
+
                 full_nbhd_sqr = abs2(taukap_temp - mu_temp)
+                cheapnhood = expnsvnhood = full_nbhd_sqr
+
                 if full_nbhd_sqr < abs2(mu_temp * nbhd)
                     in_nbhds = true
                     for k in eachindex(cones)
@@ -214,35 +217,40 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                         # modifies dual_views
                         @timeit Hypatia.to "update_z" stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
 
-                        @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
-                        # # mul!(stepper.nbhd_temp[k], Cones.inv_hess(cone_k), stepper.dual_views[k])
-                        expensivenhood = dot(stepper.dual_views[k], stepper.nbhd_temp[k]) #
+                        # expensive neighborhood
+                        # @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
+                        # expnsvnhood_k = dot(stepper.dual_views[k], stepper.nbhd_temp[k])
 
-                        v1 = stepper.dual_views[k] ./ norm(Cones.grad(cone_k), Inf)
-                        v2 = taukap_temp - mu_temp
-                        nbhd_sqr_k = abs2(max(norm(v1, Inf), abs(v2)))
+                        # cheap neighborhood
+                        gradnorm = maximum(norm(Cones.grad(cone_k), Inf) for cone_k in cones)
+                        cheapnhood_k = abs2(norm(stepper.dual_views[k], Inf) ./ gradnorm)
 
-                        open("nhood.csv", "a") do f
-                            println(f, "$nbhd_sqr_k, $expensivenhood")
-                        end
+                        nbhd_sqr_k = cheapnhood_k
 
                         if nbhd_sqr_k <= -1e-5
                             println("numerical issue for cone: nbhd_sqr_k is $nbhd_sqr_k")
                             in_nbhds = false
                             break
                         elseif nbhd_sqr_k > 0.0
-                            full_nbhd_sqr += nbhd_sqr_k
+
+                            cheapnhood = max(cheapnhood_k, cheapnhood)
+                            # expnsvnhood += expnsvnhood_k
+                            # open("nhood.csv", "a") do f
+                            #     println(f, "$expnsvnhood, $cheapnhood")
+                            # end
+                            full_nbhd_sqr = cheapnhood
+
                             if full_nbhd_sqr > abs2(mu_temp * nbhd)
                                 in_nbhds = false
                                 break
                             end
-                        end
-                    end
+                        end # numerics
+                    end # cones
                     if in_nbhds
                         break
                     end
-                end
-            end
+                end # alternative condition
+            end # in cones
         end
 
         if alpha < 1e-3
@@ -253,7 +261,7 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
 
         # iterate is outside the neighborhood: decrease alpha
         alpha *= 0.8 # TODO option for parameter
-    end
+    end # pred iters
 
     return (alpha, num_pred_iters)
 end

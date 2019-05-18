@@ -185,8 +185,8 @@ function test_polymin(instance::Function; options, rseed::Int = 1)
     solver = SO.HSDSolver(model; options...)
     SO.solve(solver)
     r = SO.get_certificates(solver, model, test = true, atol = 1e-4, rtol = 1e-4)
-    # @test r.status == :Optimal
-    # @test r.primal_obj ≈ d.true_obj atol = 1e-4 rtol = 1e-4
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ d.true_obj atol = 1e-4 rtol = 1e-4
     return
 end
 

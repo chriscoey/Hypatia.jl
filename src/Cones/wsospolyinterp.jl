@@ -110,17 +110,17 @@ function check_in_cone(cone::WSOSPolyInterp; invert::Bool = true)
     for k in eachindex(Ps) # TODO can be done in parallel, but need multiple tmp3s
         LUk = LUs[k]
         ΛFk = ΛFs[k]
-        LUk .= view(Ps[k]', ΛFk.p, :)
-        # @timeit Hypatia.to "divLU"
-        ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
-        # @timeit Hypatia.to "_AtA"
-        _AtA!(UU, LUk)
+        @timeit Hypatia.to "view" LUk .= view(Ps[k]', ΛFk.p, :)
+        @timeit Hypatia.to "ldiv" ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
+        @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
 
+        @timeit Hypatia.to "gH" begin
         @inbounds for j in eachindex(g)
             g[j] -= real(UU[j, j])
             @inbounds for i in 1:j
                 H[i, j] += abs2(UU[i, j])
             end
+        end
         end
     end
     end # timeit gradhess
