@@ -67,7 +67,7 @@ set_initial_point(arr::AbstractVector{Float64}, cone::WSOSPolyInterp) = (@. arr 
 _AtA!(U::Matrix{T}, A::Matrix{T}) where {T <: Real} = BLAS.syrk!('U', 'T', one(T), A, zero(T), U)
 _AtA!(U::Matrix{Complex{T}}, A::Matrix{Complex{T}}) where {T <: Real} = BLAS.herk!('U', 'C', one(T), A, zero(T), U)
 
-function check_in_cone(cone::WSOSPolyInterp)
+function check_in_cone(cone::WSOSPolyInterp; invert::Bool = true)
     Ps = cone.Ps
     LLs = cone.tmpLL
     ULs = cone.tmpUL
@@ -76,6 +76,8 @@ function check_in_cone(cone::WSOSPolyInterp)
     ΛFs = cone.ΛFs
     D = Diagonal(cone.point)
 
+    @timeit Hypatia.to "buildΛ" begin
+
     for k in eachindex(Ps) # TODO can be done in parallel
         # Λ = Pk' * Diagonal(point) * Pk
         # TODO LDLT calculation could be faster
@@ -83,16 +85,22 @@ function check_in_cone(cone::WSOSPolyInterp)
         Pk = Ps[k]
         ULk = ULs[k]
         LLk = LLs[k]
+        # @timeit Hypatia.to "UL"
         mul!(ULk, D, Pk)
+        # @timeit Hypatia.to "LL"
         mul!(LLk, Pk', ULk)
 
         # pivoted cholesky and triangular solve method
+        # @timeit Hypatia.to "cholesky"
         ΛFk = cholesky!(Hermitian(LLk, :L), Val(true), check = false)
         if !isposdef(ΛFk)
             return false
         end
         ΛFs[k] = ΛFk
     end
+
+    end # inconce check
+    @timeit Hypatia.to "gradhess" begin
 
     g = cone.g
     H = cone.H
@@ -103,7 +111,9 @@ function check_in_cone(cone::WSOSPolyInterp)
         LUk = LUs[k]
         ΛFk = ΛFs[k]
         LUk .= view(Ps[k]', ΛFk.p, :)
+        # @timeit Hypatia.to "divLU"
         ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
+        # @timeit Hypatia.to "_AtA"
         _AtA!(UU, LUk)
 
         @inbounds for j in eachindex(g)
@@ -113,6 +123,18 @@ function check_in_cone(cone::WSOSPolyInterp)
             end
         end
     end
+    end # timeit gradhess
+    # @assert -dot(cone.point, cone.g) ≈ get_nu(cone) atol=1e-3 rtol=1e-3
+    # if norm(Symmetric(cone.H, :U) * cone.point + cone.g) > 1e-3
+    #     @show Symmetric(cone.H, :U) * cone.point + cone.g
+    # end
+    # @assert Symmetric(cone.H, :U) * cone.point ≈ -cone.g atol=1e-1 rtol=1e-1
 
-    return factorize_hess(cone)
+    if invert
+        @timeit Hypatia.to "invwsos" ret = factorize_hess(cone)
+    else
+        ret = true
+    end
+
+    return ret
 end

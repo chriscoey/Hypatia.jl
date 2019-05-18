@@ -4,6 +4,9 @@ Copyright 2018, Chris Coey and contributors
 
 module Hypatia
 
+using TimerOutputs
+const to = TimerOutput()
+
 # submodules
 include("ModelUtilities/ModelUtilities.jl")
 include("Cones/Cones.jl")

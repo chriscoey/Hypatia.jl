@@ -118,8 +118,6 @@ get_tau(solver::HSDSolver) = solver.tau
 get_kappa(solver::HSDSolver) = solver.kap
 get_mu(solver::HSDSolver) = solver.mu
 
-# using TimerOutputs
-
 # TODO maybe use iteration interface rather than while loop
 function solve(solver::HSDSolver)
     solver.status = :SolveCalled

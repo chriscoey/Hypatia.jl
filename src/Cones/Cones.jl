@@ -13,6 +13,8 @@ using DiffResults
 abstract type Cone end
 
 using TimerOutputs
+import Hypatia
+# import Hypatia.to
 
 include("orthant.jl")
 include("epinorminf.jl")
@@ -39,6 +41,7 @@ function factorize_hess(cone::Cone)
     # cone.F = bunchkaufman!(Symmetric(cone.H2, :U), true, check = false)
     # return issuccess(cone.F)
 
+    # @timeit Hypatia.to "hessian chol" 
     cone.F = cholesky!(Symmetric(cone.H2, :U), Val(true), check = false)
     return isposdef(cone.F)
 end
