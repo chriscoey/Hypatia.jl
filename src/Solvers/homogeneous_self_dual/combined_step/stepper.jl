@@ -214,13 +214,17 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                         # modifies dual_views
                         @timeit Hypatia.to "update_z" stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
 
-                        # @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
+                        @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
                         # # mul!(stepper.nbhd_temp[k], Cones.inv_hess(cone_k), stepper.dual_views[k])
-                        # nbhd_sqr_k = dot(stepper.dual_views[k], stepper.nbhd_temp[k]) #
+                        expensivenhood = dot(stepper.dual_views[k], stepper.nbhd_temp[k]) #
 
-                        v1 = stepper.dual_views[k] ./ maximum(Cones.grad(cone_k))
+                        v1 = stepper.dual_views[k] ./ norm(Cones.grad(cone_k), Inf)
                         v2 = taukap_temp - mu_temp
-                        nbhd_sqr_k = abs2(max(maximum(v1), v2))
+                        nbhd_sqr_k = abs2(max(norm(v1, Inf), abs(v2)))
+
+                        open("nhood.csv", "a") do f
+                            println(f, "$nbhd_sqr_k, $expensivenhood")
+                        end
 
                         if nbhd_sqr_k <= -1e-5
                             println("numerical issue for cone: nbhd_sqr_k is $nbhd_sqr_k")
