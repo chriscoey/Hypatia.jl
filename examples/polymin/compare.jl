@@ -424,8 +424,8 @@ function speedtest(instance::Function; options, rseed::Int = 1)
                 num_corr = 0
             end
 
-            @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15d\n",
-                polyname, obj, d.n, d.halfdeg, G1, d.nu, tts, tb, ti, ta, tc, td, num_iters, aff_per_iter, comb_per_iter, num_corr
+            @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15d, %15.2f, %15.2f\n",
+                polyname, obj, d.n, d.halfdeg, G1, d.nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                 )
         end
     end # nbhd
@@ -450,15 +450,15 @@ function polyminannulus(n, halfdeg, deg, inner_radius, outer_radius; use_real::B
         n=n, halfdeg=halfdeg, nu=nu, interp_time=interp_time)
 end
 
-realpsd1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
-complexpsd1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
-realwsos1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
-complexwsos1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
+rp_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
+cp_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
+rw_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
+cw_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
 
-realpsd2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
-complexpsd2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
-realwsos2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
-complexwsos2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
+rp_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
+cp_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
+rw_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
+cw_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
 
 function speedtest(; options...)
     if !isdir("timings")
@@ -467,8 +467,8 @@ function speedtest(; options...)
     for nbhd in ["_infty", "_hess"]
         open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "a") do f
             @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
-                "poly", "obj", "n", "halfdeg", "U", "nu", "total time", "build time", "interp time", "% time affine", "% time comb", "% time dir", "num iters", "aff per iter",
-                "comb per iter", "corr steps",
+                "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
+                "comb / iter",
                 )
         end
     end
