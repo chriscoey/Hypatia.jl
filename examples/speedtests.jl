@@ -26,8 +26,8 @@ reset_timer!(Hypatia.to)
 
 for nbhd in ["_infty", "_hess"]
     open(joinpath("timings", "allpolymins" * nbhd * ".csv"), "a") do f
-        @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
-            "poly", "n", "halfdeg", "G1", "nu", "total time", "build time", "affine %", "interp time", "num iters", "aff p iter",
+        @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
+            "poly", "n", "halfdeg", "G1", "nu", "total time", "build time", "affine %", "comb %", "interp time", "num iters", "aff p iter",
             "comb per iter", "dir %",
             )
     end

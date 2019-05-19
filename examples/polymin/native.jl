@@ -277,8 +277,8 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
                 comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
                 # println(f, "$polyname, $(d.n), $(d.halfdeg), $G1, $G2, $tt, $ta, $ti, $num_iters, $aff_per_iter, $comb_per_iter")
 
-                @printf(f, "%15s, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15.2f\n",
-                    polyname, d.n, d.halfdeg, G1, d.nu, tts, tb, ta, ti, num_iters, aff_per_iter, comb_per_iter, td
+                @printf(f, "%15s, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15.2f\n",
+                    polyname, d.n, d.halfdeg, G1, d.nu, tts, tb, ta, tc, ti, num_iters, aff_per_iter, comb_per_iter, td
                     )
             end
         end
