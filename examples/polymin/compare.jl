@@ -388,7 +388,7 @@ function speedtest(instance::Function; options, rseed::Int = 1)
         mkdir("timings")
     end
     for nbhd in ["_infty", "_hess"]
-        open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "a") do f
+        open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "w") do f
             @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
                 "poly", "n", "halfdeg", "G1", "nu", "total time", "build time", "affine %", "comb %", "interp time", "num iters", "aff p iter",
                 "comb per iter", "dir %",
@@ -436,12 +436,12 @@ function speedtest(instance::Function; options, rseed::Int = 1)
     return
 end
 
-function polyminannulus(n, d, deg, inner_radius, outer_radius; use_real::Bool = true, use_wsos::Bool = true)
+function polyminannulus(n, halfdeg, deg, inner_radius, outer_radius; use_real::Bool = true, use_wsos::Bool = true) # TODO rename degs, is it the right halfdeg?
     (F_coef, F_fun) = rand_obj(n, deg) # TODO am i meant to use F_coef?
     if use_real
-        interp_time = @elapsed interp = setup_R_interp(n, d, F_fun, inner_radius, outer_radius)
+        interp_time = @elapsed interp = setup_R_interp(n, halfdeg, F_fun, inner_radius, outer_radius)
     else
-        interp_time = @elapsed interp = setup_C_interp(n, d, F_fun, inner_radius, outer_radius)
+        interp_time = @elapsed interp = setup_C_interp(n, halfdeg, F_fun, inner_radius, outer_radius)
     end
     if use_wsos
         d = build_wsos_dual(interp)
@@ -450,18 +450,18 @@ function polyminannulus(n, d, deg, inner_radius, outer_radius; use_real::Bool = 
     end
     nu = sum(size(Pk, 2) for Pk in interp.P_data)
     return (c=d.c, A=d.A, b=d.b, G=d.G, h=d.h, cones=d.cones, cone_idxs=d.cone_idxs,
-        n=n, halfdeg=d, nu=nu, interp_time=interp_time)
+        n=n, halfdeg=halfdeg, nu=nu, interp_time=interp_time)
 end
 
-realpsd1() = polyminannulus(3, 3, 1, 0.5, 1.5, use_real = true, use_wsos = false)
-complexpsd1() = polyminannulus(3, 3, 1, 0.5, 1.5, use_real = false, use_wsos = false)
-realwsos1() = polyminannulus(3, 3, 1, 0.5, 1.5, use_real = true, use_wsos = true)
-complexwsos1() = polyminannulus(3, 3, 1, 0.5, 1.5, use_real = false, use_wsos = true)
+realpsd1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
+complexpsd1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
+realwsos1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
+complexwsos1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
 
-realpsd2() = polyminannulus(3, 2, 1, 0.95, 1.05, use_real = true, use_wsos = false)
-complexpsd2() = polyminannulus(3, 2, 1, 0.95, 1.05, use_real = false, use_wsos = false)
-realwsos2() = polyminannulus(3, 2, 1, 0.95, 1.05, use_real = true, use_wsos = true)
-complexwsos2() = polyminannulus(3, 2, 1, 0.95, 1.05, use_real = false, use_wsos = true)
+realpsd2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = true, use_wsos = false)
+complexpsd2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = false, use_wsos = false)
+realwsos2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = true, use_wsos = true)
+complexwsos2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = false, use_wsos = true)
 
 speedtest(; options...) = speedtest.([
     realpsd1,
