@@ -4,22 +4,16 @@ Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 
 import Random
 
-function load_feasible_point(cone::CO.Cone)
-    point = zeros(CO.dimension(cone))
-    CO.set_initial_point(point, cone)
-    CO.load_point(cone, point)
-    return
-end
-
 function pass_through_cone(cone::CO.Cone, num_checks::Int)
     CO.setup_data(cone)
     for _ in 1:num_checks
-        load_feasible_point(cone)
+        point = zeros(CO.dimension(cone))
+        CO.set_initial_point(point, cone)
+        CO.load_point(cone, point)
+
         @test CO.check_in_cone(cone)
-        @testset "gradient/hessian" begin
-            @test -dot(cone.point, cone.g) ≈ CO.get_nu(cone) atol=1e-9 rtol=1e-9
-            @test Symmetric(cone.H, :U) * cone.point ≈ -cone.g atol=1e-9 rtol=1e-9
-        end
+        @test -dot(cone.point, cone.g) ≈ CO.get_nu(cone) atol=1e-9 rtol=1e-9
+        @test Symmetric(cone.H, :U) * cone.point ≈ -cone.g atol=1e-9 rtol=1e-9
     end
     return
 end
@@ -99,7 +93,11 @@ end
 
 function test_semidefinite_barrier()
     for dim in [1, 3, 6]
-        cone = CO.PosSemidef(dim)
+        cone = CO.PosSemidef{Float64}(dim) # real
+        pass_through_cone(cone, 1)
+    end
+    for dim in [1, 4, 9]
+        cone = CO.PosSemidef{ComplexF64}(dim) # complex
         pass_through_cone(cone, 1)
     end
     return

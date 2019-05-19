@@ -42,8 +42,8 @@ function dimension1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_mo
         end
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ -1 atol = 1e-4 rtol = 1e-4
-        @test r.x ≈ [1, 0] atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ -1 atol=1e-4 rtol=1e-4
+        @test r.x ≈ [1, 0] atol=1e-4 rtol=1e-4
         @test isempty(r.y)
 
         @test_throws ErrorException("some dual equality constraints are inconsistent") linear_model(Float64[-1, -1], A, b, G, h, cones, cone_idxs)
@@ -127,7 +127,7 @@ function orthant1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_mode
     rnp = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test rnp.status == :Optimal
 
-    @test rnp.primal_obj ≈ rnn.primal_obj atol = 1e-4 rtol = 1e-4
+    @test rnp.primal_obj ≈ rnn.primal_obj atol=1e-4 rtol=1e-4
 end
 
 function orthant2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -150,7 +150,7 @@ function orthant2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_mode
     r2 = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r2.status == :Optimal
 
-    @test r1.primal_obj ≈ r2.primal_obj atol = 1e-4 rtol = 1e-4
+    @test r1.primal_obj ≈ r2.primal_obj atol=1e-4 rtol=1e-4
 end
 
 function orthant3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -173,7 +173,7 @@ function orthant3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_mode
     r2 = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r2.status == :Optimal
 
-    @test r1.primal_obj ≈ r2.primal_obj atol = 1e-4 rtol = 1e-4
+    @test r1.primal_obj ≈ r2.primal_obj atol=1e-4 rtol=1e-4
 end
 
 function orthant4(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -197,7 +197,7 @@ function orthant4(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_mode
     r2 = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r2.status == :Optimal
 
-    @test r1.primal_obj ≈ r2.primal_obj atol = 1e-4 rtol = 1e-4
+    @test r1.primal_obj ≈ r2.primal_obj atol=1e-4 rtol=1e-4
 end
 
 function epinorminf1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -211,9 +211,9 @@ function epinorminf1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ -1 - inv(sqrt(2)) atol = 1e-4 rtol = 1e-4
-    @test r.x ≈ [1, inv(sqrt(2)), 1] atol = 1e-4 rtol = 1e-4
-    @test r.y ≈ [1, 1] atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ -1 - inv(sqrt(2)) atol=1e-4 rtol=1e-4
+    @test r.x ≈ [1, inv(sqrt(2)), 1] atol=1e-4 rtol=1e-4
+    @test r.y ≈ [1, 1] atol=1e-4 rtol=1e-4
 end
 
 function epinorminf2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -228,7 +228,7 @@ function epinorminf2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ 1 atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ 1 atol=1e-4 rtol=1e-4
 end
 
 function epinorminf3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -242,8 +242,8 @@ function epinorminf3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ 0 atol = 1e-4 rtol = 1e-4
-    @test r.x ≈ zeros(6) atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ 0 atol=1e-4 rtol=1e-4
+    @test r.x ≈ zeros(6) atol=1e-4 rtol=1e-4
 end
 
 function epinorminf4(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -257,9 +257,9 @@ function epinorminf4(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ -1 atol = 1e-4 rtol = 1e-4
-    @test r.x ≈ [1, -0.4, 0.6] atol = 1e-4 rtol = 1e-4
-    @test r.y ≈ [1, 0] atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ -1 atol=1e-4 rtol=1e-4
+    @test r.x ≈ [1, -0.4, 0.6] atol=1e-4 rtol=1e-4
+    @test r.y ≈ [1, 0] atol=1e-4 rtol=1e-4
 end
 
 function epinorminf5(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -274,7 +274,7 @@ function epinorminf5(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ 1 atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ 1 atol=1e-4 rtol=1e-4
 end
 
 function epinorminf6(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -291,10 +291,10 @@ function epinorminf6(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ -l + 1 atol = 1e-4 rtol = 1e-4
-    @test r.x[2] ≈ 0.5 atol = 1e-4 rtol = 1e-4
-    @test r.x[end - 1] ≈ -0.5 atol = 1e-4 rtol = 1e-4
-    @test sum(abs, r.x) ≈ 1 atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ -l + 1 atol=1e-4 rtol=1e-4
+    @test r.x[2] ≈ 0.5 atol=1e-4 rtol=1e-4
+    @test r.x[end - 1] ≈ -0.5 atol=1e-4 rtol=1e-4
+    @test sum(abs, r.x) ≈ 1 atol=1e-4 rtol=1e-4
 end
 
 function epinormeucl1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -310,9 +310,9 @@ function epinormeucl1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ -sqrt(2) atol = 1e-4 rtol = 1e-4
-        @test r.x ≈ [1, inv(sqrt(2)), inv(sqrt(2))] atol = 1e-4 rtol = 1e-4
-        @test r.y ≈ [sqrt(2), 0] atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ -sqrt(2) atol=1e-4 rtol=1e-4
+        @test r.x ≈ [1, inv(sqrt(2)), inv(sqrt(2))] atol=1e-4 rtol=1e-4
+        @test r.y ≈ [sqrt(2), 0] atol=1e-4 rtol=1e-4
     end
 end
 
@@ -329,8 +329,8 @@ function epinormeucl2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol = 1e-4 rtol = 1e-4
-        @test r.x ≈ zeros(3) atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ 0 atol=1e-4 rtol=1e-4
+        @test r.x ≈ zeros(3) atol=1e-4 rtol=1e-4
     end
 end
 
@@ -347,8 +347,8 @@ function epipersquare1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ -sqrt(2) atol = 1e-4 rtol = 1e-4
-        @test r.x[3:4] ≈ [1, 1] / sqrt(2) atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ -sqrt(2) atol=1e-4 rtol=1e-4
+        @test r.x[3:4] ≈ [1, 1] / sqrt(2) atol=1e-4 rtol=1e-4
     end
 end
 
@@ -365,8 +365,8 @@ function epipersquare2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ -inv(sqrt(2)) atol = 1e-4 rtol = 1e-4
-        @test r.x[2] ≈ inv(sqrt(2)) atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ -inv(sqrt(2)) atol=1e-4 rtol=1e-4
+        @test r.x[2] ≈ inv(sqrt(2)) atol=1e-4 rtol=1e-4
     end
 end
 
@@ -383,8 +383,8 @@ function epipersquare3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol = 1e-4 rtol = 1e-4
-        @test r.x ≈ zeros(4) atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ 0 atol=1e-4 rtol=1e-4
+        @test r.x ≈ zeros(4) atol=1e-4 rtol=1e-4
     end
 end
 
@@ -401,8 +401,8 @@ function semidefinite1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ -1 atol = 1e-4 rtol = 1e-4
-        @test r.x[2] ≈ 1 atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ -1 atol=1e-4 rtol=1e-4
+        @test r.x[2] ≈ 1 atol=1e-4 rtol=1e-4
     end
 end
 
@@ -419,8 +419,8 @@ function semidefinite2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol = 1e-4 rtol = 1e-4
-        @test r.x ≈ zeros(3) atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ 0 atol=1e-4 rtol=1e-4
+        @test r.x ≈ zeros(3) atol=1e-4 rtol=1e-4
     end
 end
 
@@ -437,9 +437,24 @@ function semidefinite3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ 1.249632 atol = 1e-4 rtol = 1e-4
-        @test r.x ≈ [0.491545, 0.647333, 0.426249, 0.571161, 0.531874, 0.331838] atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ 1.249632 atol=1e-4 rtol=1e-4
+        @test r.x ≈ [0.491545, 0.647333, 0.426249, 0.571161, 0.531874, 0.331838] atol=1e-4 rtol=1e-4
     end
+end
+
+function semidefinitecomplex1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
+    c = Float64[1, 0, 0, 1]
+    A = Float64[0 0 1 0]
+    b = Float64[1]
+    G = Diagonal([-1, -sqrt(2), -sqrt(2), -1])
+    h = zeros(4)
+    cone_idxs = [1:4]
+    cones = [CO.PosSemidef{ComplexF64}(4)]
+
+    r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 2 atol=1e-4 rtol=1e-4
+    @test r.x ≈ [1, 0, 1, 1] atol=1e-4 rtol=1e-4
 end
 
 function hypoperlog1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -454,10 +469,10 @@ function hypoperlog1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
     ehalf = exp(1 / 2)
-    @test r.primal_obj ≈ 2 * ehalf + 3 atol = 1e-4 rtol = 1e-4
-    @test r.x ≈ [1, 2, 2 * ehalf] atol = 1e-4 rtol = 1e-4
-    @test r.y ≈ -[1 + ehalf / 2, 1 + ehalf] atol = 1e-4 rtol = 1e-4
-    @test r.z ≈ c + A' * r.y atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ 2 * ehalf + 3 atol=1e-4 rtol=1e-4
+    @test r.x ≈ [1, 2, 2 * ehalf] atol=1e-4 rtol=1e-4
+    @test r.y ≈ -[1 + ehalf / 2, 1 + ehalf] atol=1e-4 rtol=1e-4
+    @test r.z ≈ c + A' * r.y atol=1e-4 rtol=1e-4
 end
 
 function hypoperlog2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -471,7 +486,7 @@ function hypoperlog2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ 0 atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ 0 atol=1e-4 rtol=1e-4
 end
 
 function hypoperlog3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -485,8 +500,8 @@ function hypoperlog3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ 0 atol = 1e-4 rtol = 1e-4
-    @test r.x ≈ [0, 0, 0] atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ 0 atol=1e-4 rtol=1e-4
+    @test r.x ≈ [0, 0, 0] atol=1e-4 rtol=1e-4
     @test isempty(r.y)
 end
 
@@ -501,8 +516,8 @@ function hypoperlog4(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_m
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ exp(-2) atol = 1e-4 rtol = 1e-4
-    @test r.x ≈ [-1, 1, exp(-2)] atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ exp(-2) atol=1e-4 rtol=1e-4
+    @test r.x ≈ [-1, 1, exp(-2)] atol=1e-4 rtol=1e-4
 end
 
 function epiperpower1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -516,8 +531,8 @@ function epiperpower1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ -1.80734 atol = 1e-4 rtol = 1e-4
-    @test r.x[[1, 2, 4]] ≈ [0.0639314, 0.783361, 2.30542] atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ -1.80734 atol=1e-4 rtol=1e-4
+    @test r.x[[1, 2, 4]] ≈ [0.0639314, 0.783361, 2.30542] atol=1e-4 rtol=1e-4
 end
 
 function epiperpower2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -533,8 +548,8 @@ function epiperpower2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ (is_dual ? -sqrt(2) : -inv(sqrt(2))) atol = 1e-4 rtol = 1e-4
-        @test r.x[1:2] ≈ [1/2, 1] atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ (is_dual ? -sqrt(2) : -inv(sqrt(2))) atol=1e-4 rtol=1e-4
+        @test r.x[1:2] ≈ [1/2, 1] atol=1e-4 rtol=1e-4
     end
 end
 
@@ -549,10 +564,10 @@ function epiperpower3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
     for is_dual in (true, false), alpha in [1.5; 2.0] # TODO objective gap is large when alpha is different e.g. 2.5, investigate why
         cones = [CO.EpiPerPower(alpha, is_dual)]
 
-        r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose, atol = 1e-3, rtol = 1e-3)
+        r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose, atol=1e-3, rtol=1e-3)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol = 1e-3 rtol = 1e-3
-        @test r.x[1:2] ≈ [0, 1] atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ 0 atol=1e-3 rtol=1e-3
+        @test r.x[1:2] ≈ [0, 1] atol=1e-4 rtol=1e-4
     end
 end
 
@@ -567,8 +582,8 @@ function hypogeomean1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ -1.80734 atol = 1e-4 rtol = 1e-4
-    @test r.x[1:3] ≈ [0.0639314, 0.783361, 2.30542] atol = 1e-4 rtol = 1e-4
+    @test r.primal_obj ≈ -1.80734 atol=1e-4 rtol=1e-4
+    @test r.x[1:3] ≈ [0.0639314, 0.783361, 2.30542] atol=1e-4 rtol=1e-4
 end
 
 function hypogeomean2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -584,8 +599,8 @@ function hypogeomean2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ (is_dual ? 0 : -inv(sqrt(2))) atol = 1e-4 rtol = 1e-4
-        @test r.x[2:3] ≈ [1, 0.5] atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ (is_dual ? 0 : -inv(sqrt(2))) atol=1e-4 rtol=1e-4
+        @test r.x[2:3] ≈ [1, 0.5] atol=1e-4 rtol=1e-4
     end
 end
 
@@ -603,8 +618,8 @@ function hypogeomean3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ (is_dual ? 1.0 : l) atol = 1e-4 rtol = 1e-4
-        @test r.x[2:end] ≈ (is_dual ? inv(l) : 1.0) * ones(l) atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ (is_dual ? 1.0 : l) atol=1e-4 rtol=1e-4
+        @test r.x[2:end] ≈ (is_dual ? inv(l) : 1.0) * ones(l) atol=1e-4 rtol=1e-4
     end
 end
 
@@ -622,8 +637,8 @@ function hypogeomean4(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_
 
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol = 1e-4 rtol = 1e-4
-        @test r.x ≈ zeros(l) atol = 1e-4 rtol = 1e-4
+        @test r.primal_obj ≈ 0 atol=1e-4 rtol=1e-4
+        @test r.x ≈ zeros(l) atol=1e-4 rtol=1e-4
     end
 end
 
@@ -644,11 +659,11 @@ function epinormspectral1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, lin
         r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
         @test r.status == :Optimal
         if is_dual
-            @test sum(svdvals!(reshape(r.s[2:end], Xn, Xm))) ≈ r.s[1] atol = 1e-4 rtol = 1e-4
-            @test svdvals!(reshape(r.z[2:end], Xn, Xm))[1] ≈ r.z[1] atol = 1e-4 rtol = 1e-4
+            @test sum(svdvals!(reshape(r.s[2:end], Xn, Xm))) ≈ r.s[1] atol=1e-4 rtol=1e-4
+            @test svdvals!(reshape(r.z[2:end], Xn, Xm))[1] ≈ r.z[1] atol=1e-4 rtol=1e-4
         else
-            @test svdvals!(reshape(r.s[2:end], Xn, Xm))[1] ≈ r.s[1] atol = 1e-4 rtol = 1e-4
-            @test sum(svdvals!(reshape(r.z[2:end], Xn, Xm))) ≈ r.z[1] atol = 1e-4 rtol = 1e-4
+            @test svdvals!(reshape(r.s[2:end], Xn, Xm))[1] ≈ r.s[1] atol=1e-4 rtol=1e-4
+            @test sum(svdvals!(reshape(r.z[2:end], Xn, Xm))) ≈ r.z[1] atol=1e-4 rtol=1e-4
         end
     end
 end
@@ -670,10 +685,10 @@ function hypoperlogdet1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linea
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.x[1] ≈ -r.primal_obj atol = 1e-4 rtol = 1e-4
-    @test r.x[2] ≈ 1 atol = 1e-4 rtol = 1e-4
-    @test r.s[2] * logdet(CO.svec_to_smat!(zeros(side, side), r.s[3:end]) / r.s[2]) ≈ r.s[1] atol = 1e-4 rtol = 1e-4
-    @test r.z[1] * (logdet(CO.svec_to_smat!(zeros(side, side), -r.z[3:end]) / r.z[1]) + side) ≈ r.z[2] atol = 1e-4 rtol = 1e-4
+    @test r.x[1] ≈ -r.primal_obj atol=1e-4 rtol=1e-4
+    @test r.x[2] ≈ 1 atol=1e-4 rtol=1e-4
+    @test r.s[2] * logdet(CO.svec_to_smat!(zeros(side, side), r.s[3:end]) / r.s[2]) ≈ r.s[1] atol=1e-4 rtol=1e-4
+    @test r.z[1] * (logdet(CO.svec_to_smat!(zeros(side, side), -r.z[3:end]) / r.z[1]) + side) ≈ r.z[2] atol=1e-4 rtol=1e-4
 end
 
 function hypoperlogdet2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -693,10 +708,10 @@ function hypoperlogdet2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linea
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.x[2] ≈ r.primal_obj atol = 1e-4 rtol = 1e-4
-    @test r.x[1] ≈ -1 atol = 1e-4 rtol = 1e-4
-    @test r.s[1] * (logdet(CO.svec_to_smat!(zeros(side, side), -r.s[3:end]) / r.s[1]) + side) ≈ r.s[2] atol = 1e-4 rtol = 1e-4
-    @test r.z[2] * logdet(CO.svec_to_smat!(zeros(side, side), r.z[3:end]) / r.z[2]) ≈ r.z[1] atol = 1e-4 rtol = 1e-4
+    @test r.x[2] ≈ r.primal_obj atol=1e-4 rtol=1e-4
+    @test r.x[1] ≈ -1 atol=1e-4 rtol=1e-4
+    @test r.s[1] * (logdet(CO.svec_to_smat!(zeros(side, side), -r.s[3:end]) / r.s[1]) + side) ≈ r.s[2] atol=1e-4 rtol=1e-4
+    @test r.z[2] * logdet(CO.svec_to_smat!(zeros(side, side), r.z[3:end]) / r.z[2]) ≈ r.z[1] atol=1e-4 rtol=1e-4
 end
 
 function hypoperlogdet3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -716,8 +731,8 @@ function hypoperlogdet3(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linea
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.x[1] ≈ -r.primal_obj atol = 1e-4 rtol = 1e-4
-    @test r.x ≈ [0, 0] atol = 1e-4 rtol = 1e-4
+    @test r.x[1] ≈ -r.primal_obj atol=1e-4 rtol=1e-4
+    @test r.x ≈ [0, 0] atol=1e-4 rtol=1e-4
 end
 
 function epipersumexp1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -732,9 +747,9 @@ function epipersumexp1(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.x[1] ≈ 1 atol = 1e-4 rtol = 1e-4
-    @test r.s[2] ≈ 0 atol = 1e-4 rtol = 1e-4
-    @test r.s[1] ≈ 1 atol = 1e-4 rtol = 1e-4
+    @test r.x[1] ≈ 1 atol=1e-4 rtol=1e-4
+    @test r.s[2] ≈ 0 atol=1e-4 rtol=1e-4
+    @test r.s[1] ≈ 1 atol=1e-4 rtol=1e-4
 end
 
 function epipersumexp2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear_model::Type{<:MO.LinearModel}, verbose::Bool)
@@ -749,7 +764,7 @@ function epipersumexp2(system_solver::Type{<:SO.CombinedHSDSystemSolver}, linear
 
     r = solve_and_check(c, A, b, G, h, cones, cone_idxs, system_solver, linear_model, verbose)
     @test r.status == :Optimal
-    @test r.x[1] ≈ 1 atol = 1e-4 rtol = 1e-4
-    @test r.s[2] ≈ 1 atol = 1e-4 rtol = 1e-4
-    @test r.s[2] * sum(exp, r.s[3:end] / r.s[2]) ≈ r.s[1] atol = 1e-4 rtol = 1e-4
+    @test r.x[1] ≈ 1 atol=1e-4 rtol=1e-4
+    @test r.s[2] ≈ 1 atol=1e-4 rtol=1e-4
+    @test r.s[2] * sum(exp, r.s[3:end] / r.s[2]) ≈ r.s[1] atol=1e-4 rtol=1e-4
 end

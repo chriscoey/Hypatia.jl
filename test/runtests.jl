@@ -65,7 +65,7 @@ barrier_testfuns = [
 end
 
 @info("starting native interface tests")
-verbose = false
+verbose = true
 system_solvers = [
     SO.NaiveCombinedHSDSystemSolver,
     SO.QRCholCombinedHSDSystemSolver,
@@ -102,6 +102,7 @@ testfuns_nonsingular = [
     semidefinite1,
     semidefinite2,
     semidefinite3,
+    semidefinitecomplex1,
     hypoperlog1,
     hypoperlog2,
     hypoperlog3,

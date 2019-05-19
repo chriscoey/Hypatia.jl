@@ -62,7 +62,7 @@ inv_hess_prod!(prod::AbstractArray{Float64}, arr::AbstractArray{Float64}, cone::
 const rt2 = sqrt(2)
 const rt2i = inv(rt2)
 
-function smat_to_svec!(vec::AbstractVector, mat::AbstractMatrix)
+function smat_to_svec!(vec::AbstractVector{T}, mat::AbstractMatrix{T}) where {T <: Real}
     k = 1
     m = size(mat, 1)
     for i in 1:m, j in 1:i
@@ -76,7 +76,7 @@ function smat_to_svec!(vec::AbstractVector, mat::AbstractMatrix)
     return vec
 end
 
-function svec_to_smat!(mat::AbstractMatrix, vec::AbstractVector)
+function svec_to_smat!(mat::AbstractMatrix{T}, vec::AbstractVector{T}) where {T <: Real}
     k = 1
     m = size(mat, 1)
     for i in 1:m, j in 1:i
@@ -86,6 +86,39 @@ function svec_to_smat!(mat::AbstractMatrix, vec::AbstractVector)
             mat[i, j] = mat[j, i] = rt2i * vec[k]
         end
         k += 1
+    end
+    return mat
+end
+
+function smat_to_svec!(vec::AbstractVector{T}, mat::AbstractMatrix{Complex{T}}) where {T <: Real}
+    k = 1
+    m = size(mat, 1)
+    for i in 1:m, j in 1:i
+        if i == j
+            vec[k] = mat[i, j]
+            k += 1
+        else
+            ck = rt2 * mat[i, j]
+            vec[k] = real(ck)
+            k += 1
+            vec[k] = imag(ck)
+            k += 1
+        end
+    end
+    return vec
+end
+
+function svec_to_smat!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVector{T}) where {T <: Real}
+    k = 1
+    m = size(mat, 1)
+    for i in 1:m, j in 1:i
+        if i == j
+            mat[i, j] = vec[k]
+            k += 1
+        else
+            mat[i, j] = mat[j, i] = rt2i * Complex(vec[k], vec[k + 1])
+            k += 2
+        end
     end
     return mat
 end
