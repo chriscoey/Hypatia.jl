@@ -67,7 +67,7 @@ set_initial_point(arr::AbstractVector{Float64}, cone::WSOSPolyInterp) = (@. arr 
 _AtA!(U::Matrix{T}, A::Matrix{T}) where {T <: Real} = BLAS.syrk!('U', 'T', one(T), A, zero(T), U)
 _AtA!(U::Matrix{Complex{T}}, A::Matrix{Complex{T}}) where {T <: Real} = BLAS.herk!('U', 'C', one(T), A, zero(T), U)
 
-function check_in_cone(cone::WSOSPolyInterp; invert::Bool = true)
+function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
     Ps = cone.Ps
     LLs = cone.tmpLL
     ULs = cone.tmpUL
@@ -130,11 +130,9 @@ function check_in_cone(cone::WSOSPolyInterp; invert::Bool = true)
     # end
     # @assert Symmetric(cone.H, :U) * cone.point ≈ -cone.g atol=1e-1 rtol=1e-1
 
-    if invert
-        @timeit Hypatia.to "invwsos" ret = factorize_hess(cone)
+    if invert_hess
+        return factorize_hess(cone)
     else
-        ret = true
+        return true
     end
-
-    return ret
 end

@@ -21,6 +21,8 @@ const CO = HYP.Cones
 const MO = HYP.Models
 const SO = HYP.Solvers
 
+using Printf
+
 include(joinpath(@__DIR__, "data.jl"))
 
 function polyminreal(
@@ -215,6 +217,7 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
     solver = SO.HSDSolver(model; options...)
     SO.solve(solver)
     for _ in 1:repeats
+        reset_timer!(Hypatia.to)
         model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
         solver = SO.HSDSolver(model; options...)
         SO.solve(solver)
@@ -242,7 +245,7 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
             comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]) / num_iters
             # println(f, "$polyname, $(d.n), $(d.halfdeg), $G1, $G2, $tt, $ta, $ti, $num_iters, $aff_per_iter, $comb_per_iter")
 
-            @printf(f, "%15s, %15d, %15d, %15d, %15.2e, %15.2s, %15.2s, %15d, %15.2e, %15.2e, %15.2e\n",
+            @printf(f, "%15s, %15d, %15d, %15d, %15.2f, %15.2s, %15.2s, %15d, %15.2f, %15.2f, %15.2f\n",
                 polyname, d.n, d.halfdeg, G1, tt, ta, ti, num_iters, aff_per_iter, comb_per_iter, td
                 )
         end
