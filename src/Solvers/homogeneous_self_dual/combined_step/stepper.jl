@@ -17,10 +17,13 @@ mutable struct CombinedHSDStepper <: HSDStepper
     cones_outside_nbhd::Vector{Bool}
     cones_loaded::Vector{Bool}
 
+    cheap_nbhd::Bool
+
     function CombinedHSDStepper(
         model::Models.LinearModel;
         system_solver::CombinedHSDSystemSolver = (model isa Models.PreprocessedLinearModel ? QRCholCombinedHSDSystemSolver(model) : NaiveCombinedHSDSystemSolver(model)),
         max_nbhd::Float64 = 0.75,
+        cheap_nbhd::Bool = true,
         )
         stepper = new()
 
@@ -40,6 +43,8 @@ mutable struct CombinedHSDStepper <: HSDStepper
         stepper.nbhd_temp = [Vector{Float64}(undef, length(model.cone_idxs[k])) for k in eachindex(model.cones)]
         stepper.cones_outside_nbhd = trues(length(model.cones))
         stepper.cones_loaded = trues(length(model.cones))
+
+        stepper.cheap_nbhd = cheap_nbhd
 
         return stepper
     end
@@ -141,6 +146,47 @@ function print_iteration_stats(solver::HSDSolver, stepper::CombinedHSDStepper)
     flush(stdout)
 end
 
+# function update_nbhd_sqrt_cheap(cone_k::Cones.Cone, res_k::AbstractVector, full_nbhd_sqr::Float64, ::AbstractVector) # replace with passing in stepper
+#     gradnorm = norm(Cones.grad(cone_k), Inf)
+#     nbhd_sqr_k = abs2(norm(res_k, Inf) ./ gradnorm)
+#     return nbhd_sqr_k
+#     # return max(nbhd_sqr_k, full_nbhd_sqr)
+# end
+#
+# function update_nbhd_sqrt_expensive(cone_k::Cones.Cone, res_k::AbstractVector, full_nbhd_sqr::Float64, nbhd_temp::AbstractVector)
+#     @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(nbhd_temp, res_k, cone_k)
+#     nbhd_sqr_k = dot(res_k, nbhd_temp)
+#     return nbhd_sqr_k
+#     # if nbhd_sqr_k < -1e-5
+#     #     return Inf
+#     # end
+#     # return full_nbhd_sqr + nbhd_sqr_k
+# end
+
+# function check_in_nbhds(cones, full_nbhd_sqr, stepper, mu_temp, nbhd)
+#     in_nbhds = true
+#     for k in eachindex(cones)
+#         cone_k = cones[k]
+#         if !stepper.cones_loaded[k]
+#             Cones.load_point(cone_k, stepper.primal_views[k])
+#             if !Cones.check_in_cone(cone_k, invert = false)
+#                 in_nbhds = false
+#                 break
+#             end
+#         end
+#
+#         # modifies dual_views
+#         @timeit Hypatia.to "update_z" stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
+#         full_nbhd_sqr = update_nbhd_sqrt_expensive(cone_k, stepper.dual_views[k], full_nbhd_sqr, stepper.nbhd_temp[k])
+#
+#         if full_nbhd_sqr > abs2(mu_temp * nbhd)
+#             in_nbhds = false
+#             break
+#         end
+#     end # cones
+#     return in_nbhds
+# end
+
 # backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
 # TODO try infinite norm neighborhood, which is cheaper to check, or enforce that for each cone we are within a smaller neighborhood separately
 function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractVector{Float64}, tau_dir::Float64, kap_dir::Float64, nbhd::Float64, prev_alpha::Float64, stepper::CombinedHSDStepper, solver::HSDSolver)
@@ -199,6 +245,7 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
 
             if in_cones
 
+
                 full_nbhd_sqr = abs2(taukap_temp - mu_temp)
                 cheapnhood = expnsvnhood = full_nbhd_sqr
 
@@ -208,7 +255,7 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                         cone_k = cones[k]
                         if !stepper.cones_loaded[k]
                             Cones.load_point(cone_k, stepper.primal_views[k])
-                            if !Cones.check_in_cone(cone_k, invert = false)
+                            if !Cones.check_in_cone(cone_k, invert = !stepper.cheap_nbhd)
                                 in_nbhds = false
                                 break
                             end
@@ -217,28 +264,30 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                         # modifies dual_views
                         @timeit Hypatia.to "update_z" stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
 
-                        # expensive neighborhood
-                        # @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
-                        # expnsvnhood_k = dot(stepper.dual_views[k], stepper.nbhd_temp[k])
+                        if stepper.cheap_nbhd
+                            gradnorm = norm(Cones.grad(cone_k), Inf)
+                            nbhd_sqr_k = abs2(norm(stepper.dual_views[k], Inf) ./ gradnorm)
+                        else
+                            @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
+                            nbhd_sqr_k = dot(stepper.dual_views[k], stepper.nbhd_temp[k])
+                            if nbhd_sqr_k <= -1e-5
+                                println("numerical issue for cone: nbhd_sqr_k is $nbhd_sqr_k")
+                                in_nbhds = false
+                                break
+                            end
+                        end
 
-                        # cheap neighborhood
-                        gradnorm = maximum(norm(Cones.grad(cone_k), Inf) for cone_k in cones)
-                        cheapnhood_k = abs2(norm(stepper.dual_views[k], Inf) ./ gradnorm)
+                        if nbhd_sqr_k > 0.0
 
-                        nbhd_sqr_k = cheapnhood_k
+                            if stepper.cheap_nbhd
+                                full_nbhd_sqr = max(nbhd_sqr_k, full_nbhd_sqr)
+                            else
+                                full_nbhd_sqr += nbhd_sqr_k
+                            end
 
-                        if nbhd_sqr_k <= -1e-5
-                            println("numerical issue for cone: nbhd_sqr_k is $nbhd_sqr_k")
-                            in_nbhds = false
-                            break
-                        elseif nbhd_sqr_k > 0.0
-
-                            cheapnhood = max(cheapnhood_k, cheapnhood)
-                            # expnsvnhood += expnsvnhood_k
                             # open("nhood.csv", "a") do f
                             #     println(f, "$expnsvnhood, $cheapnhood")
                             # end
-                            full_nbhd_sqr = cheapnhood
 
                             if full_nbhd_sqr > abs2(mu_temp * nbhd)
                                 in_nbhds = false
@@ -250,6 +299,8 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                         break
                     end
                 end # alternative condition
+
+
             end # in cones
         end
 

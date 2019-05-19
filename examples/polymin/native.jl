@@ -30,7 +30,9 @@ function polyminreal(
     )
     (x, fn, dom, true_obj) = getpolydata(polyname)
     sample = (length(x) >= 5) || !isa(dom, MU.Box)
-    (U, pts, P0, PWts, _) = MU.interpolate(dom, halfdeg, sample = sample)
+    interp_time = @elapsed begin
+        (U, pts, P0, PWts, _) = MU.interpolate(dom, halfdeg, sample = sample)
+    end
 
     # set up problem data
     interp_vals = [fn(pts[j, :]...) for j in 1:U]
@@ -51,7 +53,10 @@ function polyminreal(
     cones = [CO.WSOSPolyInterp(U, [P0, PWts...], !primal_wsos)]
     cone_idxs = [1:U]
 
-    return (c = c, A = A, b = b, G = G, h = h, cones = cones, cone_idxs = cone_idxs, true_obj = true_obj)
+    nu = sum(size(p, 2) for p in PWts)
+
+    return (c = c, A = A, b = b, G = G, h = h, cones = cones, cone_idxs = cone_idxs,
+        true_obj = true_obj, n = length(x), halfdeg = halfdeg, nu = nu, interp_time = interp_time)
 end
 
 polyminreal1() = polyminreal(:heart, 2)
@@ -67,6 +72,7 @@ polyminreal10() = polyminreal(:rosenbrock, 5)
 polyminreal11() = polyminreal(:butcher, 2)
 polyminreal12() = polyminreal(:goldsteinprice_ellipsoid, 7)
 polyminreal13() = polyminreal(:goldsteinprice_ball, 7)
+
 polyminreal14() = polyminreal(:motzkin, 3, primal_wsos = false)
 polyminreal15() = polyminreal(:motzkin, 3)
 polyminreal16() = polyminreal(:reactiondiffusion, 4, primal_wsos = false)
@@ -87,6 +93,21 @@ polyminreal27() = polyminreal(:butcher, 2, primal_wsos = false)
 polyminreal28() = polyminreal(:goldsteinprice_ellipsoid, 7, primal_wsos = false)
 polyminreal29() = polyminreal(:goldsteinprice_ball, 7, primal_wsos = false)
 
+polyminreal30() = polyminreal(:heart, 3, primal_wsos = false)
+
+# polyminreal33() = polyminreal(:heart, 2, primal_wsos = false)
+# polyminreal34() = polyminreal(:schwefel, 2, primal_wsos = false)
+# polyminreal35() = polyminreal(:magnetism7_ball, 2, primal_wsos = false)
+# polyminreal36() = polyminreal(:motzkin_ellipsoid, 4, primal_wsos = false)
+# polyminreal37() = polyminreal(:caprasse, 4, primal_wsos = false)
+# polyminreal38() = polyminreal(:goldsteinprice, 7, primal_wsos = false)
+# polyminreal39() = polyminreal(:robinson, 8, primal_wsos = false)
+# polyminreal40() = polyminreal(:robinson_ball, 8, primal_wsos = false)
+# polyminreal41() = polyminreal(:rosenbrock, 5, primal_wsos = false)
+# polyminreal42() = polyminreal(:butcher, 2, primal_wsos = false)
+# polyminreal43() = polyminreal(:goldsteinprice_ellipsoid, 7, primal_wsos = false)
+# polyminreal44() = polyminreal(:goldsteinprice_ball, 7, primal_wsos = false)
+
 function polymincomplex(
     polyname::Symbol,
     halfdeg::Int;
@@ -106,6 +127,7 @@ function polymincomplex(
     @assert length(V_basis) == U
 
     # sample from domain (inefficient for general domains, only samples from unit box and checks feasibility)
+    interp_time = @elapsed begin
     num_samples = sample_factor * U
     samples = Vector{Vector{ComplexF64}}(undef, num_samples)
     k = 0
@@ -126,6 +148,7 @@ function polymincomplex(
     points = samples[keep]
     V = V[keep, :]
     @test rank(V) == U
+    end # timing interpolation related things
 
     # setup P matrices
     P0 = V[:, 1:L]
@@ -160,7 +183,7 @@ function polymincomplex(
     cones = [CO.WSOSPolyInterp(U, P_data, !primal_wsos)]
     cone_idxs = [1:U]
 
-    return (c = c, A = A, b = b, G = G, h = h, cones = cones, cone_idxs = cone_idxs, true_obj = true_obj)
+    return (c = c, A = A, b = b, G = G, h = h, cones = cones, cone_idxs = cone_idxs, true_obj = true_obj, n = n, halfdeg = halfdeg, interp_time = interp_time)
 end
 
 polymincomplex1() = polymincomplex(:abs1d, 1)
@@ -178,17 +201,60 @@ polymincomplex12() = polymincomplex(:absbox2d, 2, primal_wsos = false)
 polymincomplex13() = polymincomplex(:negabsbox2d, 1, primal_wsos = false)
 polymincomplex14() = polymincomplex(:denseunit1d, 2, primal_wsos = false)
 
-function test_polymin(instance::Function; options, rseed::Int = 1)
+function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::Bool = false)
     Random.seed!(rseed)
+    if !cumulative
+        reset_timer!(Hypatia.to)
+        repeats = 1
+    else
+        repeats = 0
+    end
     d = instance()
+
     model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
     solver = SO.HSDSolver(model; options...)
     SO.solve(solver)
+    for _ in 1:repeats
+        model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
+        solver = SO.HSDSolver(model; options...)
+        SO.solve(solver)
+    end
     r = SO.get_certificates(solver, model, test = true, atol = 1e-4, rtol = 1e-4)
     @test r.status == :Optimal
     @test r.primal_obj ≈ d.true_obj atol = 1e-4 rtol = 1e-4
+
+    if !cumulative
+        polyname = string(methods(instance).mt.name)
+        open(joinpath("timings", polyname * ".txt"), "w") do f
+            print_timer(f, Hypatia.to) # methods(instance).mt.name
+        end
+
+        open(joinpath("timings", "allpolymins" * ".csv"), "a") do f
+            G1 = size(d.G, 1)
+            # nu = ...
+            tt = TimerOutputs.tottime(Hypatia.to) # total time
+            ta = TimerOutputs.time(Hypatia.to["aff alpha"]) / tt # % of time in affine alpha
+            tc = TimerOutputs.time(Hypatia.to["comb alpha"]) / tt # % of time in comb alpha
+            td = TimerOutputs.time(Hypatia.to["directions"]) / tt # % of time calculating directions
+            ti = d.interp_time
+            num_iters = TimerOutputs.ncalls(Hypatia.to["directions"])
+            aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]) / num_iters
+            comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]) / num_iters
+            # println(f, "$polyname, $(d.n), $(d.halfdeg), $G1, $G2, $tt, $ta, $ti, $num_iters, $aff_per_iter, $comb_per_iter")
+
+            @printf(f, "%15s, %15d, %15d, %15d, %15.2e, %15.2s, %15.2s, %15d, %15.2e, %15.2e, %15.2e\n",
+                polyname, d.n, d.halfdeg, G1, tt, ta, ti, num_iters, aff_per_iter, comb_per_iter, td
+                )
+        end
+    end
+
+
     return
 end
+
+test_polymin_dual_hearts(; options...) = test_polymin.([
+    polyminreal30,
+    ], options = options)
 
 test_polymin_duals(; options...) = test_polymin.([
     polyminreal14,
@@ -213,6 +279,7 @@ test_polymin_duals(; options...) = test_polymin.([
     polymincomplex12,
     polymincomplex13,
     polymincomplex14,
+    # polyminreal30, # extra heart
     ], options = options)
 
 test_polymin_all(; options...) = test_polymin.([

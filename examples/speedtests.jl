@@ -24,9 +24,18 @@ include(joinpath(examples_dir, "polymin/native.jl"))
 
 reset_timer!(Hypatia.to)
 
+open(joinpath("timings", "allpolymins" * ".csv"), "a") do f
+    @printf(f, "\n%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
+        "poly", "n", "halfdeg", "G1", "total time", "affine %", "interp time", "num iters", "aff p iter",
+        "comb per iter", "dir %",
+        )
+
+end
+
 @testset "speed" begin
     test_polymin_duals(verbose = true)
-    test_envelope_dual(verbose = false)
+    # test_envelope_dual(verbose = true)
+    # test_polymin_dual_hearts(verbose = true)
 end
 
 Hypatia.to
