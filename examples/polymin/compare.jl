@@ -384,29 +384,20 @@ function speedtest(instance::Function; options, rseed::Int = 1)
     Random.seed!(rseed)
 
     d = instance()
-    if !isdir("timings")
-        mkdir("timings")
-    end
-    for nbhd in ["_infty", "_hess"]
-        open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "w") do f
-            @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
-                "poly", "n", "halfdeg", "G1", "nu", "total time", "build time", "affine %", "comb %", "interp time", "num iters", "aff p iter",
-                "comb per iter", "dir %",
-                )
-        end
-    end
 
     for nbhd in ["_infty", "_hess"]
 
         infty_nbhd = (nbhd == "_infty")
 
         build_time = 0
+        obj = 0
         for _ in 1:2
             reset_timer!(Hypatia.to)
             build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
             stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
             solver = SO.HSDSolver(model; options..., stepper = stepper)
             SO.solve(solver)
+            obj = SO.get_primal_obj(solver)
         end
 
         polyname = string(methods(instance).mt.name)
@@ -427,8 +418,8 @@ function speedtest(instance::Function; options, rseed::Int = 1)
             aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]["linstep"]) / num_iters
             comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
 
-            @printf(f, "%15s, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15.2f\n",
-                polyname, d.n, d.halfdeg, G1, d.nu, tts, tb, ta, tc, ti, num_iters, aff_per_iter, comb_per_iter, td
+            @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15.2f\n",
+                polyname, obj, d.n, d.halfdeg, G1, d.nu, tts, tb, ta, tc, ti, num_iters, aff_per_iter, comb_per_iter, td
                 )
         end
     end # nbhd
@@ -463,16 +454,30 @@ complexpsd2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = false, use_wsos =
 realwsos2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = true, use_wsos = true)
 complexwsos2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = false, use_wsos = true)
 
-speedtest(; options...) = speedtest.([
-    realpsd1,
-    complexpsd1,
-    realwsos1,
-    complexwsos1,
-    realpsd2,
-    complexpsd2,
-    realwsos2,
-    complexwsos2,
-    ], options = options)
+function speedtest(; options...)
+    if !isdir("timings")
+        mkdir("timings")
+    end
+    for nbhd in ["_infty", "_hess"]
+        open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "a") do f
+            @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
+                "poly", "obj", "n", "halfdeg", "G1", "nu", "total time", "build time", "affine %", "comb %", "interp time", "num iters", "aff p iter",
+                "comb per iter", "dir %", "corr steps",
+                )
+        end
+    end
+    speedtest.([
+        realpsd1,
+        complexpsd1,
+        realwsos1,
+        complexwsos1,
+        realpsd2,
+        complexpsd2,
+        realwsos2,
+        complexwsos2,
+        ], options = options)
+    return
+end
 
 
 # run_3_2_1() = run_all_rand(3, 2, 1, 0.9, 1.1)
