@@ -418,8 +418,14 @@ function speedtest(instance::Function; options, rseed::Int = 1)
             aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]["linstep"]) / num_iters
             comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
 
-            @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15.2f\n",
-                polyname, obj, d.n, d.halfdeg, G1, d.nu, tts, tb, ta, tc, ti, num_iters, aff_per_iter, comb_per_iter, td
+            if "corr alpha" in keys(Hypatia.to.inner_timers)
+                num_corr = TimerOutputs.ncalls(Hypatia.to["corr alpha"])
+            else
+                num_corr = 0
+            end
+
+            @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15d\n",
+                polyname, obj, d.n, d.halfdeg, G1, d.nu, tts, tb, ti, ta, tc, td, num_iters, aff_per_iter, comb_per_iter, num_corr
                 )
         end
     end # nbhd
@@ -449,10 +455,10 @@ complexpsd1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = f
 realwsos1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
 complexwsos1() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
 
-realpsd2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = true, use_wsos = false)
-complexpsd2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = false, use_wsos = false)
-realwsos2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = true, use_wsos = true)
-complexwsos2() = polyminannulus(2, 2, 1, 0.95, 1.05, use_real = false, use_wsos = true)
+realpsd2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
+complexpsd2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
+realwsos2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
+complexwsos2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
 
 function speedtest(; options...)
     if !isdir("timings")
@@ -461,8 +467,8 @@ function speedtest(; options...)
     for nbhd in ["_infty", "_hess"]
         open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "a") do f
             @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
-                "poly", "obj", "n", "halfdeg", "G1", "nu", "total time", "build time", "affine %", "comb %", "interp time", "num iters", "aff p iter",
-                "comb per iter", "dir %", "corr steps",
+                "poly", "obj", "n", "halfdeg", "U", "nu", "total time", "build time", "interp time", "% time affine", "% time comb", "% time dir", "num iters", "aff per iter",
+                "comb per iter", "corr steps",
                 )
         end
     end
