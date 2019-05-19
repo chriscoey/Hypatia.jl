@@ -55,7 +55,7 @@ function polyminreal(
     cones = [CO.WSOSPolyInterp(U, [P0, PWts...], !primal_wsos)]
     cone_idxs = [1:U]
 
-    nu = sum(size(p, 2) for p in PWts)
+    nu = sum(size(p, 2) for p in PWts) + size(P0, 2)
 
     return (c = c, A = A, b = b, G = G, h = h, cones = cones, cone_idxs = cone_idxs,
         true_obj = true_obj, n = length(x), halfdeg = halfdeg, nu = nu, interp_time = interp_time)
@@ -96,6 +96,18 @@ polyminreal28() = polyminreal(:goldsteinprice_ellipsoid, 7, primal_wsos = false)
 polyminreal29() = polyminreal(:goldsteinprice_ball, 7, primal_wsos = false)
 
 polyminreal30() = polyminreal(:heart, 3, primal_wsos = false)
+polyminreal31() = polyminreal(:schwefel, 3, primal_wsos = false)
+polyminreal32() = polyminreal(:magnetism7_ball, 3, primal_wsos = false)
+polyminreal33() = polyminreal(:motzkin_ellipsoid, 5, primal_wsos = false)
+polyminreal34() = polyminreal(:caprasse, 5, primal_wsos = false)
+polyminreal35() = polyminreal(:goldsteinprice, 8, primal_wsos = false)
+polyminreal36() = polyminreal(:robinson, 9, primal_wsos = false)
+polyminreal37() = polyminreal(:robinson_ball, 9, primal_wsos = false)
+polyminreal38() = polyminreal(:rosenbrock, 6, primal_wsos = false)
+polyminreal39() = polyminreal(:butcher, 3, primal_wsos = false)
+polyminreal40() = polyminreal(:goldsteinprice_ellipsoid, 8, primal_wsos = false)
+polyminreal41() = polyminreal(:goldsteinprice_ball, 8, primal_wsos = false)
+
 
 # polyminreal33() = polyminreal(:heart, 2, primal_wsos = false)
 # polyminreal34() = polyminreal(:schwefel, 2, primal_wsos = false)
@@ -167,6 +179,8 @@ function polymincomplex(
         push!(P_data, Pi)
     end
 
+    nu = sum(size(p, 2) for p in P_data)
+
     # setup problem data
     if primal_wsos
         c = [-1.0]
@@ -185,7 +199,8 @@ function polymincomplex(
     cones = [CO.WSOSPolyInterp(U, P_data, !primal_wsos)]
     cone_idxs = [1:U]
 
-    return (c = c, A = A, b = b, G = G, h = h, cones = cones, cone_idxs = cone_idxs, true_obj = true_obj, n = n, halfdeg = halfdeg, interp_time = interp_time)
+    return (c = c, A = A, b = b, G = G, h = h, cones = cones, cone_idxs = cone_idxs,
+        true_obj = true_obj, n = n, halfdeg = halfdeg, interp_time = interp_time, nu = nu)
 end
 
 polymincomplex1() = polymincomplex(:abs1d, 1)
@@ -203,6 +218,14 @@ polymincomplex12() = polymincomplex(:absbox2d, 2, primal_wsos = false)
 polymincomplex13() = polymincomplex(:negabsbox2d, 1, primal_wsos = false)
 polymincomplex14() = polymincomplex(:denseunit1d, 2, primal_wsos = false)
 
+polymincomplex15() = polymincomplex(:abs1d, 2, primal_wsos = false)
+polymincomplex16() = polymincomplex(:absunit1d, 2, primal_wsos = false)
+polymincomplex17() = polymincomplex(:negabsunit1d, 3, primal_wsos = false)
+polymincomplex18() = polymincomplex(:absball2d, 2, primal_wsos = false)
+polymincomplex19() = polymincomplex(:absbox2d, 3, primal_wsos = false)
+polymincomplex20() = polymincomplex(:negabsbox2d, 2, primal_wsos = false)
+polymincomplex21() = polymincomplex(:denseunit1d, 3, primal_wsos = false)
+
 function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::Bool = false)
     Random.seed!(rseed)
     if !cumulative
@@ -213,43 +236,53 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
     end
     d = instance()
 
-    model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
-    solver = SO.HSDSolver(model; options...)
-    SO.solve(solver)
-    for _ in 1:repeats
-        reset_timer!(Hypatia.to)
+    for nbhd in ["_infty", "_hess"]
+
+        infty_nbhd = (nbhd == "_infty")
+
         model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
-        solver = SO.HSDSolver(model; options...)
+        stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
+        solver = SO.HSDSolver(model; options..., stepper = stepper)
         SO.solve(solver)
-    end
-    r = SO.get_certificates(solver, model, test = true, atol = 1e-4, rtol = 1e-4)
-    @test r.status == :Optimal
-    @test r.primal_obj ≈ d.true_obj atol = 1e-4 rtol = 1e-4
+        build_time = 0
 
-    if !cumulative
-        polyname = string(methods(instance).mt.name)
-        open(joinpath("timings", polyname * ".txt"), "w") do f
-            print_timer(f, Hypatia.to) # methods(instance).mt.name
+        for _ in 1:repeats
+            reset_timer!(Hypatia.to)
+            build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
+            stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
+            solver = SO.HSDSolver(model; options..., stepper = stepper)
+            SO.solve(solver)
         end
+        r = SO.get_certificates(solver, model, test = true, atol = 1e-4, rtol = 1e-4)
+        @test r.status == :Optimal
+        @test r.primal_obj ≈ d.true_obj atol = 1e-4 rtol = 1e-4
 
-        open(joinpath("timings", "allpolymins" * ".csv"), "a") do f
-            G1 = size(d.G, 1)
-            # nu = ...
-            tt = TimerOutputs.tottime(Hypatia.to) # total time
-            ta = TimerOutputs.time(Hypatia.to["aff alpha"]) / tt # % of time in affine alpha
-            tc = TimerOutputs.time(Hypatia.to["comb alpha"]) / tt # % of time in comb alpha
-            td = TimerOutputs.time(Hypatia.to["directions"]) / tt # % of time calculating directions
-            ti = d.interp_time
-            num_iters = TimerOutputs.ncalls(Hypatia.to["directions"])
-            aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]) / num_iters
-            comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]) / num_iters
-            # println(f, "$polyname, $(d.n), $(d.halfdeg), $G1, $G2, $tt, $ta, $ti, $num_iters, $aff_per_iter, $comb_per_iter")
+        if !cumulative
+            polyname = string(methods(instance).mt.name)
+            open(joinpath("timings", polyname * nbhd * ".txt"), "w") do f
+                print_timer(f, Hypatia.to) # methods(instance).mt.name
+            end
 
-            @printf(f, "%15s, %15d, %15d, %15d, %15.2f, %15.2s, %15.2s, %15d, %15.2f, %15.2f, %15.2f\n",
-                polyname, d.n, d.halfdeg, G1, tt, ta, ti, num_iters, aff_per_iter, comb_per_iter, td
-                )
+            open(joinpath("timings", "allpolymins" * nbhd * ".csv"), "a") do f
+                G1 = size(d.G, 1)
+                tt = TimerOutputs.tottime(Hypatia.to) # total solving time (nanoseconds)
+                tts = tt / 1e6
+                tb = build_time
+                ta = TimerOutputs.time(Hypatia.to["aff alpha"]) / tt # % of time in affine alpha
+                tc = TimerOutputs.time(Hypatia.to["comb alpha"]) / tt # % of time in comb alpha
+                td = TimerOutputs.time(Hypatia.to["directions"]) / tt # % of time calculating directions
+                ti = d.interp_time
+                num_iters = TimerOutputs.ncalls(Hypatia.to["directions"])
+                aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]["linstep"]) / num_iters
+                comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
+                # println(f, "$polyname, $(d.n), $(d.halfdeg), $G1, $G2, $tt, $ta, $ti, $num_iters, $aff_per_iter, $comb_per_iter")
+
+                @printf(f, "%15s, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15.2f\n",
+                    polyname, d.n, d.halfdeg, G1, d.nu, tts, tb, ta, ti, num_iters, aff_per_iter, comb_per_iter, td
+                    )
+            end
         end
-    end
+    end # nbhd
 
 
     return

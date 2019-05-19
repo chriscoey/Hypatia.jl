@@ -23,7 +23,7 @@ mutable struct CombinedHSDStepper <: HSDStepper
         model::Models.LinearModel;
         system_solver::CombinedHSDSystemSolver = (model isa Models.PreprocessedLinearModel ? QRCholCombinedHSDSystemSolver(model) : NaiveCombinedHSDSystemSolver(model)),
         max_nbhd::Float64 = 0.75,
-        infty_nbhd::Bool = true,
+        infty_nbhd::Bool = false,
         )
         stepper = new()
 
@@ -214,14 +214,14 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
     while num_pred_iters < 100
         num_pred_iters += 1
 
-        # @timeit Hypatia.to "updates" begin
+        @timeit Hypatia.to "linstep" begin
         @. z_temp = point.z + alpha * z_dir
         @. s_temp = point.s + alpha * s_dir
         tau_temp = solver.tau + alpha * tau_dir
         kap_temp = solver.kap + alpha * kap_dir
         taukap_temp = tau_temp * kap_temp
         mu_temp = (dot(s_temp, z_temp) + taukap_temp) / (1.0 + model.nu)
-        # end
+        end
 
         if mu_temp > 0.0
             # accept primal iterate if it is inside the cone and neighborhood
@@ -244,11 +244,7 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
             end
 
             if in_cones
-
-
                 full_nbhd_sqr = abs2(taukap_temp - mu_temp)
-                cheapnhood = expnsvnhood = full_nbhd_sqr
-
                 if full_nbhd_sqr < abs2(mu_temp * nbhd)
                     in_nbhds = true
                     for k in eachindex(cones)
@@ -278,11 +274,11 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                             elseif nbhd_sqr_k > 0
                                 full_nbhd_sqr += nbhd_sqr_k
                             end
-                        end
+                            # open("nhood.csv", "a") do f
+                            #     println(f, "$full_nbhd_sqr, $cheap")
+                            # end
 
-                        # open("nhood.csv", "a") do f
-                        #     println(f, "$expnsvnhood, $cheapnhood")
-                        # end
+                        end
 
                         if full_nbhd_sqr > abs2(mu_temp * nbhd)
                             in_nbhds = false
