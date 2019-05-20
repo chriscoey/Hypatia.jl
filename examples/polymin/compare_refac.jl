@@ -316,16 +316,18 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                     println("building Hypatia internal model")
                     build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
                     stepper = SO.CombinedHSDStepper(model, infty_nbhd = is_infty_nbhd)
-                    solver = SO.HSDSolver(model, stepper = stepper, time_limit = 1800.0, tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5)
+                    solver = SO.HSDSolver(model, stepper = stepper,
+                        tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5,
+                        time_limit = 1800.0, max_iters = 250,)
                     SO.solve(solver)
                     obj = SO.get_primal_obj(solver)
                 # end
 
-                open(joinpath("timings", modelname * ".txt"), "a") do f
+                open(joinpath("timings", modelname * ".txt"), "w") do f
                     print_timer(f, Hypatia.to)
                 end
 
-                open(joinpath("timings", modelname * ".csv"), "a") do f
+                open(joinpath("timings", "results.csv"), "a") do f
                     # TODO save n, p, q
                     # (p, n) = size(A)
                     # q = length(h)
@@ -359,21 +361,22 @@ end
 if !isdir("timings")
     mkdir("timings")
 end
-for nbhd in ["infty", "hess"]
-    open(joinpath("timings", "polyannulus_" * nbhd * ".csv"), "w") do f
-        @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-        "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
-        "comb / iter",
-        )
-    end
+open(joinpath("timings", "results.csv"), "w") do f
+    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+    "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
+    "comb / iter",
+    )
 end
+
 
 # compile run
 speedtest(2, 2, 100)
 
 # full run
-ns = [1,2,3,4,6,8,10]
-halfdegs = [1,2,3,4,6,8,10,15,20,30]
+# ns = [1,2,3,4,6,8,10]
+# halfdegs = [1,2,3,4,6,8,10,15,20,30]
+ns = [1,2,3,4]
+halfdegs = [1,2,3,4,6,8]
 maxU = 1000
 for n in ns, halfdeg in halfdegs
     @show n, halfdeg
