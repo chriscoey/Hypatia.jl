@@ -24,12 +24,12 @@ include(joinpath(examples_dir, "polymin/native.jl"))
 
 reset_timer!(Hypatia.to)
 
-for nbhd in ["_infty", "_hess"]
-    open(joinpath("timings", "allpolymins" * nbhd * ".csv"), "a") do f
-        @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
-            "poly", "n", "halfdeg", "G1", "nu", "total time", "build time", "affine %", "comb %", "interp time", "num iters", "aff p iter",
-            "comb per iter", "dir %",
-            )
+for nbhd in ["infty", "hess"]
+    open(joinpath("timings", "allpolymins_" * nbhd * ".csv"), "a") do f
+        @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
+        "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
+        "comb / iter",
+        )
     end
 end
 

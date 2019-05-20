@@ -245,6 +245,7 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
         solver = SO.HSDSolver(model; options..., stepper = stepper)
         SO.solve(solver)
         build_time = 0
+        obj = 0
 
         for _ in 1:repeats
             reset_timer!(Hypatia.to)
@@ -252,6 +253,7 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
             stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
             solver = SO.HSDSolver(model; options..., stepper = stepper)
             SO.solve(solver)
+            obj = SO.get_primal_obj(solver)
         end
         r = SO.get_certificates(solver, model, test = true, atol = 1e-4, rtol = 1e-4)
         @test r.status == :Optimal
@@ -275,10 +277,14 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
                 num_iters = TimerOutputs.ncalls(Hypatia.to["directions"])
                 aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]["linstep"]) / num_iters
                 comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
-                # println(f, "$polyname, $(d.n), $(d.halfdeg), $G1, $G2, $tt, $ta, $ti, $num_iters, $aff_per_iter, $comb_per_iter")
+                if "corr alpha" in keys(Hypatia.to.inner_timers)
+                    num_corr = TimerOutputs.ncalls(Hypatia.to["corr alpha"])
+                else
+                    num_corr = 0
+                end
 
-                @printf(f, "%15s, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15.2f, %15.2f, %15.2f\n",
-                    polyname, d.n, d.halfdeg, G1, d.nu, tts, tb, ta, tc, ti, num_iters, aff_per_iter, comb_per_iter, td
+                @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15d, %15.2f, %15.2f\n",
+                    polyname, obj, d.n, d.halfdeg, G1, d.nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                     )
             end
         end
