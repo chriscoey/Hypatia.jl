@@ -367,19 +367,21 @@ end
 if !isdir("timings")
     mkdir("timings")
 end
-open(joinpath("timings", "results.csv"), "a") do f
-    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-        "RorC", "PorW", "HorI",
-        "n", "half_deg", "dim_cone", "num_vars", "bar_par",
-        "status", "p_obj", "d_obj",
-        "iters", "corr_steps", "avg_aff_ls", "avg_comb_ls",
-        "t_interp", "t_build", "t_solve", "frac_t_aff", "frac_t_comb", "frac_t_dir",
-    )
-end
-
 
 # compile run
+println("\ncompile run\n")
 speedtest(2, 2, 100)
+println("\n")
+
+open(joinpath("timings", "results.csv"), "w") do f
+    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+    "RorC", "PorW", "HorI",
+    "n", "half_deg", "dim_cone", "num_vars", "bar_par",
+    "status", "p_obj", "d_obj",
+    "iters", "corr_steps", "avg_aff_ls", "avg_comb_ls",
+    "t_interp", "t_build", "t_solve", "frac_t_aff", "frac_t_comb", "frac_t_dir",
+    )
+end
 
 # full run
 ns = [1,2,3,4,6,8,10]
@@ -387,11 +389,19 @@ halfdegs = [1,2,3,4,6,8,10,15,20]
 # ns = [1,2,3,4]
 # halfdegs = [1,2,3,4,6,8]
 maxU = 5000
+
+@show ns
+@show halfdegs
+@show maxU
+
 for n in ns, halfdeg in halfdegs
+    println("\n")
     @show n, halfdeg
+    println()
     try
         speedtest(n, halfdeg, maxU)
     catch e
         println(e)
     end
+    println()
 end

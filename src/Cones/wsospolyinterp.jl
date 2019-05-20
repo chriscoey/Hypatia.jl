@@ -76,7 +76,7 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
     ΛFs = cone.ΛFs
     D = Diagonal(cone.point)
 
-    @timeit Hypatia.to "buildΛ" begin
+    @timeit Hypatia.to "buildlam" begin
 
     for k in eachindex(Ps) # TODO can be done in parallel
         # Λ = Pk' * Diagonal(point) * Pk
@@ -99,7 +99,7 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
         ΛFs[k] = ΛFk
     end
 
-    end # inconce check
+    end # incone check
     @timeit Hypatia.to "gradhess" begin
 
     g = cone.g
@@ -115,10 +115,10 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
         @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
 
         @timeit Hypatia.to "gH" begin
-        @inbounds for j in eachindex(g)
-            g[j] -= real(UU[j, j])
-            @inbounds for i in 1:j
-                H[i, j] += abs2(UU[i, j])
+        for j in eachindex(g)
+            @inbounds g[j] -= real(UU[j, j])
+            for i in 1:j
+                @inbounds H[i, j] += abs2(UU[i, j])
             end
         end
         end
@@ -130,9 +130,9 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
     # end
     # @assert Symmetric(cone.H, :U) * cone.point ≈ -cone.g atol=1e-1 rtol=1e-1
 
-    if invert_hess
-        return factorize_hess(cone)
-    else
+    # if invert_hess
+    #     return factorize_hess(cone)
+    # else
         return true
-    end
+    # end
 end
