@@ -107,7 +107,7 @@ function setup_C_interp(
     # select some points from annulus domain
     @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 5000
+    num_samples = 1500
     @show U
     cand_pts = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -161,7 +161,7 @@ function setup_R_interp(
     # select some points from annulus domain
     @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 5000
+    num_samples = 1500
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -311,15 +311,15 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
 
                 build_time = 0.0
                 obj = 0.0
-                for _ in 1:2
+                # for _ in 1:2
                     reset_timer!(Hypatia.to)
-                    println("building model")
+                    println("building Hypatia internal model")
                     build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
                     stepper = SO.CombinedHSDStepper(model, infty_nbhd = is_infty_nbhd)
                     solver = SO.HSDSolver(model, stepper = stepper, time_limit = 1800.0, tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5)
                     SO.solve(solver)
                     obj = SO.get_primal_obj(solver)
-                end
+                # end
 
                 open(joinpath("timings", modelname * ".txt"), "a") do f
                     print_timer(f, Hypatia.to)
@@ -371,17 +371,17 @@ end
 # compile run
 speedtest(2, 2, 100)
 
-# # full run
-# ns = [1,2,3,4,6,8,10]
-# halfdegs = [1,2,3,4,6,8,10,15,20,30]
-# maxU = 2000
-# for n in ns, halfdeg in halfdegs
-#     @show n, halfdeg
-#     realU = binomial(2n + 2halfdeg, 2n)
-#     if realU > maxU
-#         println("skipping n=$n, d=$d, since real U=$realU")
-#         continue
-#     end
-#
-#     speedtest(n, halfdeg, maxU)
-# end
+# full run
+ns = [1,2,3,4,6,8,10]
+halfdegs = [1,2,3,4,6,8,10,15,20,30]
+maxU = 1000
+for n in ns, halfdeg in halfdegs
+    @show n, halfdeg
+    realU = binomial(2n + 2halfdeg, 2n)
+    if realU > maxU
+        println("skipping n=$n, d=$d, since real U=$realU")
+        continue
+    end
+
+    speedtest(n, halfdeg, maxU)
+end
