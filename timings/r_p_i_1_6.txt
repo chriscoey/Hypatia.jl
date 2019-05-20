@@ -1,26 +1,26 @@
  ──────────────────────────────────────────────────────────────────────
                                Time                   Allocations      
                        ──────────────────────   ───────────────────────
-   Tot / % measured:        1.39s / 87.9%           16.7MiB / 49.9%    
+   Tot / % measured:        966ms / 98.1%           18.4MiB / 57.4%    
 
  Section       ncalls     time   %tot     avg     alloc   %tot      avg
  ──────────────────────────────────────────────────────────────────────
- comb alpha        68    431ms  35.3%  6.33ms   3.69MiB  44.2%  55.5KiB
-   update_z       247   5.02ms  0.41%  20.3μs   23.2KiB  0.27%    96.0B
-   linstep        291   1.65ms  0.14%  5.67μs   18.2KiB  0.21%    64.0B
- directions        68    399ms  32.7%  5.87ms   0.98MiB  11.8%  14.8KiB
-   middle          68    189ms  15.5%  2.79ms    860KiB  10.1%  12.7KiB
-     mat           68    172ms  14.1%  2.53ms   1.06KiB  0.01%    16.0B
-     chol          68   10.0ms  0.82%   147μs    177KiB  2.08%  2.61KiB
-     ldiv          68   3.55ms  0.29%  52.2μs    347KiB  4.07%  5.11KiB
-   pre fact        68   89.6ms  7.34%  1.32ms   10.6KiB  0.12%     160B
-   post fact       68   81.8ms  6.70%  1.20ms   37.2KiB  0.44%     560B
-   setup z         68   35.5ms  2.91%   522μs   66.9KiB  0.78%  0.98KiB
-   setup xy        68   1.04ms  0.09%  15.3μs   8.50KiB  0.10%     128B
- aff alpha         68    351ms  28.8%  5.16ms   3.28MiB  39.3%  49.4KiB
-   update_z       204   4.10ms  0.34%  20.1μs   19.1KiB  0.22%    96.0B
-   linstep        164   1.01ms  0.08%  6.14μs   10.3KiB  0.12%    64.0B
- corr alpha         4   39.2ms  3.21%  9.81ms    398KiB  4.66%  99.4KiB
-   update_z        30    501μs  0.04%  16.7μs   2.81KiB  0.03%    96.0B
-   linstep         18    104μs  0.01%  5.79μs   1.13KiB  0.01%    64.0B
+ aff alpha         81    330ms  34.9%  4.08ms   3.91MiB  37.0%  49.4KiB
+   update_z       246   1.93ms  0.20%  7.84μs   23.1KiB  0.21%    96.0B
+   linstep        194    720μs  0.08%  3.71μs   12.1KiB  0.11%    64.0B
+ comb alpha        81    322ms  34.0%  3.98ms   4.52MiB  42.9%  57.2KiB
+   update_z       307   1.73ms  0.18%  5.64μs   28.8KiB  0.27%    96.0B
+   linstep        365   1.16ms  0.12%  3.19μs   22.8KiB  0.21%    64.0B
+ directions        81    253ms  26.7%  3.12ms   1.52MiB  14.4%  19.2KiB
+   middle          81    121ms  12.8%  1.49ms   1.35MiB  12.8%  17.1KiB
+     mat           81    106ms  11.2%  1.31ms   1.27KiB  0.01%    16.0B
+     chol          81   7.52ms  0.79%  92.8μs    211KiB  1.96%  2.61KiB
+     ldiv          81   3.14ms  0.33%  38.7μs    395KiB  3.66%  4.88KiB
+   pre fact        81   66.5ms  7.02%   821μs   12.7KiB  0.12%     160B
+   post fact       81   51.1ms  5.39%   631μs   44.3KiB  0.41%     560B
+   setup z         81   12.8ms  1.35%   158μs   79.7KiB  0.74%  0.98KiB
+   setup xy        81    548μs  0.06%  6.76μs   10.1KiB  0.09%     128B
+ corr alpha         6   42.1ms  4.45%  7.02ms    614KiB  5.69%   102KiB
+   update_z        45    266μs  0.03%  5.92μs   4.22KiB  0.04%    96.0B
+   linstep         34    107μs  0.01%  3.14μs   2.13KiB  0.02%    64.0B
  ──────────────────────────────────────────────────────────────────────
