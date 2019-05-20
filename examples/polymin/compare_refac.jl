@@ -107,7 +107,7 @@ function setup_C_interp(
     # select some points from annulus domain
     # @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 4000
+    num_samples = 6000
     @show U
     cand_pts = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -161,7 +161,7 @@ function setup_R_interp(
     # select some points from annulus domain
     # @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 4000
+    num_samples = 6000
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -383,10 +383,10 @@ speedtest(2, 2, 100)
 
 # full run
 ns = [1,2,3,4,6,8,10]
-halfdegs = [1,2,3,4,6,8,10,15,20,30]
-ns = [1,2,3,4]
-halfdegs = [1,2,3,4,6,8]
-maxU = 2000
+halfdegs = [1,2,3,4,6,8,10,15,20]
+# ns = [1,2,3,4]
+# halfdegs = [1,2,3,4,6,8]
+maxU = 5000
 for n in ns, halfdeg in halfdegs
     @show n, halfdeg
     try
