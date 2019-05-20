@@ -296,9 +296,9 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
     (F_coef, F_fun) = rand_obj(n, halfdeg - 1)
     for is_complex in [true, false]
         str_is_complex = is_complex ? "c" : "r"
-        num_vars = is_complex ? binomial(2n + 2halfdeg, 2n) : binomial(n + 2halfdeg, n)
-        if num_vars > maxU
-            println("skipping n=$n, halfdeg=$halfdeg, since num_vars=$num_vars")
+        U = is_complex ? binomial(2n + 2halfdeg, 2n) : binomial(n + 2halfdeg, n)
+        if U > maxU
+            println("skipping n=$n, halfdeg=$halfdeg, since U=$U")
             continue
         end
         interp_fun = is_complex ? setup_C_interp : setup_R_interp
@@ -337,9 +337,9 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                     # TODO save n, p, q
                     # (p, n) = size(A)
                     # q = length(h)
-                    G1 = size(d.G, 1)
+                    (G1, G2) = size(d.G)
                     tt = TO.tottime(Hypatia.to) # total solving time (nanoseconds)
-                    tts = tt / 1e6
+                    tts = tt / 1e9
                     tb = build_time
                     ta = TO.time(Hypatia.to["aff alpha"]) / tt # % of time in affine alpha
                     tc = TO.time(Hypatia.to["comb alpha"]) / tt # % of time in comb alpha
@@ -353,7 +353,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                     end
 
                     @printf(f, "%s,%s,%s,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
-                        str_is_complex, str_is_wsos, str_is_infty_nbhd, n, halfdeg, pobj, dobj, G1, num_vars,
+                        str_is_complex, str_is_wsos, str_is_infty_nbhd, n, halfdeg, pobj, dobj, G1, G2,
                         nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                         )
                 end # do
