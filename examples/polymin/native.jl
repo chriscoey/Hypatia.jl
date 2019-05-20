@@ -244,8 +244,8 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
         stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
         solver = SO.HSDSolver(model; options..., stepper = stepper)
         SO.solve(solver)
-        build_time = 0
-        obj = 0
+        build_time = 0.0
+        obj = 0.0
 
         for _ in 1:repeats
             reset_timer!(Hypatia.to)
@@ -283,7 +283,7 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
                     num_corr = 0
                 end
 
-                @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15d, %15.2f, %15.2f\n",
+                @printf(f, "%s,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
                     polyname, obj, d.n, d.halfdeg, G1, d.nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                     )
             end

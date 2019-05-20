@@ -294,7 +294,7 @@ function speedtest(; rseed::Int = 1)
 
     for nbhd in ["infty", "hess"]
         open(joinpath("timings", "polyannulus_" * nbhd * ".csv"), "a") do f
-            @printf(f, "%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s\n",
+            @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
             "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
             "comb / iter",
             )
@@ -322,10 +322,11 @@ function speedtest(; rseed::Int = 1)
 
                 for nbhd in ["infty", "hess"]
                     infty_nbhd = (nbhd == "infty")
-                    build_time = 0
-                    obj = 0
+                    build_time = 0.0
+                    obj = 0.0
                     for _ in 1:2
                         reset_timer!(Hypatia.to)
+                        println("building model")
                         build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
                         stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
                         solver = SO.HSDSolver(model, stepper = stepper)
@@ -356,7 +357,7 @@ function speedtest(; rseed::Int = 1)
                             num_corr = 0
                         end
 
-                        @printf(f, "%15s,%15.3f,%15d,%15d,%15d,%15d,%15.2f,%15.2f,%15.2f,%15.2f,%15.2f,%15.2f,%15d,%15d,%15.2f,%15.2f\n",
+                        @printf(f, "%s,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
                             polyname, obj, n, halfdeg, G1, nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                             )
                     end # do
