@@ -286,99 +286,6 @@ function build_psd_dual(dat)
     return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs)
 end
 
-function solve_model(dat, is_min::Bool)
-    model = MO.PreprocessedLinearModel(dat.c, dat.A, dat.b, dat.G, dat.h, dat.cones, dat.cone_idxs)
-    solver = SO.HSDSolver(model, verbose = true, tol_feas = 1e-5, tol_rel_opt = 1e-6, tol_abs_opt = 1e-5, max_iters = 200)
-    SO.solve(solver)
-
-    obj = SO.get_primal_obj(solver)
-    if !is_min
-        obj = -obj
-    end
-    # @test SO.get_status(solver) == :Optimal
-
-    return obj
-    # TODO experimental minimum over random points in domain
-    # F_min_pts = minimum(F_interp)
-    # println("minimum on domain over interp points:\n", F_min_pts)
-    # @test obj <= (primal_wsos ? -F_min_pts : F_min_pts)
-end
-
-function run_all(
-    n::Int,
-    d::Int,
-    F_coef::Hermitian{ComplexF64, Matrix{ComplexF64}},
-    F_fun::Function,
-    inner_radius::Float64,
-    outer_radius::Float64,
-    )
-    # setup real and complex interpolations
-    # TODO time them, note the second uses more candidate points which may be unfair
-    println()
-    println("starting complex interpolation")
-    C_interp = setup_C_interp(n, d, F_fun, inner_radius, outer_radius)
-    println("C U is   ", C_interp.U)
-    println("C Ls are ", size.(C_interp.P_data, 2))
-    println("starting real interpolation")
-    R_interp = setup_R_interp(n, d, F_fun, inner_radius, outer_radius)
-    println("R U is   ", R_interp.U)
-    println("R Ls are ", size.(R_interp.P_data, 2))
-    println("finished interpolation")
-
-    # build real and complex models
-    println()
-    println("building complex models")
-    C_wsos_primal = build_wsos_primal(C_interp)
-    C_wsos_dual = build_wsos_dual(C_interp)
-    C_psd_dual = build_psd_dual(C_interp)
-    println("building real models")
-    R_wsos_primal = build_wsos_primal(R_interp)
-    R_wsos_dual = build_wsos_dual(R_interp)
-    R_psd_dual = build_psd_dual(R_interp)
-    println("finished building models")
-
-    # TODO also measure time (also the setup time for real or complex)
-    # run models
-    println()
-    println("starting solves")
-    objs = Dict()
-    # println("C wsos primal:")
-    # objs[:Cwp] = solve_model(C_wsos_primal, false)
-    println("C wsos dual:")
-    objs[:Cwd] = solve_model(C_wsos_dual, true)
-    println("C psd dual:")
-    objs[:Cp] = solve_model(C_psd_dual, true)
-    # println("R wsos primal:")
-    # objs[:Rwp] = solve_model(R_wsos_primal, false)
-    println("R wsos dual:")
-    objs[:Rwd] = solve_model(R_wsos_dual, true)
-    println("R psd dual:")
-    objs[:Rp] = solve_model(R_psd_dual, true)
-    println("finished solves")
-
-    # TODO check objs against minimum at test sample points
-
-    return objs
-end
-
-function run_all_rand(
-    n::Int,
-    d::Int,
-    deg::Int,
-    inner_radius::Float64,
-    outer_radius::Float64,
-    )
-    @assert deg <= d
-
-    # generate random objective of degree deg
-    (F_coef, F_fun) = rand_obj(n, deg)
-
-    # run models of degree d
-    objs = run_all(n, d, F_coef, F_fun, inner_radius, outer_radius)
-
-    return objs
-end
-
 function speedtest(; rseed::Int = 1)
     Random.seed!(rseed)
     if !isdir("timings")
@@ -387,7 +294,7 @@ function speedtest(; rseed::Int = 1)
 
     for nbhd in ["infty", "hess"]
         open(joinpath("timings", "polyannulus_" * nbhd * ".csv"), "a") do f
-            @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
+            @printf(f, "%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s,%15s\n",
             "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
             "comb / iter",
             )
@@ -449,7 +356,7 @@ function speedtest(; rseed::Int = 1)
                             num_corr = 0
                         end
 
-                        @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15d, %15.2f, %15.2f\n",
+                        @printf(f, "%15s,%15.3f,%15d,%15d,%15d,%15d,%15.2f,%15.2f,%15.2f,%15.2f,%15.2f,%15.2f,%15d,%15d,%15.2f,%15.2f\n",
                             polyname, obj, n, halfdeg, G1, nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                             )
                     end # do
