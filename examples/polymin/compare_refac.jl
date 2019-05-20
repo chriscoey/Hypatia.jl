@@ -93,7 +93,7 @@ function setup_C_interp(
     F_fun::Function,
     inner_radius::Float64,
     outer_radius::Float64;
-    sample_factor::Int = 10,
+    # sample_factor::Int = 10,
     use_QR::Bool = true,
     )
     # generate interpolation
@@ -105,9 +105,9 @@ function setup_C_interp(
     @assert length(V_basis) == U
 
     # select some points from annulus domain
-    @assert sample_factor >= 2
+    # @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 2000
+    num_samples = 4000
     @show U
     cand_pts = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -146,7 +146,7 @@ function setup_R_interp(
     F_fun::Function,
     inner_radius::Float64,
     outer_radius::Float64;
-    sample_factor::Int = 10,
+    # sample_factor::Int = 10,
     use_QR::Bool = true,
     )
     # generate interpolation
@@ -159,9 +159,9 @@ function setup_R_interp(
     @assert length(V_basis) == U
 
     # select some points from annulus domain
-    @assert sample_factor >= 2
+    # @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 2500
+    num_samples = 4000
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
