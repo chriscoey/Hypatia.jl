@@ -18,8 +18,8 @@ TODO low priority
 - in dual formulation allow 1.0I as structured matrix
 =#
 
-import Pkg
-Pkg.activate(".") # run from hypatia main directory level
+# import Pkg
+# Pkg.activate(".") # run from hypatia main directory level
 
 using LinearAlgebra
 using SparseArrays
@@ -346,8 +346,8 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                         num_corr = TO.ncalls(Hypatia.to["corr alpha"])
                     end
 
-                    @printf(f, "%s,%f,%d,%d,%s,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
-                        modelname, obj, n, halfdeg, str_is_infty_nbhd, G1, nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
+                    @printf(f, "%s,%s,%s,%d,%d,%f,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
+                        str_is_complex, str_is_wsos, str_is_infty_nbhd, n, halfdeg, obj, G1, nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                         )
                 end # do
             end # nbhd
@@ -361,10 +361,11 @@ end
 if !isdir("timings")
     mkdir("timings")
 end
-open(joinpath("timings", "results.csv"), "w") do f
-    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-    "poly", "obj", "n", "halfdeg", "nhbd", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
-    "comb / iter",
+open(joinpath("timings", "results.csv"), "a") do f
+    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+        "number", "cone", "nhbd", "n", "halfdeg", "obj", "G dim", "nu", "interp t",
+        "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
+        "comb / iter",
     )
 end
 
@@ -375,16 +376,16 @@ speedtest(2, 2, 100)
 # full run
 # ns = [1,2,3,4,6,8,10]
 # halfdegs = [1,2,3,4,6,8,10,15,20,30]
-ns = [1,2,3,4]
-halfdegs = [1,2,3,4,6,8]
-maxU = 1000
-for n in ns, halfdeg in halfdegs
-    @show n, halfdeg
-    realU = binomial(2n + 2halfdeg, 2n)
-    if realU > maxU
-        println("skipping n=$n, d=$d, since real U=$realU")
-        continue
-    end
-
-    speedtest(n, halfdeg, maxU)
-end
+# ns = [1,2,3,4]
+# halfdegs = [1,2,3,4,6,8]
+# maxU = 1000
+# for n in ns, halfdeg in halfdegs
+#     @show n, halfdeg
+#     realU = binomial(2n + 2halfdeg, 2n)
+#     if realU > maxU
+#         println("skipping n=$n, d=$d, since real U=$realU")
+#         continue
+#     end
+#
+#     speedtest(n, halfdeg, maxU)
+# end
