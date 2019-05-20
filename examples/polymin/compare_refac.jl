@@ -18,8 +18,8 @@ TODO low priority
 - in dual formulation allow 1.0I as structured matrix
 =#
 
-# import Pkg
-# Pkg.activate(".") # run from hypatia main directory level
+import Pkg
+Pkg.activate(".") # run from hypatia main directory level
 
 using LinearAlgebra
 using SparseArrays
@@ -281,7 +281,7 @@ function build_psd_dual(dat)
             for i in 1:Lk, j in 1:i
                 scal = (i == j) ? -1.0 : -rt2
                 for u in 1:dat.U
-                    @inbounds Gk[l, u] = scal * Pk[u, i] * Pk[u, j])
+                    @inbounds Gk[l, u] = scal * Pk[u, i] * Pk[u, j]
                 end
                 l += 1
             end
@@ -310,36 +310,30 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
             str_is_wsos = is_wsos ? "w" : "p"
             model_fun = is_wsos ? build_wsos_dual : build_psd_dual
             d = model_fun(interp)
-            nu = sum(size(Pk, 2) for Pk in interp.P_data)
+            barpar = sum(size(Pk, 2) for Pk in interp.P_data)
+            (dim_cone, num_vars) = size(d.G)
 
             for is_infty_nbhd in [true]
                 str_is_infty_nbhd = is_infty_nbhd ? "i" : "h"
                 modelname = "$(str_is_complex)_$(str_is_wsos)_$(str_is_infty_nbhd)_$(n)_$(halfdeg)"
 
-                build_time = 0.0
-                obj = 0.0
-                # for _ in 1:2
-                    reset_timer!(Hypatia.to)
-                    println("building Hypatia internal model")
-                    build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
-                    stepper = SO.CombinedHSDStepper(model, infty_nbhd = is_infty_nbhd)
-                    solver = SO.HSDSolver(model, stepper = stepper,
-                        tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5,
-                        time_limit = 1800.0, max_iters = 250,)
-                    SO.solve(solver)
-                    pobj = SO.get_primal_obj(solver)
-                    dobj = SO.get_dual_obj(solver)
-                # end
+                reset_timer!(Hypatia.to)
+                println("building Hypatia internal model")
+                build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
+                stepper = SO.CombinedHSDStepper(model, infty_nbhd = is_infty_nbhd)
+                solver = SO.HSDSolver(model, stepper = stepper,
+                    tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5,
+                    time_limit = 1800.0, max_iters = 250,)
+                SO.solve(solver)
+                pobj = SO.get_primal_obj(solver)
+                dobj = SO.get_dual_obj(solver)
+                status = SO.get_status(solver)
 
                 open(joinpath("timings", modelname * ".txt"), "w") do f
                     print_timer(f, Hypatia.to)
                 end
 
                 open(joinpath("timings", "results.csv"), "a") do f
-                    # TODO save n, p, q
-                    # (p, n) = size(A)
-                    # q = length(h)
-                    (G1, G2) = size(d.G)
                     tt = TO.tottime(Hypatia.to) # total solving time (nanoseconds)
                     tts = tt / 1e9
                     tb = build_time
@@ -354,9 +348,12 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                         num_corr = TO.ncalls(Hypatia.to["corr alpha"])
                     end
 
-                    @printf(f, "%s,%s,%s,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
-                        str_is_complex, str_is_wsos, str_is_infty_nbhd, n, halfdeg, pobj, dobj, G1, G2,
-                        nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
+                    @printf(f, "%s,%s,%s,%d,%d,%d,%d,%d,%s,%f,%f,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f\n",
+                        str_is_complex, str_is_wsos, str_is_infty_nbhd,
+                        n, halfdeg, dim_cone, num_vars, barpar,
+                        status, pobj, dobj,
+                        num_iters, num_corr, aff_per_iter, comb_per_iter,
+                        ti, tb, tts, ta, tc, td
                         )
                 end # do
             end # nbhd
@@ -371,10 +368,12 @@ if !isdir("timings")
     mkdir("timings")
 end
 open(joinpath("timings", "results.csv"), "a") do f
-    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-        "number", "cone", "nhbd", "n", "halfdeg", "pobj", "dobj", "cone dim", "num vars", "nu", "interp t",
-        "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
-        "comb / iter",
+    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+        "RorC", "PorW", "HorI",
+        "n", "half_deg", "dim_cone", "num_vars", "bar_par",
+        "status", "p_obj", "d_obj",
+        "iters", "corr_steps", "avg_aff_ls", "avg_comb_ls",
+        "t_interp", "t_build", "t_solve", "frac_t_aff", "frac_t_comb", "frac_t_dir",
     )
 end
 
@@ -393,6 +392,6 @@ for n in ns, halfdeg in halfdegs
     try
         speedtest(n, halfdeg, maxU)
     catch e
-        print(e)
+        println(e)
     end
 end
