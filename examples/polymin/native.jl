@@ -251,7 +251,7 @@ function test_polymin(instance::Function; options, rseed::Int = 1, cumulative::B
             reset_timer!(Hypatia.to)
             build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
             stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
-            solver = SO.HSDSolver(model; options..., stepper = stepper)
+            solver = SO.HSDSolver(model; options..., stepper = stepper, time_limit = 1800.0)
             SO.solve(solver)
             obj = SO.get_primal_obj(solver)
         end

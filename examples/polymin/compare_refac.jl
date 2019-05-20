@@ -102,7 +102,9 @@ function setup_C_interp(
 
     # select some points from annulus domain
     @assert sample_factor >= 2
-    num_samples = sample_factor * U
+    # num_samples = sample_factor * U
+    num_samples = 5000
+    @show U
     cand_pts = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
 
@@ -154,7 +156,8 @@ function setup_R_interp(
 
     # select some points from annulus domain
     @assert sample_factor >= 2
-    num_samples = sample_factor * U
+    # num_samples = sample_factor * U
+    num_samples = 5000
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -301,7 +304,12 @@ function speedtest(; rseed::Int = 1)
         end
     end
 
-    for n in [2, 3], halfdeg in [2]
+    for n in 1:10, halfdeg in 2:10
+        @show n, halfdeg
+        if binomial(2n + 2 * halfdeg, 2n) > 5000
+            println("nope n=$n and d=$d shouldn't run")
+            continue
+        end
         (F_coef, F_fun) = rand_obj(n, halfdeg - 1)
         for num_type in ["r", "c"]
             use_real = (num_type == "r")
@@ -329,7 +337,7 @@ function speedtest(; rseed::Int = 1)
                         println("building model")
                         build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
                         stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
-                        solver = SO.HSDSolver(model, stepper = stepper)
+                        solver = SO.HSDSolver(model, stepper = stepper, time_limit = 1800.0, tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5)
                         SO.solve(solver)
                         obj = SO.get_primal_obj(solver)
                     end
