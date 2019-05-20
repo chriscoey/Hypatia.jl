@@ -161,7 +161,7 @@ function setup_R_interp(
     # select some points from annulus domain
     @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 2000
+    num_samples = 2500
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -251,15 +251,19 @@ function build_psd_dual(dat)
             Gk = Matrix{Float64}(undef, dk, dat.U)
             l = 1
             for i in 1:Lk, j in 1:i
-                PiPj = [conj(Pk[u, i]) * Pk[u, j] for u in 1:dat.U]
                 if i == j
-                    @. Gk[l, :] = -real(PiPj)
-                else
-                    @. Gk[l, :] = -rt2 * real(PiPj)
+                    for u in 1:dat.U
+                        @inbounds Gk[l, u] = -real(conj(Pk[u, i]) * Pk[u, j])
+                    end
                     l += 1
-                    @. Gk[l, :] = -rt2 * imag(PiPj)
+                else
+                    for u in 1:dat.U
+                        Pkuij = -rt2 * conj(Pk[u, i]) * Pk[u, j]
+                        @inbounds Gk[l, u] = real(Pkuij)
+                        @inbounds Gk[l + 1, u] = imag(Pkuij)
+                    end
+                    l += 2
                 end
-                l += 1
             end
             push!(Gs, Gk)
             rowidx += dk
@@ -275,11 +279,9 @@ function build_psd_dual(dat)
             Gk = Matrix{Float64}(undef, dk, dat.U)
             l = 1
             for i in 1:Lk, j in 1:i
-                PiPj = [Pk[u, i] * Pk[u, j] for u in 1:dat.U]
-                if i == j
-                    @. Gk[l, :] = -PiPj
-                else
-                    @. Gk[l, :] = -rt2 * PiPj
+                scal = (i == j) ? -1.0 : -rt2
+                for u in 1:dat.U
+                    @inbounds Gk[l, u] = scal * Pk[u, i] * Pk[u, j])
                 end
                 l += 1
             end
