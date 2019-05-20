@@ -107,7 +107,7 @@ function setup_C_interp(
     # select some points from annulus domain
     @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 1500
+    num_samples = 2000
     @show U
     cand_pts = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -161,7 +161,7 @@ function setup_R_interp(
     # select some points from annulus domain
     @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 1500
+    num_samples = 2000
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -319,7 +319,10 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                     solver = SO.HSDSolver(model, stepper = stepper,
                         tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5,
                         time_limit = 1800.0, max_iters = 250,)
-                    SO.solve(solver)
+                    try
+                        SO.solve(solver)
+                    catch
+                    end
                     obj = SO.get_primal_obj(solver)
                 # end
 
@@ -374,18 +377,18 @@ end
 speedtest(2, 2, 100)
 
 # full run
-# ns = [1,2,3,4,6,8,10]
-# halfdegs = [1,2,3,4,6,8,10,15,20,30]
-# ns = [1,2,3,4]
-# halfdegs = [1,2,3,4,6,8]
-# maxU = 1000
-# for n in ns, halfdeg in halfdegs
-#     @show n, halfdeg
-#     realU = binomial(2n + 2halfdeg, 2n)
-#     if realU > maxU
-#         println("skipping n=$n, d=$d, since real U=$realU")
-#         continue
-#     end
-#
-#     speedtest(n, halfdeg, maxU)
-# end
+ns = [1,2,3,4,6,8,10]
+halfdegs = [1,2,3,4,6,8,10,15,20,30]
+ns = [1,2,3,4]
+halfdegs = [1,2,3,4,6,8]
+maxU = 2000
+for n in ns, halfdeg in halfdegs
+    @show n, halfdeg
+    realU = binomial(2n + 2halfdeg, 2n)
+    if realU > maxU
+        println("skipping n=$n, halfdeg=$halfdeg, since real U=$realU")
+        continue
+    end
+
+    speedtest(n, halfdeg, maxU)
+end
