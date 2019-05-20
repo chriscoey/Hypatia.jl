@@ -296,6 +296,11 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
     (F_coef, F_fun) = rand_obj(n, halfdeg - 1)
     for is_complex in [true, false]
         str_is_complex = is_complex ? "c" : "r"
+        num_vars = is_complex ? binomial(2n + 2halfdeg, 2n) : binomial(n + 2halfdeg, n)
+        if num_vars > maxU
+            println("skipping n=$n, halfdeg=$halfdeg, since num_vars=$num_vars")
+            continue
+        end
         interp_fun = is_complex ? setup_C_interp : setup_R_interp
         ti = @elapsed interp = interp_fun(n, halfdeg, F_fun, 0.8, 1.2)
 
@@ -305,7 +310,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
             d = model_fun(interp)
             nu = sum(size(Pk, 2) for Pk in interp.P_data)
 
-            for is_infty_nbhd in [true, false]
+            for is_infty_nbhd in [true]
                 str_is_infty_nbhd = is_infty_nbhd ? "i" : "h"
                 modelname = "$(str_is_complex)_$(str_is_wsos)_$(str_is_infty_nbhd)_$(n)_$(halfdeg)"
 
@@ -319,11 +324,9 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                     solver = SO.HSDSolver(model, stepper = stepper,
                         tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5,
                         time_limit = 1800.0, max_iters = 250,)
-                    try
-                        SO.solve(solver)
-                    catch
-                    end
-                    obj = SO.get_primal_obj(solver)
+                    SO.solve(solver)
+                    pobj = SO.get_primal_obj(solver)
+                    dobj = SO.get_dual_obj(solver)
                 # end
 
                 open(joinpath("timings", modelname * ".txt"), "w") do f
@@ -349,8 +352,9 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
                         num_corr = TO.ncalls(Hypatia.to["corr alpha"])
                     end
 
-                    @printf(f, "%s,%s,%s,%d,%d,%f,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
-                        str_is_complex, str_is_wsos, str_is_infty_nbhd, n, halfdeg, obj, G1, nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
+                    @printf(f, "%s,%s,%s,%d,%d,%f,%f,%d,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
+                        str_is_complex, str_is_wsos, str_is_infty_nbhd, n, halfdeg, pobj, dobj, G1, num_vars,
+                        nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
                         )
                 end # do
             end # nbhd
@@ -365,8 +369,8 @@ if !isdir("timings")
     mkdir("timings")
 end
 open(joinpath("timings", "results.csv"), "a") do f
-    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-        "number", "cone", "nhbd", "n", "halfdeg", "obj", "G dim", "nu", "interp t",
+    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+        "number", "cone", "nhbd", "n", "halfdeg", "pobj", "dobj", "cone dim", "num vars", "nu", "interp t",
         "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
         "comb / iter",
     )
@@ -384,11 +388,9 @@ halfdegs = [1,2,3,4,6,8]
 maxU = 2000
 for n in ns, halfdeg in halfdegs
     @show n, halfdeg
-    realU = binomial(2n + 2halfdeg, 2n)
-    if realU > maxU
-        println("skipping n=$n, halfdeg=$halfdeg, since real U=$realU")
-        continue
+    try
+        speedtest(n, halfdeg, maxU)
+    catch e
+        print(e)
     end
-
-    speedtest(n, halfdeg, maxU)
 end
