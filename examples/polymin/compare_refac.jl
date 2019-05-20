@@ -18,6 +18,9 @@ TODO low priority
 - in dual formulation allow 1.0I as structured matrix
 =#
 
+import Pkg
+Pkg.activate(".") # run from hypatia main directory level
+
 using LinearAlgebra
 using SparseArrays
 import Combinatorics
@@ -26,6 +29,7 @@ import Distributions
 using Test
 using Printf
 using TimerOutputs
+const TO = TimerOutputs
 import Hypatia
 const HYP = Hypatia
 const CO = HYP.Cones
@@ -103,7 +107,7 @@ function setup_C_interp(
     # select some points from annulus domain
     @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 5000
+    num_samples = 1500
     @show U
     cand_pts = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -157,7 +161,7 @@ function setup_R_interp(
     # select some points from annulus domain
     @assert sample_factor >= 2
     # num_samples = sample_factor * U
-    num_samples = 5000
+    num_samples = 1500
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
@@ -228,7 +232,6 @@ function build_wsos_dual(dat; elim::Bool = false)
     return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs)
 end
 
-# TODO can just use P'*diag(x)*P in PSDCone constraints, where Ps come from data above
 function build_psd_dual(dat)
     c = dat.F_interp
     A = ones(1, dat.U)
@@ -289,90 +292,99 @@ function build_psd_dual(dat)
     return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs)
 end
 
-function speedtest(; rseed::Int = 1)
-    Random.seed!(rseed)
-    if !isdir("timings")
-        mkdir("timings")
-    end
+function speedtest(n::Int, halfdeg::Int, maxU::Int; rseed::Int = 1)
+    (F_coef, F_fun) = rand_obj(n, halfdeg - 1)
+    for is_complex in [true, false]
+        str_is_complex = is_complex ? "c" : "r"
+        interp_fun = is_complex ? setup_C_interp : setup_R_interp
+        ti = @elapsed interp = interp_fun(n, halfdeg, F_fun, 0.8, 1.2)
 
-    for nbhd in ["infty", "hess"]
-        open(joinpath("timings", "polyannulus_" * nbhd * ".csv"), "a") do f
-            @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-            "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
-            "comb / iter",
-            )
-        end
-    end
+        for is_wsos in [true, false]
+            str_is_wsos = is_wsos ? "w" : "p"
+            model_fun = is_wsos ? build_wsos_dual : build_psd_dual
+            d = model_fun(interp)
+            nu = sum(size(Pk, 2) for Pk in interp.P_data)
 
-    for n in 1:10, halfdeg in 2:10
-        @show n, halfdeg
-        if binomial(2n + 2 * halfdeg, 2n) > 5000
-            println("nope n=$n and d=$d shouldn't run")
-            continue
-        end
-        (F_coef, F_fun) = rand_obj(n, halfdeg - 1)
-        for num_type in ["r", "c"]
-            use_real = (num_type == "r")
-            if use_real
-                ti = @elapsed interp = setup_R_interp(n, halfdeg, F_fun, 0.5, 1.5)
-            else
-                ti = @elapsed interp = setup_C_interp(n, halfdeg, F_fun, 0.5, 1.5)
-            end
+            for is_infty_nbhd in [true, false]
+                str_is_infty_nbhd = is_infty_nbhd ? "i" : "h"
+                modelname = "$(str_is_complex)_$(str_is_wsos)_$(str_is_infty_nbhd)_$(n)_$(halfdeg)"
 
-            for cone_type in ["w", "p"]
-                use_wsos = (cone_type == "w")
-                if use_wsos
-                    d = build_wsos_dual(interp)
-                else
-                    d = build_psd_dual(interp)
+                build_time = 0.0
+                obj = 0.0
+                # for _ in 1:2
+                    reset_timer!(Hypatia.to)
+                    println("building Hypatia internal model")
+                    build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
+                    stepper = SO.CombinedHSDStepper(model, infty_nbhd = is_infty_nbhd)
+                    solver = SO.HSDSolver(model, stepper = stepper,
+                        tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5,
+                        time_limit = 1800.0, max_iters = 250,)
+                    SO.solve(solver)
+                    obj = SO.get_primal_obj(solver)
+                # end
+
+                open(joinpath("timings", modelname * ".txt"), "w") do f
+                    print_timer(f, Hypatia.to)
                 end
-                nu = sum(size(Pk, 2) for Pk in interp.P_data)
 
-                for nbhd in ["infty", "hess"]
-                    infty_nbhd = (nbhd == "infty")
-                    build_time = 0.0
-                    obj = 0.0
-                    for _ in 1:2
-                        reset_timer!(Hypatia.to)
-                        println("building model")
-                        build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
-                        stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
-                        solver = SO.HSDSolver(model, stepper = stepper, time_limit = 1800.0, tol_rel_opt = 1e-5, tol_abs_opt = 1e-5, tol_feas = 1e-5)
-                        SO.solve(solver)
-                        obj = SO.get_primal_obj(solver)
+                open(joinpath("timings", "results.csv"), "a") do f
+                    # TODO save n, p, q
+                    # (p, n) = size(A)
+                    # q = length(h)
+                    G1 = size(d.G, 1)
+                    tt = TO.tottime(Hypatia.to) # total solving time (nanoseconds)
+                    tts = tt / 1e6
+                    tb = build_time
+                    ta = TO.time(Hypatia.to["aff alpha"]) / tt # % of time in affine alpha
+                    tc = TO.time(Hypatia.to["comb alpha"]) / tt # % of time in comb alpha
+                    td = TO.time(Hypatia.to["directions"]) / tt # % of time calculating directions
+                    num_iters = TO.ncalls(Hypatia.to["directions"])
+                    aff_per_iter = TO.ncalls(Hypatia.to["aff alpha"]["linstep"]) / num_iters
+                    comb_per_iter = TO.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
+                    num_corr = 0
+                    if haskey(Hypatia.to.inner_timers, "corr alpha")
+                        num_corr = TO.ncalls(Hypatia.to["corr alpha"])
                     end
-                    polyname = "$(cone_type)_$(num_type)_$(n)_$(halfdeg)"
 
-                    open(joinpath("timings", polyname * nbhd * ".txt"), "w") do f
-                        print_timer(f, Hypatia.to)
-                    end
-
-                    open(joinpath("timings", "polyannulus_" * nbhd * ".csv"), "a") do f
-                        G1 = size(d.G, 1)
-                        tt = TimerOutputs.tottime(Hypatia.to) # total solving time (nanoseconds)
-                        tts = tt / 1e6
-                        tb = build_time
-                        ta = TimerOutputs.time(Hypatia.to["aff alpha"]) / tt # % of time in affine alpha
-                        tc = TimerOutputs.time(Hypatia.to["comb alpha"]) / tt # % of time in comb alpha
-                        td = TimerOutputs.time(Hypatia.to["directions"]) / tt # % of time calculating directions
-                        num_iters = TimerOutputs.ncalls(Hypatia.to["directions"])
-                        aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]["linstep"]) / num_iters
-                        comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
-
-                        if "corr alpha" in keys(Hypatia.to.inner_timers)
-                            num_corr = TimerOutputs.ncalls(Hypatia.to["corr alpha"])
-                        else
-                            num_corr = 0
-                        end
-
-                        @printf(f, "%s,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
-                            polyname, obj, n, halfdeg, G1, nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
-                            )
-                    end # do
-                end # nbhd
-            end # cone type
-        end # numtype
-    end # n halfdeg
+                    @printf(f, "%s,%f,%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%f,%f\n",
+                        modelname, obj, n, halfdeg, G1, nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
+                        )
+                end # do
+            end # nbhd
+        end # cone type
+    end # numtype
 
     return
+end
+
+
+if !isdir("timings")
+    mkdir("timings")
+end
+open(joinpath("timings", "results.csv"), "w") do f
+    @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+    "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
+    "comb / iter",
+    )
+end
+
+
+# compile run
+speedtest(2, 2, 100)
+
+# full run
+# ns = [1,2,3,4,6,8,10]
+# halfdegs = [1,2,3,4,6,8,10,15,20,30]
+ns = [1,2,3,4]
+halfdegs = [1,2,3,4,6,8]
+maxU = 1000
+for n in ns, halfdeg in halfdegs
+    @show n, halfdeg
+    realU = binomial(2n + 2halfdeg, 2n)
+    if realU > maxU
+        println("skipping n=$n, d=$d, since real U=$realU")
+        continue
+    end
+
+    speedtest(n, halfdeg, maxU)
 end
