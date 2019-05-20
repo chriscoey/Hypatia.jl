@@ -114,6 +114,10 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
         @timeit Hypatia.to "ldiv" ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
         @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
 
+        # lambda_i = inv(ΛFk)
+        # mul!(LUk, lambda_i, Ps[k]')
+        # mul!(UU, Ps[k], LUk)
+
         @timeit Hypatia.to "gH" begin
         @inbounds for j in eachindex(g)
             g[j] -= real(UU[j, j])
