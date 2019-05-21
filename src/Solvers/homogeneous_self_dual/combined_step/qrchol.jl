@@ -93,6 +93,8 @@ mutable struct QRCholCombinedHSDSystemSolver <: CombinedHSDSystemSolver
         system_solver.GHGQ1x = Matrix{Float64}(undef, n, 3)
         system_solver.Q2div = Matrix{Float64}(undef, nmp, 3)
         system_solver.GQ2 = model.G * model.Ap_Q2
+        # @show typeof(model.G)
+        # @show typeof(system_solver.GQ2)
         system_solver.HGQ2 = Matrix{Float64}(undef, q, nmp)
         system_solver.Q2GHGQ2 = Matrix{Float64}(undef, nmp, nmp)
         system_solver.Q2x = similar(system_solver.Q1x)
@@ -209,7 +211,7 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
                 prod_k[k] ./= mu
             else
                 # mul!(prod_k[k], Cones.hess(cone_k), arr_k[k])
-                Cones.hess_prod!(prod_k[k], arr_k[k], cone_k)
+                @timeit Hypatia.to "hess k prod" Cones.hess_prod!(prod_k[k], arr_k[k], cone_k)
                 prod_k[k] .*= mu
             end
         end
@@ -235,26 +237,38 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
 
     @timeit Hypatia.to "middle" begin
     if !iszero(size(Q2div, 1))
-        @timeit Hypatia.to "mat" begin
-        block_hessian_product!(HGQ2_k, GQ2_k)
-        mul!(Q2GHGQ2, GQ2', HGQ2)
+        if issparse(GQ2)
+            @timeit Hypatia.to "mul manual" begin
+            H = cones[1].H
+            @. Q2GHGQ2 = mu * (H[1, 1] + H[2:end, 2:end] - H[1:1, 2:end] - H[1:1, 2:end]')
+            # for j in 2:size(H, 2), i in 2:j
+            #     @inbounds Q2GHGQ2[i-1, j-1] = mu * (H[1, 1] - H[i, 1] - H[1, j] + H[i, j])
+            # end
+
+            # @. Q2GHGQ2 = H[1, 1] - H[2:end, 1:1] - H[1:1, 2:end] + H[2:end, 2:end]
+            # Q2GHGQ2 .*= mu
+            end
+        else
+            @timeit Hypatia.to "block prod" block_hessian_product!(HGQ2_k, GQ2_k)
+            @timeit Hypatia.to "mul!" mul!(Q2GHGQ2, GQ2', HGQ2)
         end
 
         # TODO prealloc cholesky auxiliary vectors using posvx
         # TODO use old sysvx code
         # @timeit Hypatia.to "bk" F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
         # if !issuccess(F)
-        @timeit Hypatia.to "chol" F = cholesky!(Symmetric(Q2GHGQ2), Val(true), check = false)
+        @timeit Hypatia.to "chol" F = cholesky!(Symmetric(Q2GHGQ2, :U), Val(true), check = false)
         if !isposdef(F)
-            # @timeit Hypatia.to "recover" begin
+            @timeit Hypatia.to "recover" begin
             println("linear system matrix factorization failed")
+            solver.slow_prev = true
             mul!(Q2GHGQ2, GQ2', HGQ2)
             Q2GHGQ2 += 1e-4I
             F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
+            end # recover
             if !issuccess(F)
                 error("could not fix failure of positive definiteness (mu is $mu); terminating")
             end
-            # end # recover
         end
         @timeit Hypatia.to "ldiv" begin # cheap
         ldiv!(F, Q2div)
