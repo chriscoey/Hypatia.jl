@@ -22,7 +22,7 @@ mutable struct CombinedHSDStepper <: HSDStepper
     function CombinedHSDStepper(
         model::Models.LinearModel;
         system_solver::CombinedHSDSystemSolver = (model isa Models.PreprocessedLinearModel ? QRCholCombinedHSDSystemSolver(model) : NaiveCombinedHSDSystemSolver(model)),
-        max_nbhd::Float64 = 0.75,
+        max_nbhd::Float64 = 0.5,
         infty_nbhd::Bool = false,
         )
         stepper = new()
@@ -261,8 +261,7 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                         @timeit Hypatia.to "update_z" stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
 
                         if stepper.infty_nbhd
-                            gradnorm = norm(Cones.grad(cone_k), Inf)
-                            nbhd_sqr_k = abs2(norm(stepper.dual_views[k], Inf) ./ gradnorm)
+                            nbhd_sqr_k = abs2(norm(stepper.dual_views[k], Inf) / norm(Cones.grad(cone_k), Inf))
                             full_nbhd_sqr = max(nbhd_sqr_k, full_nbhd_sqr)
                         else
                             @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
@@ -277,25 +276,22 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                             # open("nhood.csv", "a") do f
                             #     println(f, "$full_nbhd_sqr, $cheap")
                             # end
-
                         end
 
                         if full_nbhd_sqr > abs2(mu_temp * nbhd)
                             in_nbhds = false
                             break
                         end
-
                     end # cones
+
                     if in_nbhds
                         break
                     end
                 end # alternative condition
-
-
             end # in cones
         end
 
-        if alpha < 1e-3
+        if alpha < 1e-2
             # alpha is very small so just let it be zero
             alpha = 0.0
             break

@@ -76,7 +76,7 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
     ΛFs = cone.ΛFs
     D = Diagonal(cone.point)
 
-    @timeit Hypatia.to "buildlam" begin
+    # @timeit Hypatia.to "buildlam" begin
 
     for k in eachindex(Ps) # TODO can be done in parallel
         # Λ = Pk' * Diagonal(point) * Pk
@@ -99,21 +99,33 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
         ΛFs[k] = ΛFk
     end
 
-    end # incone check
-    @timeit Hypatia.to "gradhess" begin
+    # end # incone check
+    # @timeit Hypatia.to "gradhess" begin
 
     g = cone.g
     H = cone.H
     @. g = 0.0
     @. H = 0.0
+    UUd = view(UU, diagind(UU))
 
     for k in eachindex(Ps) # TODO can be done in parallel, but need multiple tmp3s
         LUk = LUs[k]
         ΛFk = ΛFs[k]
-        ULk = ULs[k]
-        # @timeit Hypatia.to "view" LUk .= view(Ps[k]', ΛFk.p, :)
-        # @timeit Hypatia.to "ldiv" ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
-        # @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
+        @timeit Hypatia.to "view" LUk .= view(Ps[k]', ΛFk.p, :)
+        @timeit Hypatia.to "ldiv" ldiv!(LowerTriangular(ΛFk.L), LUk) # TODO check calls best triangular solve
+        @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
+
+
+
+        # LUk = LUs[k]
+        # ΛFk = ΛFs[k]
+        # ULk = ULs[k]
+        # # @timeit Hypatia.to "view"
+        # LUk .= view(Ps[k]', ΛFk.p, :)
+        # # @timeit Hypatia.to "ldiv"
+        # ldiv!(LowerTriangular(ΛFk.L), LUk) # TODO check calls best triangular solve
+        # # @timeit Hypatia.to "AtA"
+        # _AtA!(UU, LUk)
 
         # LAPACK.trtri!('U', 'N', ΛFk.factors)
         # ULk .= view(Ps[k], :, ΛFk.p)
@@ -121,26 +133,29 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
         # ULk = ULk * UpperTriangular(ΛFk.factors)
         # UU = ULk * ULk'
 
-        U_i = inv(ΛFk.U)
-        # LAPACK.trtri!('U', 'N', ΛFk.factors)
-        ULk .= view(Ps[k], :, ΛFk.p)
-        ULk = ULk * U_i
-        UU = ULk * ULk'
+        # U_i = inv(ΛFk.U)
+        # # LAPACK.trtri!('U', 'N', ΛFk.factors)
+        # ULk .= view(Ps[k], :, ΛFk.p)
+        # ULk = ULk * U_i
+        # UU = ULk * ULk'
 
         # lambda_i = inv(ΛFk)
         # mul!(LUk, lambda_i, Ps[k]')
         # mul!(UU, Ps[k], LUk)
 
         @timeit Hypatia.to "gH" begin
+        # g .-= UUd
+        # @. H += abs2(UU)
+
         for j in eachindex(g)
             @inbounds g[j] -= real(UU[j, j])
             for i in 1:j
-                @inbounds H[i, j] += abs2(UU[i, j])
+                @inbounds H[j, i] = H[i, j] += abs2(UU[i, j])
             end
         end
         end
     end
-    end # timeit gradhess
+    # end # timeit gradhess
     # @assert -dot(cone.point, cone.g) ≈ get_nu(cone) atol=1e-3 rtol=1e-3
     # if norm(Symmetric(cone.H, :U) * cone.point + cone.g) > 1e-3
     #     @show Symmetric(cone.H, :U) * cone.point + cone.g
