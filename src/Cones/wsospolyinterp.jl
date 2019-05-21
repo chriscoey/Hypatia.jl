@@ -110,9 +110,26 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
     for k in eachindex(Ps) # TODO can be done in parallel, but need multiple tmp3s
         LUk = LUs[k]
         ΛFk = ΛFs[k]
-        @timeit Hypatia.to "view" LUk .= view(Ps[k]', ΛFk.p, :)
-        @timeit Hypatia.to "ldiv" ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
-        @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
+        ULk = ULs[k]
+        # @timeit Hypatia.to "view" LUk .= view(Ps[k]', ΛFk.p, :)
+        # @timeit Hypatia.to "ldiv" ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
+        # @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
+
+        # LAPACK.trtri!('U', 'N', ΛFk.factors)
+        # ULk .= view(Ps[k], :, ΛFk.p)
+        # BLAS.trmm!('R', 'U', 'N', 'N', 1.0, ΛFk.factors, ULk)
+        # ULk = ULk * UpperTriangular(ΛFk.factors)
+        # UU = ULk * ULk'
+
+        U_i = inv(ΛFk.U)
+        # LAPACK.trtri!('U', 'N', ΛFk.factors)
+        ULk .= view(Ps[k], :, ΛFk.p)
+        ULk = ULk * U_i
+        UU = ULk * ULk'
+
+        # lambda_i = inv(ΛFk)
+        # mul!(LUk, lambda_i, Ps[k]')
+        # mul!(UU, Ps[k], LUk)
 
         @timeit Hypatia.to "gH" begin
         for j in eachindex(g)
