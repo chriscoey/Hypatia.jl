@@ -438,7 +438,7 @@ end
 # specify sizes to run
 
 ns = [1,2,3,4,5,6,8,10,12,14,16,18,20]
-halfdegs = ns
+halfdegs = [2,3,4,5,6,8,10,12,14]
 # ns = [1,2,3,4]
 # halfdegs = [1,2,3,4,6,8]
 # ns = [10, 12]

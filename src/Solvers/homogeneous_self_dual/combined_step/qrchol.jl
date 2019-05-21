@@ -252,7 +252,7 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
             @timeit Hypatia.to "block prod" block_hessian_product!(HGQ2_k, GQ2_k)
             @timeit Hypatia.to "mul!" mul!(Q2GHGQ2, GQ2', HGQ2)
         end
-        
+
         # TODO prealloc cholesky auxiliary vectors using posvx
         # TODO use old sysvx code
         # @timeit Hypatia.to "bk" F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
@@ -261,6 +261,7 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
         if !isposdef(F)
             @timeit Hypatia.to "recover" begin
             println("linear system matrix factorization failed")
+            solver.slow_prev = true
             mul!(Q2GHGQ2, GQ2', HGQ2)
             Q2GHGQ2 += 1e-4I
             F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
