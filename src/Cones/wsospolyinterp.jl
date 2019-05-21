@@ -106,7 +106,8 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
     H = cone.H
     @. g = 0.0
     @. H = 0.0
-    UUd = view(UU, diagind(UU))
+    # UUd = view(UU, diagind(UU))
+    # UUH = Hermitian(UU, :U)
 
     for k in eachindex(Ps) # TODO can be done in parallel, but need multiple tmp3s
         LUk = LUs[k]
@@ -114,8 +115,6 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
         @timeit Hypatia.to "view" LUk .= view(Ps[k]', ΛFk.p, :)
         @timeit Hypatia.to "ldiv" ldiv!(LowerTriangular(ΛFk.L), LUk) # TODO check calls best triangular solve
         @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
-
-
 
         # LUk = LUs[k]
         # ΛFk = ΛFs[k]
@@ -143,14 +142,14 @@ function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
         # mul!(LUk, lambda_i, Ps[k]')
         # mul!(UU, Ps[k], LUk)
 
-        @timeit Hypatia.to "gH" begin
-        # g .-= UUd
-        # @. H += abs2(UU)
+        # @timeit Hypatia.to "g" @. g -= real(UUd)
+        # @timeit Hypatia.to "H" @. H += abs2(UU)
 
+        @timeit Hypatia.to "gH" begin
         for j in eachindex(g)
             @inbounds g[j] -= real(UU[j, j])
-            for i in 1:j
-                @inbounds H[j, i] = H[i, j] += abs2(UU[i, j])
+            @simd for i in 1:j
+                @inbounds H[i, j] += abs2(UU[i, j])
             end
         end
         end

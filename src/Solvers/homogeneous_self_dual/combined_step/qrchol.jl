@@ -242,9 +242,9 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
         # @timeit Hypatia.to "mul manual" Q2GHGQ2 .= mu * GQ2' * Symmetric(cones[1].H, :U) * GQ2
         @timeit Hypatia.to "mul manual" begin
         H = cones[1].H
-        @. Q2GHGQ2 = mu * (H[1, 1] + H[2:end, 2:end] - H[1:1, 2:end] - H[2:end, 1:1])
+        @. Q2GHGQ2 = mu * (H[1, 1] + H[2:end, 2:end] - H[1:1, 2:end] - H[1:1, 2:end]')
         # for j in 2:size(H, 2), i in 2:j
-        #     @. @inbounds Q2GHGQ2[i-1, j-1] = mu * (H[1, 1] - H[i, 1] - H[1, j] + H[i, j])
+        #     @inbounds Q2GHGQ2[i-1, j-1] = mu * (H[1, 1] - H[i, 1] - H[1, j] + H[i, j])
         # end
 
         # @. Q2GHGQ2 = H[1, 1] - H[2:end, 1:1] - H[1:1, 2:end] + H[2:end, 2:end]
