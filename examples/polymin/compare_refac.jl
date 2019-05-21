@@ -384,10 +384,10 @@ open(joinpath("timings", "results.csv"), "w") do f
 end
 
 # full run
-ns = [1,2,3,4,6,8,10]
-halfdegs = [1,2,3,4,6,8,10,15,20]
-# ns = [1,2,3,4]
-# halfdegs = [1,2,3,4,6,8]
+#ns = [1,2,3,4,6,8,10]
+#halfdegs = [1,2,3,4,6,8,10,15,20]
+ns = [10, 12, 14, 16, 18, 20]
+halfdegs = [1,2,]
 maxU = 5000
 
 @show ns
