@@ -182,13 +182,14 @@ function setup_R_interp(
     U = binomial(2n + 2d, 2n)
     L_exps = [a for t in 0:d for a in Combinatorics.multiexponents(2n, t)]
     @assert length(L_exps) == L
-    V_basis = [z -> mon_pow(z, a) for t in 0:2d for a in Combinatorics.multiexponents(2n, t)]
-    @assert length(V_basis) == U
 
     # select some points from annulus domain
+    V_basis = [z -> mon_pow(z, a) for t in 0:2d for a in Combinatorics.multiexponents(2n, t)]
+    @assert length(V_basis) == U
     cand_pts_complex = sample_in_annulus(num_samples, n, inner_radius, outer_radius)
     cand_pts = [vcat(real(z), imag(z)) for z in cand_pts_complex]
     (pts, V) = select_subset_pts(U, V_basis, cand_pts)
+    P0 = V[:, 1:L]
 
     # setup objective data
     F_interp = [F_fun(complex.(p[1:n], p[n+1:2n])) for p in pts]
@@ -197,7 +198,6 @@ function setup_R_interp(
     # setup WSOS constraint data
     # TODO try instead getting points from box and then transforming only for the g_i
     # TODO compare single squared constraint vs two bound constraints (changes size of P_g too)
-    P0 = V[:, 1:L]
     if use_QR
         P0 = Matrix(qr(P0).Q)
     end
@@ -227,16 +227,16 @@ function setup_R_interp(
     return (U=U, F_interp=F_interp, P_data=P_data, min_sample_value=min_sample_value)
 end
 
-function build_wsos_primal(dat)
-    c = [-1.0]
-    A = zeros(0, 1)
-    b = Float64[]
-    G = ones(dat.U, 1)
-    h = dat.F_interp
-    cones = [CO.WSOSPolyInterp(dat.U, dat.P_data, false)]
-    cone_idxs = [1:dat.U]
-    return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs)
-end
+# function build_wsos_primal(dat)
+#     c = [-1.0]
+#     A = zeros(0, 1)
+#     b = Float64[]
+#     G = ones(dat.U, 1)
+#     h = dat.F_interp
+#     cones = [CO.WSOSPolyInterp(dat.U, dat.P_data, false)]
+#     cone_idxs = [1:dat.U]
+#     return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs)
+# end
 
 function build_wsos_dual(dat; elim::Bool = true)
     if elim
@@ -244,6 +244,7 @@ function build_wsos_dual(dat; elim::Bool = true)
         # x₁ = 1 - x₂ - ... - xᵤ
         # TODO handle constant term in obj
         @show dat.F_interp[1] # constant
+        obj_const = dat.F_interp[1]
         n = dat.U - 1
         c = dat.F_interp[2:end] .- dat.F_interp[1]
         A = zeros(0, n)
@@ -254,6 +255,7 @@ function build_wsos_dual(dat; elim::Bool = true)
         G = sparse(GI, GJ, GV, dat.U, n)
         h = zeros(dat.U); h[1] = 1.0
     else
+        obj_const = 0.0
         c = dat.F_interp
         A = ones(1, dat.U)
         b = [1.0]
@@ -262,7 +264,7 @@ function build_wsos_dual(dat; elim::Bool = true)
     end
     cones = [CO.WSOSPolyInterp(dat.U, dat.P_data, true)]
     cone_idxs = [1:dat.U]
-    return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs)
+    return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs, obj_const=obj_const)
 end
 
 function build_psd_dual(dat)
@@ -324,7 +326,7 @@ function build_psd_dual(dat)
     end
     G = vcat(Gs...)
     h = zeros(size(G, 1))
-    return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs)
+    return (c=c, A=A, b=b, G=G, h=h, cones=cones, cone_idxs=cone_idxs, obj_const=0.0)
 end
 
 
@@ -339,7 +341,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
     min_sample_value = Inf
     obj_vals = Float64[]
 
-    for is_complex in [true]#[true, false]
+    for is_complex in [true, false]
         str_is_complex = is_complex ? "c" : "r"
         println("running $str_is_complex")
 
@@ -355,7 +357,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
         min_sample_value = min(min_sample_value, interp.min_sample_value)
         println("finished interpolation, took $ti seconds")
 
-        for is_wsos in [true]#[true, false]
+        for is_wsos in [true, false]
             str_is_wsos = is_wsos ? "w" : "p"
             println("running $str_is_wsos")
 
@@ -389,9 +391,9 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
                 ts = @elapsed SO.solve(solver)
                 println("finished solve, took $ts seconds")
 
-                pobj = SO.get_primal_obj(solver)
+                pobj = SO.get_primal_obj(solver) + d.obj_const
                 push!(obj_vals, pobj)
-                dobj = SO.get_dual_obj(solver)
+                dobj = SO.get_dual_obj(solver) + d.obj_const
                 status = SO.get_status(solver)
                 num_iters = SO.get_num_iters(solver)
 
@@ -435,17 +437,17 @@ end
 ####
 # specify sizes to run
 
-# ns = [1,2,3,4,6,8,10]
-# halfdegs = [1,2,3,4,6,8,10,15,20]
+ns = [1,2,3,4,5,6,8,10,12,14,16,18,20]
+halfdegs = ns
 # ns = [1,2,3,4]
 # halfdegs = [1,2,3,4,6,8]
 # ns = [10, 12]
 # halfdegs = [1, 2]
-ns = [1,2,3,4,5]
-halfdegs = [3,4,5]
+# ns = [1,2,3,4,5]
+# halfdegs = [3,4,5]
 
-maxU = 2500
-# maxU = 7500
+# maxU = 2500
+maxU = 7500
 
 num_samples = 8000
 

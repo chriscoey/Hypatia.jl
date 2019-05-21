@@ -237,20 +237,22 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
 
     @timeit Hypatia.to "middle" begin
     if !iszero(size(Q2div, 1))
-        # @timeit Hypatia.to "block prod" block_hessian_product!(HGQ2_k, GQ2_k)
-        # @timeit Hypatia.to "mul!" mul!(Q2GHGQ2, GQ2', HGQ2)
-        # @timeit Hypatia.to "mul manual" Q2GHGQ2 .= mu * GQ2' * Symmetric(cones[1].H, :U) * GQ2
-        @timeit Hypatia.to "mul manual" begin
-        H = cones[1].H
-        @. Q2GHGQ2 = mu * (H[1, 1] + H[2:end, 2:end] - H[1:1, 2:end] - H[1:1, 2:end]')
-        # for j in 2:size(H, 2), i in 2:j
-        #     @inbounds Q2GHGQ2[i-1, j-1] = mu * (H[1, 1] - H[i, 1] - H[1, j] + H[i, j])
-        # end
+        if issparse(GQ2)
+            @timeit Hypatia.to "mul manual" begin
+            H = cones[1].H
+            @. Q2GHGQ2 = mu * (H[1, 1] + H[2:end, 2:end] - H[1:1, 2:end] - H[1:1, 2:end]')
+            # for j in 2:size(H, 2), i in 2:j
+            #     @inbounds Q2GHGQ2[i-1, j-1] = mu * (H[1, 1] - H[i, 1] - H[1, j] + H[i, j])
+            # end
 
-        # @. Q2GHGQ2 = H[1, 1] - H[2:end, 1:1] - H[1:1, 2:end] + H[2:end, 2:end]
-        # Q2GHGQ2 .*= mu
+            # @. Q2GHGQ2 = H[1, 1] - H[2:end, 1:1] - H[1:1, 2:end] + H[2:end, 2:end]
+            # Q2GHGQ2 .*= mu
+            end
+        else
+            @timeit Hypatia.to "block prod" block_hessian_product!(HGQ2_k, GQ2_k)
+            @timeit Hypatia.to "mul!" mul!(Q2GHGQ2, GQ2', HGQ2)
         end
-
+        
         # TODO prealloc cholesky auxiliary vectors using posvx
         # TODO use old sysvx code
         # @timeit Hypatia.to "bk" F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
