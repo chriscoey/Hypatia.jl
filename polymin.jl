@@ -345,7 +345,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
         str_is_complex = is_complex ? "c" : "r"
         println("running $str_is_complex")
 
-        U = is_complex ? binomial(n + 2halfdeg, n) : binomial(2n + 2halfdeg, 2n)
+        U = is_complex ? binomial(n + halfdeg, n)^2 : binomial(2n + 2halfdeg, 2n)
         if U > maxU
             println("for $str_is_complex, skipping n=$n, halfdeg=$halfdeg, since U=$U")
             continue
