@@ -1053,3 +1053,346 @@ starting solve
    12  -2.0639e+05  -2.9083e+03  2.88e-02  1.40e-07  4.36e+00  0.00e+00  5.24e+02  1.26e-05  2.56e+00  5.34e-05  1.48e-01  4.52e-01
    13  -5.1488e+05  -5.8279e+03  1.13e-02  2.19e-08  3.44e+00  0.00e+00  4.13e+02  6.25e-06  3.18e+00  2.09e-05  3.94e-02  6.33e-01
    14  -9.5603e+04  -5.1813e+03  3.74e-03  3.91e-08  1.01e+00  0.00e+00  1.22e+02  7.03e-06  6.36e-01  6.92e-06  3.37e-02  6.92e-01
+   15  -4.9682e+04  -5.8788e+03  8.81e-04  1.77e-08  2.71e-01  0.00e+00  3.26e+01  6.19e-06  2.71e-01  1.63e-06  1.42e-02  7.75e-01
+   16  -1.1512e+04  -4.6160e+03  4.08e-04  3.54e-08  9.91e-02  0.00e+00  1.19e+01  7.87e-06  5.43e-02  7.55e-07  9.17e-02  5.90e-01
+   17  -7.9906e+03  -4.2449e+03  2.94e-04  3.68e-08  6.57e-02  0.00e+00  7.88e+00  8.55e-06  3.20e-02  5.44e-07  9.83e-02  3.10e-01
+   18  -7.7723e+03  -4.1994e+03  2.88e-04  3.71e-08  6.38e-02  0.00e+00  7.65e+00  8.64e-06  3.09e-02  5.33e-07  1.99e-01  2.38e-02
+performing correction step
+   19  -5.9685e+03  -2.9769e+03  2.88e-04  4.82e-08  4.53e-02  0.00e+00  5.43e+00  1.22e-05  3.64e-02  5.33e-07  2.06e-01  1.00e+00
+   20  -3.2685e+03  -2.3998e+03  1.83e-04  5.58e-08  2.31e-02  0.00e+00  2.78e+00  1.51e-05  1.31e-02  3.38e-07  1.61e-01  4.37e-01
+   21  -2.5833e+03  -2.0775e+03  1.61e-04  6.25e-08  1.77e-02  0.00e+00  2.13e+00  1.74e-05  8.82e-03  2.99e-07  3.86e-01  1.88e-01
+   22  -2.4180e+03  -1.9824e+03  1.57e-04  6.48e-08  1.64e-02  0.00e+00  1.97e+00  1.83e-05  7.96e-03  2.90e-07  4.70e-01  5.51e-02
+performing correction step
+   23  -1.9199e+03  -1.4853e+03  1.57e-04  8.15e-08  1.23e-02  0.00e+00  1.48e+00  2.44e-05  1.06e-02  2.90e-07  4.88e-01  1.00e+00
+time limit reached; terminating
+
+status is TimeLimit after 23 iterations and 1811.306 seconds
+
+finished solve, took 1811.306347674 seconds
+
+running p
+starting data building
+finished data building, took 7.160613573 seconds
+barpar is 540, dim_cone is 20700, num_vars is 14400
+running i
+
+model name c_p_i_14_2
+building Hypatia model
+Hypatia model built, took 454.429765364 seconds
+starting solve
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -5.6283e+04  -1.1110e+00  5.40e+02  9.59e-03  9.97e-01  6.84e-03  9.93e+00  1.00e+00  1.00e+00  1.00e+00
+    1  -5.6284e+04  -1.1135e+00  3.99e+02  7.10e-03  9.97e-01  6.84e-03  9.93e+00  7.40e-01  1.00e+00  7.40e-01  2.06e-01  3.28e-01
+    2  -5.6286e+04  -1.1201e+00  3.06e+02  5.43e-03  9.97e-01  6.84e-03  9.93e+00  5.64e-01  1.00e+00  5.66e-01  3.53e-01  3.67e-01
+    3  -5.6289e+04  -1.1328e+00  2.36e+02  4.20e-03  9.97e-01  6.84e-03  9.93e+00  4.35e-01  1.00e+00  4.37e-01  3.02e-01  3.29e-01
+    4  -5.6292e+04  -1.1508e+00  1.84e+02  3.28e-03  9.97e-01  6.84e-03  9.93e+00  3.39e-01  1.00e+00  3.42e-01  2.52e-01  2.95e-01
+    5  -5.6298e+04  -1.1869e+00  1.31e+02  2.33e-03  9.97e-01  6.85e-03  9.93e+00  2.41e-01  1.01e+00  2.43e-01  3.01e-01  4.12e-01
+    6  -5.6307e+04  -1.2489e+00  9.04e+01  1.60e-03  9.97e-01  6.85e-03  9.93e+00  1.66e-01  1.01e+00  1.67e-01  1.56e-01  3.70e-01
+    7  -5.6323e+04  -1.3708e+00  5.71e+01  1.01e-03  9.98e-01  6.85e-03  9.93e+00  1.05e-01  1.01e+00  1.06e-01  1.12e-01  4.14e-01
+    8  -5.6375e+04  -1.7698e+00  2.64e+01  4.68e-04  9.98e-01  6.85e-03  9.94e+00  4.86e-02  1.01e+00  4.89e-02  7.44e-02  5.79e-01
+    9  -5.6529e+04  -3.0275e+00  9.97e+00  1.76e-04  1.00e+00  6.87e-03  9.96e+00  1.84e-02  1.01e+00  1.85e-02  4.32e-02  6.49e-01
+   10  -5.7136e+04  -8.1228e+00  2.87e+00  5.02e-05  1.01e+00  6.93e-03  1.00e+01  5.25e-03  1.01e+00  5.31e-03  2.04e-02  7.27e-01
+   11  -6.0535e+04  -3.6645e+01  5.99e-01  9.90e-06  1.05e+00  7.24e-03  1.05e+01  1.05e-03  1.02e+00  1.11e-03  9.14e-03  7.98e-01
+   12  -6.8146e+04  -9.9953e+01  2.36e-01  3.46e-06  1.15e+00  7.93e-03  1.15e+01  3.78e-04  1.08e+00  4.37e-04  1.43e-02  6.15e-01
+   13  -1.0861e+05  -4.3067e+02  7.82e-02  7.20e-07  1.66e+00  1.14e-02  1.65e+01  8.70e-05  1.25e+00  1.45e-04  2.84e-02  6.88e-01
+   14  -2.0983e+05  -1.1933e+03  4.53e-02  2.16e-07  2.67e+00  1.84e-02  2.66e+01  3.13e-05  1.81e+00  8.38e-05  1.08e-01  4.72e-01
+   15  -6.6670e+05  -4.4465e+03  2.45e-02  3.68e-08  5.40e+00  3.71e-02  5.38e+01  8.39e-06  3.00e+00  4.53e-05  1.31e-01  5.28e-01
+dual infeasibility detected; terminating
+
+status is DualInfeasible after 15 iterations and 1894.253 seconds
+
+finished solve, took 1894.253444046 seconds
+
+min sample value is -56.51185662823831
+obj values are
+[-1926.856837039467, -666700.4171555236]
+
+
+
+n = 14
+halfdeg = 3
+
+starting random objective generation
+finished random objective generation, took 0.000456253 seconds
+running c
+for c, skipping n=14, halfdeg=3, since U=462400
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 14
+halfdeg = 4
+
+starting random objective generation
+finished random objective generation, took 0.012746181 seconds
+running c
+for c, skipping n=14, halfdeg=4, since U=9363600
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 14
+halfdeg = 5
+
+starting random objective generation
+finished random objective generation, took 1.19004725 seconds
+running c
+for c, skipping n=14, halfdeg=5, since U=135210384
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 14
+halfdeg = 6
+
+starting random objective generation
+finished random objective generation, took 3.433458971 seconds
+running c
+for c, skipping n=14, halfdeg=6, since U=1502337600
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 16
+halfdeg = 1
+
+starting random objective generation
+finished random objective generation, took 1.6676e-5 seconds
+running c
+for c, skipping n=16, halfdeg=1, since U=289
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 16
+halfdeg = 2
+
+starting random objective generation
+finished random objective generation, took 1.5341e-5 seconds
+running c
+for c, skipping n=16, halfdeg=2, since U=23409
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 16
+halfdeg = 3
+
+starting random objective generation
+finished random objective generation, took 0.000570332 seconds
+running c
+for c, skipping n=16, halfdeg=3, since U=938961
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 16
+halfdeg = 4
+
+starting random objective generation
+finished random objective generation, took 0.021192789 seconds
+running c
+for c, skipping n=16, halfdeg=4, since U=23474025
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 16
+halfdeg = 5
+
+starting random objective generation
+finished random objective generation, took 0.711976805 seconds
+running c
+for c, skipping n=16, halfdeg=5, since U=414081801
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 16
+halfdeg = 6
+
+starting random objective generation
+finished random objective generation, took 10.462274122 seconds
+running c
+for c, skipping n=16, halfdeg=6, since U=5567099769
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 18
+halfdeg = 1
+
+starting random objective generation
+finished random objective generation, took 4.2304e-5 seconds
+running c
+for c, skipping n=18, halfdeg=1, since U=361
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 18
+halfdeg = 2
+
+starting random objective generation
+finished random objective generation, took 2.716e-5 seconds
+running c
+for c, skipping n=18, halfdeg=2, since U=36100
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 18
+halfdeg = 3
+
+starting random objective generation
+finished random objective generation, took 0.000768865 seconds
+running c
+for c, skipping n=18, halfdeg=3, since U=1768900
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 18
+halfdeg = 4
+
+starting random objective generation
+finished random objective generation, took 0.483667194 seconds
+running c
+for c, skipping n=18, halfdeg=4, since U=53509225
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 18
+halfdeg = 5
+
+starting random objective generation
+finished random objective generation, took 1.358123191 seconds
+running c
+for c, skipping n=18, halfdeg=5, since U=1132255201
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 18
+halfdeg = 6
+
+starting random objective generation
+finished random objective generation, took 28.885402636 seconds
+running c
+for c, skipping n=18, halfdeg=6, since U=18116083216
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 20
+halfdeg = 1
+
+starting random objective generation
+finished random objective generation, took 4.3352e-5 seconds
+running c
+for c, skipping n=20, halfdeg=1, since U=441
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 20
+halfdeg = 2
+
+starting random objective generation
+finished random objective generation, took 2.6876e-5 seconds
+running c
+for c, skipping n=20, halfdeg=2, since U=53361
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 20
+halfdeg = 3
+
+starting random objective generation
+finished random objective generation, took 0.001306985 seconds
+running c
+for c, skipping n=20, halfdeg=3, since U=3136441
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 20
+halfdeg = 4
+
+starting random objective generation
+finished random objective generation, took 1.083601527 seconds
+running c
+for c, skipping n=20, halfdeg=4, since U=112911876
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 20
+halfdeg = 5
+
+starting random objective generation
+finished random objective generation, took 3.009094646 seconds
+running c
+for c, skipping n=20, halfdeg=5, since U=2822796900
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
+n = 20
+halfdeg = 6
+
+starting random objective generation
+finished random objective generation, took 72.045816354 seconds
+running c
+for c, skipping n=20, halfdeg=6, since U=53005852900
+min sample value is Inf
+obj values are
+Float64[]
+
+
+
