@@ -333,29 +333,33 @@ end
 function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int = 1)
     @assert num_samples >= maxU
 
-    (F_coef, F_fun) = rand_obj(n, max(1, halfdeg - 1))
+    println("starting random objective generation")
+    tobj = @elapsed (F_coef, F_fun) = rand_obj(n, max(1, halfdeg - 1))
     # println("random obj is")
     # println(F_coef)
-    println()
+    println("finished random objective generation, took $tobj seconds")
+    flush(stdout)
 
     min_sample_value = Inf
     obj_vals = Float64[]
 
-    for is_complex in [true, false]
+    for is_complex in [true]#, false]
         str_is_complex = is_complex ? "c" : "r"
         println("running $str_is_complex")
 
         U = is_complex ? binomial(n + halfdeg, n)^2 : binomial(2n + 2halfdeg, 2n)
-        if U > maxU
+        if U > maxU || U < 7500
             println("for $str_is_complex, skipping n=$n, halfdeg=$halfdeg, since U=$U")
             continue
         end
 
         println("starting interpolation")
+        flush(stdout)
         interp_fun = is_complex ? setup_C_interp : setup_R_interp
         ti = @elapsed interp = interp_fun(n, halfdeg, F_fun, num_samples, 0.8, 1.2)
         min_sample_value = min(min_sample_value, interp.min_sample_value)
         println("finished interpolation, took $ti seconds")
+        flush(stdout)
 
         for is_wsos in [true, false]
             str_is_wsos = is_wsos ? "w" : "p"
@@ -377,6 +381,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
 
                 modelname = "$(str_is_complex)_$(str_is_wsos)_$(str_is_infty_nbhd)_$(n)_$(halfdeg)"
                 println("model name $modelname")
+                flush(stdout)
 
                 println("building Hypatia model")
                 tb = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
@@ -385,11 +390,13 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
                     tol_rel_opt = 1e-5, tol_abs_opt = 1e-4, tol_feas = 1e-4,
                     time_limit = 1800.0, max_iters = 250,)
                 println("Hypatia model built, took $tb seconds")
+                flush(stdout)
 
                 println("starting solve")
                 reset_timer!(Hypatia.to)
                 ts = @elapsed SO.solve(solver)
                 println("finished solve, took $ts seconds")
+                flush(stdout)
 
                 pobj = SO.get_primal_obj(solver) + d.obj_const
                 push!(obj_vals, pobj)
@@ -421,6 +428,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
                 end
 
                 println()
+                flush(stdout)
             end # nbhd
         end # cone type
     end # numtype
@@ -437,8 +445,10 @@ end
 ####
 # specify sizes to run
 
+# ns = [1,2,3,4,5,6,8,10,12,14,16,18,20]
+# halfdegs = [2,3,4,5,6,8,10,12,14]
 ns = [1,2,3,4,5,6,8,10,12,14,16,18,20]
-halfdegs = [2,3,4,5,6,8,10,12,14]
+halfdegs = [1,2,3,4,5,6]
 # ns = [1,2,3,4]
 # halfdegs = [1,2,3,4,6,8]
 # ns = [10, 12]
@@ -447,9 +457,9 @@ halfdegs = [2,3,4,5,6,8,10,12,14]
 # halfdegs = [3,4,5]
 
 # maxU = 2500
-maxU = 7500
+maxU = 20000
 
-num_samples = 8000
+num_samples = 20000
 
 
 ####
@@ -461,8 +471,9 @@ end
 println("\nstarting compile run\n")
 speedtest(2, 2, 100, 100) # compile
 println("\nfinished compile run")
+flush(stdout)
 
-open(joinpath("timings", "results.csv"), "w") do f
+open(joinpath("timings", "results.csv"), "a") do f
     @printf(f, "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
     "RorC", "PorW", "HorI",
     "n", "half_deg", "dim_cone", "num_vars", "bar_par",
@@ -483,16 +494,19 @@ println("\nstarting full run\n")
 @show maxU
 @show num_samples
 println("\n")
+flush(stdout)
 for n in ns, halfdeg in halfdegs
     println("\n")
     @show n
     @show halfdeg
     println()
+    flush(stdout)
     try
         speedtest(n, halfdeg, maxU, num_samples)
     catch e
         println(e)
     end
+    flush(stdout)
     println()
 end
 println("\n")
