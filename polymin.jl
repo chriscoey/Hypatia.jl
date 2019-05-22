@@ -388,7 +388,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
                 stepper = SO.CombinedHSDStepper(model, infty_nbhd = is_infty_nbhd)
                 solver = SO.HSDSolver(model, stepper = stepper,
                     tol_rel_opt = 1e-5, tol_abs_opt = 1e-4, tol_feas = 1e-4,
-                    time_limit = 1800.0, max_iters = 250,)
+                    time_limit = 7200.0, max_iters = 250,)
                 println("Hypatia model built, took $tb seconds")
                 flush(stdout)
 
