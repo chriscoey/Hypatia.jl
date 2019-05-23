@@ -2,7 +2,7 @@
 starting compile run
 
 starting random objective generation
-finished random objective generation, took 4.6909e-5 seconds
+finished random objective generation, took 4.1553e-5 seconds
 running c
 for c, skipping n=2, halfdeg=2, since U=36
 min sample value is Inf
@@ -15,8 +15,8 @@ starting full run
 
 ns = [1, 2, 3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20]
 halfdegs = [1, 2, 3, 4, 5, 6]
-maxU = 20000
-num_samples = 20000
+maxU = 30000
+num_samples = 30000
 
 
 
@@ -25,7 +25,7 @@ n = 1
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 1.2604e-5 seconds
+finished random objective generation, took 7.812e-6 seconds
 running c
 for c, skipping n=1, halfdeg=1, since U=4
 min sample value is Inf
@@ -38,7 +38,7 @@ n = 1
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 5.36e-6 seconds
+finished random objective generation, took 7.061e-6 seconds
 running c
 for c, skipping n=1, halfdeg=2, since U=9
 min sample value is Inf
@@ -51,7 +51,7 @@ n = 1
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 5.015e-6 seconds
+finished random objective generation, took 3.972e-6 seconds
 running c
 for c, skipping n=1, halfdeg=3, since U=16
 min sample value is Inf
@@ -64,7 +64,7 @@ n = 1
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 6.235e-6 seconds
+finished random objective generation, took 4.574e-6 seconds
 running c
 for c, skipping n=1, halfdeg=4, since U=25
 min sample value is Inf
@@ -77,7 +77,7 @@ n = 1
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 7.376e-6 seconds
+finished random objective generation, took 5.187e-6 seconds
 running c
 for c, skipping n=1, halfdeg=5, since U=36
 min sample value is Inf
@@ -90,7 +90,7 @@ n = 1
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 7.262e-6 seconds
+finished random objective generation, took 5.419e-6 seconds
 running c
 for c, skipping n=1, halfdeg=6, since U=49
 min sample value is Inf
@@ -103,7 +103,7 @@ n = 2
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 9.65e-6 seconds
+finished random objective generation, took 2.805e-6 seconds
 running c
 for c, skipping n=2, halfdeg=1, since U=9
 min sample value is Inf
@@ -116,7 +116,7 @@ n = 2
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 2.92e-6 seconds
+finished random objective generation, took 2.753e-6 seconds
 running c
 for c, skipping n=2, halfdeg=2, since U=36
 min sample value is Inf
@@ -129,7 +129,7 @@ n = 2
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 5.666e-6 seconds
+finished random objective generation, took 6.278e-6 seconds
 running c
 for c, skipping n=2, halfdeg=3, since U=100
 min sample value is Inf
@@ -142,7 +142,7 @@ n = 2
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 9.712e-6 seconds
+finished random objective generation, took 9.659e-6 seconds
 running c
 for c, skipping n=2, halfdeg=4, since U=225
 min sample value is Inf
@@ -155,7 +155,7 @@ n = 2
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 2.1524e-5 seconds
+finished random objective generation, took 2.0445e-5 seconds
 running c
 for c, skipping n=2, halfdeg=5, since U=441
 min sample value is Inf
@@ -168,7 +168,7 @@ n = 2
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 2.4982e-5 seconds
+finished random objective generation, took 2.4196e-5 seconds
 running c
 for c, skipping n=2, halfdeg=6, since U=784
 min sample value is Inf
@@ -181,7 +181,7 @@ n = 3
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 5.23e-6 seconds
+finished random objective generation, took 3.322e-6 seconds
 running c
 for c, skipping n=3, halfdeg=1, since U=16
 min sample value is Inf
@@ -194,7 +194,7 @@ n = 3
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 3.255e-6 seconds
+finished random objective generation, took 3.193e-6 seconds
 running c
 for c, skipping n=3, halfdeg=2, since U=100
 min sample value is Inf
@@ -207,7 +207,7 @@ n = 3
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 1.2023e-5 seconds
+finished random objective generation, took 7.5e-6 seconds
 running c
 for c, skipping n=3, halfdeg=3, since U=400
 min sample value is Inf
@@ -220,7 +220,7 @@ n = 3
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 2.0392e-5 seconds
+finished random objective generation, took 1.837e-5 seconds
 running c
 for c, skipping n=3, halfdeg=4, since U=1225
 min sample value is Inf
@@ -233,7 +233,7 @@ n = 3
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 4.5595e-5 seconds
+finished random objective generation, took 4.2745e-5 seconds
 running c
 for c, skipping n=3, halfdeg=5, since U=3136
 min sample value is Inf
@@ -246,7 +246,7 @@ n = 3
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 0.025027241 seconds
+finished random objective generation, took 9.1398e-5 seconds
 running c
 for c, skipping n=3, halfdeg=6, since U=7056
 min sample value is Inf
@@ -259,7 +259,7 @@ n = 4
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 5.012e-6 seconds
+finished random objective generation, took 3.978e-6 seconds
 running c
 for c, skipping n=4, halfdeg=1, since U=25
 min sample value is Inf
@@ -272,7 +272,7 @@ n = 4
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 5.52e-6 seconds
+finished random objective generation, took 5.448e-6 seconds
 running c
 for c, skipping n=4, halfdeg=2, since U=225
 min sample value is Inf
@@ -285,7 +285,7 @@ n = 4
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 6.1453e-5 seconds
+finished random objective generation, took 1.294e-5 seconds
 running c
 for c, skipping n=4, halfdeg=3, since U=1225
 min sample value is Inf
@@ -298,7 +298,7 @@ n = 4
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 4.4118e-5 seconds
+finished random objective generation, took 4.0857e-5 seconds
 running c
 for c, skipping n=4, halfdeg=4, since U=4900
 min sample value is Inf
@@ -311,132 +311,12 @@ n = 4
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 0.00014894 seconds
+finished random objective generation, took 0.00014053 seconds
 running c
-starting interpolation
-finished interpolation, took 1286.922602464 seconds
-running w
-starting data building
-dat.F_interp[1] = -3.795020971689463
-finished data building, took 0.391054946 seconds
-barpar is 686, dim_cone is 15876, num_vars is 15875
-running i
-
-model name c_w_i_4_5
-building Hypatia model
-Hypatia model built, took 36.455687315 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0   2.1062e+01  -1.6282e-01  6.86e+02       NaN  1.00e+00  0.00e+00  1.26e+02  1.00e+00  1.00e+00  1.00e+00
-    1   2.0505e+01  -1.6453e-01  4.42e+02       NaN  1.00e+00  0.00e+00  1.26e+02  6.44e-01  1.00e+00  6.44e-01  3.04e-01  5.12e-01
-    2   1.9688e+01  -1.7300e-01  2.90e+02       NaN  1.00e+00  0.00e+00  1.26e+02  4.23e-01  1.00e+00  4.23e-01  2.54e-01  4.59e-01
-    3   1.8028e+01  -2.0248e-01  1.72e+02       NaN  1.00e+00  0.00e+00  1.26e+02  2.50e-01  1.00e+00  2.51e-01  2.04e-01  5.14e-01
-    4   1.3380e+01  -3.0412e-01  8.05e+01       NaN  1.00e+00  0.00e+00  1.26e+02  1.17e-01  1.00e+00  1.17e-01  7.65e-02  5.75e-01
-    5  -6.3472e-01  -6.6036e-01  3.07e+01  4.83e+01  1.00e+00  0.00e+00  1.26e+02  4.51e-02  1.00e+00  4.47e-02  4.49e-02  6.44e-01
-    6  -2.6541e+01  -1.4218e+00  1.40e+01  5.26e-01  1.00e+00  0.00e+00  1.26e+02  2.10e-02  9.95e-01  2.04e-02  7.55e-02  5.77e-01
-    7  -9.0431e+01  -3.4249e+00  5.77e+00  6.38e-02  1.00e+00  0.00e+00  1.26e+02  8.95e-03  9.78e-01  8.40e-03  1.12e-01  6.47e-01
-    8  -1.9393e+02  -6.9855e+00  2.86e+00  1.47e-02  1.00e+00  0.00e+00  1.26e+02  4.57e-03  9.55e-01  4.17e-03  1.54e-01  5.79e-01
-    9  -3.7079e+02  -1.3485e+01  1.51e+00  4.07e-03  1.00e+00  0.00e+00  1.26e+02  2.46e-03  9.33e-01  2.20e-03  1.11e-01  5.19e-01
-   10  -1.3069e+03  -4.9752e+01  4.26e-01  3.26e-04  1.00e+00  0.00e+00  1.26e+02  7.08e-04  9.05e-01  6.21e-04  2.04e-02  7.27e-01
-   11  -3.3328e+03  -1.3095e+02  1.62e-01  4.87e-05  1.00e+00  0.00e+00  1.26e+02  2.76e-04  8.88e-01  2.37e-04  4.69e-02  6.40e-01
-   12  -1.1032e+04  -4.4535e+02  4.84e-02  4.39e-06  1.01e+00  0.00e+00  1.27e+02  8.20e-05  8.70e-01  7.06e-05  2.29e-02  7.17e-01
-   13  -3.0690e+04  -1.2364e+03  1.76e-02  5.74e-07  1.03e+00  0.00e+00  1.30e+02  2.95e-05  8.70e-01  2.57e-05  9.01e-03  6.39e-01
-   14  -3.3850e+05  -1.3316e+04  2.01e-03  5.93e-09  1.27e+00  0.00e+00  1.60e+02  2.73e-06  8.89e-01  2.92e-06  1.05e-02  8.95e-01
-   15  -4.7623e+05  -1.8111e+04  1.01e-03  2.12e-09  1.03e+00  0.00e+00  1.30e+02  1.85e-06  8.45e-01  1.47e-06  1.16e-01  5.12e-01
-   16  -3.8454e+05  -2.4415e+04  2.92e-04  7.60e-10  4.30e-01  0.00e+00  5.41e+01  1.32e-06  4.77e-01  4.26e-07  2.27e-02  7.17e-01
-   17  -8.6917e+04  -2.1634e+04  7.84e-05  9.01e-10  1.07e-01  0.00e+00  1.35e+01  1.46e-06  9.54e-02  1.14e-07  1.97e-02  7.40e-01
-   18  -3.1114e+04  -1.9097e+04  2.06e-05  6.61e-10  2.69e-02  0.00e+00  3.39e+00  1.59e-06  1.91e-02  3.00e-08  2.02e-02  7.42e-01
-   19  -1.5230e+04  -1.3472e+04  1.12e-05  7.35e-10  1.11e-02  0.00e+00  1.40e+00  2.17e-06  3.82e-03  1.63e-08  1.74e-01  5.28e-01
-   20  -1.4741e+04  -1.3123e+04  1.10e-05  7.46e-10  1.06e-02  0.00e+00  1.34e+00  2.23e-06  3.61e-03  1.60e-08  4.56e-01  3.14e-02
-performing correction step
-   21  -1.1448e+04  -9.8097e+03  1.09e-05  9.53e-10  8.01e-03  0.00e+00  1.01e+00  2.96e-06  4.84e-03  1.59e-08  4.58e-01  1.00e+00
-   22  -8.0413e+03  -7.5851e+03  7.29e-06  9.06e-10  4.14e-03  0.00e+00  5.22e-01  3.82e-06  1.74e-03  1.06e-08  3.14e-01  4.84e-01
-   23  -6.5752e+03  -6.3496e+03  6.15e-06  9.36e-10  2.93e-03  0.00e+00  3.69e-01  4.56e-06  1.03e-03  8.96e-09  3.74e-01  2.48e-01
-   24  -6.1388e+03  -5.9572e+03  5.83e-06  9.50e-10  2.60e-03  0.00e+00  3.28e-01  4.86e-06  8.82e-04  8.50e-09  4.25e-01  9.11e-02
-   25  -6.0184e+03  -5.8475e+03  5.74e-06  9.54e-10  2.52e-03  0.00e+00  3.17e-01  4.95e-06  8.46e-04  8.37e-09  4.31e-01  2.67e-02
-performing correction step
-   26  -5.5683e+03  -5.2917e+03  5.74e-06  1.03e-09  2.28e-03  0.00e+00  2.87e-01  5.47e-06  1.51e-03  8.37e-09  4.32e-01  1.00e+00
-   27  -4.0977e+03  -4.0219e+03  3.88e-06  9.47e-10  1.17e-03  0.00e+00  1.48e-01  7.19e-06  5.45e-04  5.66e-09  2.85e-01  4.53e-01
-   28  -3.2512e+03  -3.2216e+03  3.10e-06  9.54e-10  7.50e-04  0.00e+00  9.45e-02  8.97e-06  2.66e-04  4.52e-09  3.48e-01  3.09e-01
-   29  -3.0082e+03  -2.9856e+03  2.90e-06  9.63e-10  6.49e-04  0.00e+00  8.17e-02  9.67e-06  2.19e-04  4.22e-09  4.10e-01  1.13e-01
-   30  -2.9740e+03  -2.9522e+03  2.87e-06  9.64e-10  6.35e-04  0.00e+00  8.00e-02  9.78e-06  2.14e-04  4.18e-09  4.11e-01  1.70e-02
-performing correction step
-   31  -2.7721e+03  -2.7349e+03  2.87e-06  1.03e-09  5.89e-04  0.00e+00  7.42e-02  1.06e-05  3.93e-04  4.18e-09  4.11e-01  1.00e+00
-   32  -2.1098e+03  -2.0995e+03  1.89e-06  8.98e-10  2.99e-04  0.00e+00  3.77e-02  1.37e-05  1.42e-04  2.76e-09  2.63e-01  4.60e-01
-   33  -1.7146e+03  -1.7105e+03  1.47e-06  8.58e-10  1.88e-04  0.00e+00  2.37e-02  1.69e-05  6.91e-05  2.14e-09  2.94e-01  3.21e-01
-   34  -1.5801e+03  -1.5771e+03  1.32e-06  8.38e-10  1.56e-04  0.00e+00  1.97e-02  1.83e-05  5.40e-05  1.93e-09  3.16e-01  1.47e-01
-   35  -1.5261e+03  -1.5235e+03  1.26e-06  8.28e-10  1.44e-04  0.00e+00  1.81e-02  1.89e-05  4.88e-05  1.84e-09  3.03e-01  6.76e-02
-   36  -1.5140e+03  -1.5115e+03  1.25e-06  8.25e-10  1.41e-04  0.00e+00  1.78e-02  1.91e-05  4.77e-05  1.82e-09  2.94e-01  1.59e-02
-performing correction step
-   37  -1.4622e+03  -1.4576e+03  1.25e-06  8.53e-10  1.36e-04  0.00e+00  1.71e-02  1.98e-05  9.19e-05  1.82e-09  2.92e-01  1.00e+00
-   38  -1.1797e+03  -1.1783e+03  7.40e-07  6.28e-10  6.55e-05  0.00e+00  8.25e-03  2.44e-05  3.31e-05  1.08e-09  2.42e-01  5.37e-01
-   39  -9.9506e+02  -9.9465e+02  4.46e-07  4.48e-10  3.29e-05  0.00e+00  4.14e-03  2.90e-05  1.19e-05  6.50e-10  1.05e-01  4.49e-01
-   40  -9.4527e+02  -9.4501e+02  3.39e-07  3.58e-10  2.39e-05  0.00e+00  3.01e-03  3.04e-05  8.19e-06  4.93e-10  7.51e-02  2.58e-01
-   41  -9.1396e+02  -9.1376e+02  2.37e-07  2.59e-10  1.67e-05  0.00e+00  2.11e-03  3.09e-05  6.16e-06  3.45e-10  2.01e-01  3.61e-01
-   42  -9.1054e+02  -9.1036e+02  1.56e-07  1.72e-10  1.22e-05  0.00e+00  1.54e-03  2.94e-05  5.33e-06  2.28e-10  2.49e-01  4.04e-01
-   43  -9.2119e+02  -9.2101e+02  1.14e-07  1.24e-10  1.03e-05  0.00e+00  1.30e-03  2.73e-05  5.07e-06  1.67e-10  3.95e-01  3.62e-01
-   44  -9.2870e+02  -9.2853e+02  9.07e-08  9.77e-11  9.03e-06  0.00e+00  1.14e-03  2.58e-05  4.63e-06  1.32e-10  3.46e-01  2.60e-01
-   45  -9.3485e+02  -9.3468e+02  7.27e-08  7.78e-11  7.90e-06  0.00e+00  1.00e-03  2.46e-05  4.15e-06  1.06e-10  2.96e-01  2.33e-01
-   46  -9.3975e+02  -9.3959e+02  5.90e-08  6.28e-11  6.95e-06  0.00e+00  8.81e-04  2.35e-05  3.69e-06  8.60e-11  2.45e-01  2.08e-01
-   47  -9.4478e+02  -9.4464e+02  4.73e-08  5.01e-11  6.08e-06  0.00e+00  7.70e-04  2.25e-05  3.24e-06  6.90e-11  2.94e-01  2.33e-01
-   48  -9.4862e+02  -9.4849e+02  3.84e-08  4.05e-11  5.34e-06  0.00e+00  6.75e-04  2.16e-05  2.84e-06  5.60e-11  2.44e-01  2.09e-01
-   49  -9.5233e+02  -9.5221e+02  2.99e-08  3.14e-11  4.51e-06  0.00e+00  5.73e-04  2.06e-05  2.41e-06  4.36e-11  1.95e-01  2.34e-01
-   50  -9.5580e+02  -9.5570e+02  2.22e-08  2.32e-11  3.68e-06  0.00e+00  4.68e-04  1.96e-05  1.96e-06  3.23e-11  1.48e-01  2.62e-01
-   51  -9.5836e+02  -9.5827e+02  1.73e-08  1.80e-11  3.09e-06  0.00e+00  3.95e-04  1.88e-05  1.64e-06  2.52e-11  1.93e-01  2.35e-01
-   52  -9.6132e+02  -9.6125e+02  1.17e-08  1.22e-11  2.36e-06  0.00e+00  3.02e-04  1.77e-05  1.25e-06  1.71e-11  1.47e-01  3.29e-01
-   53  -9.6380e+02  -9.6374e+02  7.37e-09  7.65e-12  1.70e-06  0.00e+00  2.16e-04  1.66e-05  8.85e-07  1.08e-11  1.04e-01  3.69e-01
-   54  -9.6577e+02  -9.6573e+02  4.22e-09  4.37e-12  1.14e-06  0.00e+00  1.43e-04  1.54e-05  5.84e-07  6.15e-12  6.77e-02  4.13e-01
-   55  -9.6645e+02  -9.6642e+02  3.20e-09  3.31e-12  9.78e-07  0.00e+00  1.17e-04  1.48e-05  4.71e-07  4.66e-12  1.03e-01  2.37e-01
-   56  -9.6651e+02  -9.6648e+02  3.12e-09  3.23e-12  9.54e-07  0.00e+00  1.15e-04  1.48e-05  4.62e-07  4.55e-12  6.66e-02  2.28e-02
-performing correction step
-   57  -9.6800e+02  -9.6798e+02  3.06e-09  3.16e-12  9.68e-07  0.00e+00  1.17e-04  1.45e-05  3.89e-07  4.46e-12  1.02e-01  5.12e-01
-   58  -9.6881e+02  -9.6880e+02  8.66e-10  8.94e-13  3.04e-07  0.00e+00  3.74e-05  1.34e-05  1.37e-07  1.26e-12  1.64e-02  7.17e-01
-optimal solution found; terminating
-
-status is Optimal after 58 iterations and 4426.306 seconds
-
-finished solve, took 4426.306967894 seconds
-
-running p
-starting data building
-finished data building, took 16.933553153 seconds
-barpar is 686, dim_cone is 55076, num_vars is 15876
-running i
-
-model name c_p_i_4_5
-building Hypatia model
-Hypatia model built, took 1583.575217818 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0   1.8743e+05   1.7224e+01  6.86e+02  3.98e+01  9.78e-01  3.11e-03  7.03e+00  1.00e+00  1.00e+00  1.00e+00
-    1   1.8743e+05   1.7223e+01  4.90e+02  2.85e+01  9.78e-01  3.09e-03  7.03e+00  7.15e-01  9.99e-01  7.15e-01  3.04e-01  4.10e-01
-    2   1.8743e+05   1.7220e+01  3.98e+02  2.31e+01  9.78e-01  3.98e-03  7.03e+00  5.79e-01  1.00e+00  5.80e-01  3.53e-01  2.94e-01
-    3   1.8743e+05   1.7214e+01  3.07e+02  1.78e+01  9.78e-01  3.73e-03  7.03e+00  4.46e-01  9.99e-01  4.47e-01  3.02e-01  3.29e-01
-    4   1.8743e+05   1.7200e+01  2.23e+02  1.29e+01  9.78e-01  3.63e-03  7.03e+00  3.23e-01  9.99e-01  3.25e-01  2.52e-01  3.68e-01
-    5   1.8743e+05   1.7164e+01  1.42e+02  8.25e+00  9.78e-01  3.44e-03  7.03e+00  2.05e-01  1.00e+00  2.06e-01  1.14e-01  4.12e-01
-    6   1.8742e+05   1.7034e+01  6.60e+01  3.87e+00  9.78e-01  3.24e-03  7.03e+00  9.56e-02  1.00e+00  9.62e-02  7.55e-02  5.77e-01
-    7   1.8741e+05   1.6759e+01  3.31e+01  1.98e+00  9.78e-01  3.16e-03  7.03e+00  4.83e-02  1.00e+00  4.83e-02  4.41e-02  5.17e-01
-    8   1.8739e+05   1.6063e+01  1.51e+01  9.42e-01  9.78e-01  3.14e-03  7.03e+00  2.24e-02  1.00e+00  2.21e-02  7.44e-02  5.79e-01
-    9   1.8735e+05   1.4672e+01  7.48e+00  5.10e-01  9.78e-01  3.06e-03  7.03e+00  1.13e-02  9.93e-01  1.09e-02  4.32e-02  5.19e-01
-   10   1.8726e+05   1.1192e+01  3.38e+00  3.02e-01  9.78e-01  3.06e-03  7.03e+00  5.20e-03  9.78e-01  4.93e-03  7.33e-02  5.81e-01
-   11   1.8699e+05  -4.1580e-01  1.25e+00       NaN  9.78e-01  3.09e-03  7.03e+00  1.96e-03  9.58e-01  1.82e-03  4.24e-02  6.51e-01
-   12   1.8642e+05  -2.6828e+01  5.29e-01       NaN  9.78e-01  3.13e-03  7.04e+00  8.37e-04  9.43e-01  7.71e-04  1.98e-02  5.84e-01
-   13   1.8233e+05  -2.2810e+02  9.97e-02       NaN  9.83e-01  3.06e-03  7.07e+00  1.58e-04  9.26e-01  1.45e-04  8.10e-03  8.17e-01
-   14   1.7425e+05  -6.1194e+02  3.82e-02       NaN  9.91e-01  3.08e-03  7.13e+00  6.12e-05  9.25e-01  5.57e-05  4.80e-02  6.40e-01
-   15   1.4220e+05  -2.1276e+03  1.13e-02       NaN  1.02e+00  3.18e-03  7.36e+00  1.78e-05  9.22e-01  1.65e-05  2.36e-02  7.17e-01
-   16  -5.5807e+04  -1.0665e+04  2.55e-03  4.56e-08  1.16e+00  3.59e-03  8.31e+00  3.56e-06  9.50e-01  3.71e-06  1.15e-02  7.83e-01
-   17  -3.4799e+05  -2.0732e+04  9.66e-04  2.78e-09  8.99e-01  2.79e-03  6.46e+00  1.79e-06  8.92e-01  1.41e-06  4.67e-02  6.40e-01
-dual infeasibility detected; terminating
-
-status is DualInfeasible after 17 iterations and 5600.877 seconds
-
-finished solve, took 5600.877850436 seconds
-
-min sample value is -347.85648403870465
+for c, skipping n=4, halfdeg=5, since U=15876
+min sample value is Inf
 obj values are
-[-972.6030812925377, -347994.5911035655]
+Float64[]
 
 
 
@@ -444,7 +324,7 @@ n = 4
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 0.000514804 seconds
+finished random objective generation, took 0.000436064 seconds
 running c
 for c, skipping n=4, halfdeg=6, since U=44100
 min sample value is Inf
@@ -457,7 +337,7 @@ n = 5
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 9.943e-6 seconds
+finished random objective generation, took 1.6402e-5 seconds
 running c
 for c, skipping n=5, halfdeg=1, since U=36
 min sample value is Inf
@@ -470,7 +350,7 @@ n = 5
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 8.166e-6 seconds
+finished random objective generation, took 5.95e-6 seconds
 running c
 for c, skipping n=5, halfdeg=2, since U=441
 min sample value is Inf
@@ -483,7 +363,7 @@ n = 5
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 3.1666e-5 seconds
+finished random objective generation, took 3.1495e-5 seconds
 running c
 for c, skipping n=5, halfdeg=3, since U=3136
 min sample value is Inf
@@ -496,139 +376,12 @@ n = 5
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 0.000125951 seconds
+finished random objective generation, took 0.000117084 seconds
 running c
-starting interpolation
-finished interpolation, took 1274.221801995 seconds
-running w
-starting data building
-dat.F_interp[1] = -156.30921190270777
-finished data building, took 0.00166051 seconds
-barpar is 686, dim_cone is 15876, num_vars is 15875
-running i
-
-model name c_w_i_5_4
-building Hypatia model
-Hypatia model built, took 35.206918849 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0   1.6322e+02  -1.0132e-01  6.86e+02       NaN  1.00e+00  0.00e+00  1.26e+02  1.00e+00  1.00e+00  1.00e+00
-    1   1.6266e+02  -1.0299e-01  4.42e+02       NaN  1.00e+00  0.00e+00  1.26e+02  6.44e-01  1.00e+00  6.44e-01  3.04e-01  5.12e-01
-    2   1.6149e+02  -1.1720e-01  2.53e+02       NaN  1.00e+00  0.00e+00  1.26e+02  3.68e-01  9.99e-01  3.68e-01  2.54e-01  5.73e-01
-    3   1.5917e+02  -1.6486e-01  1.37e+02       NaN  1.00e+00  0.00e+00  1.26e+02  2.01e-01  1.00e+00  2.00e-01  1.15e-01  5.14e-01
-    4   1.5438e+02  -2.8144e-01  7.06e+01       NaN  1.00e+00  0.00e+00  1.26e+02  1.03e-01  9.98e-01  1.03e-01  1.57e-01  5.75e-01
-    5   1.4606e+02  -5.1559e-01  3.81e+01       NaN  1.00e+00  0.00e+00  1.26e+02  5.62e-02  9.96e-01  5.56e-02  1.14e-01  5.16e-01
-    6   1.2524e+02  -1.1696e+00  1.76e+01       NaN  1.00e+00  0.00e+00  1.26e+02  2.62e-02  9.92e-01  2.56e-02  7.55e-02  5.77e-01
-    7   6.2421e+01  -3.4365e+00  6.64e+00       NaN  1.00e+00  0.00e+00  1.26e+02  1.00e-02  9.84e-01  9.69e-03  4.41e-02  6.47e-01
-    8  -1.8345e+02  -1.3119e+01  1.90e+00  1.04e-02  1.00e+00  0.00e+00  1.26e+02  2.91e-03  9.73e-01  2.77e-03  2.10e-02  7.24e-01
-    9  -7.1677e+02  -3.4700e+01  7.31e-01  1.02e-03  1.00e+00  0.00e+00  1.26e+02  1.13e-03  9.60e-01  1.07e-03  4.67e-02  6.40e-01
-   10  -2.7314e+03  -1.1734e+02  2.18e-01  7.97e-05  9.99e-01  0.00e+00  1.26e+02  3.40e-04  9.45e-01  3.18e-04  2.27e-02  7.17e-01
-   11  -1.1823e+04  -4.9194e+02  5.14e-02  4.35e-06  9.92e-01  0.00e+00  1.25e+02  8.13e-05  9.34e-01  7.50e-05  4.67e-02  8.00e-01
-   12  -3.0863e+04  -1.2678e+03  1.89e-02  6.12e-07  9.76e-01  0.00e+00  1.23e+02  3.09e-05  9.21e-01  2.75e-05  2.27e-02  6.40e-01
-   13  -9.4268e+04  -4.0276e+03  5.44e-03  5.77e-08  9.00e-01  0.00e+00  1.13e+02  9.70e-06  8.77e-01  7.93e-06  8.01e-03  7.17e-01
-   14  -1.6203e+05  -8.1191e+03  1.97e-03  1.22e-08  6.68e-01  0.00e+00  8.42e+01  4.77e-06  7.35e-01  2.88e-06  8.01e-03  6.40e-01
-   15  -1.2946e+05  -1.0297e+04  8.49e-04  6.55e-09  3.67e-01  0.00e+00  4.63e+01  3.74e-06  4.46e-01  1.24e-06  8.01e-03  5.73e-01
-   16  -5.9492e+04  -1.0715e+04  3.08e-04  5.18e-09  1.39e-01  0.00e+00  1.75e+01  3.59e-06  1.75e-01  4.49e-07  8.01e-03  6.42e-01
-   17  -1.9803e+04  -9.7836e+03  9.08e-05  4.59e-09  3.75e-02  0.00e+00  4.73e+00  3.92e-06  3.93e-02  1.32e-07  1.94e-02  7.19e-01
-   18  -9.3371e+03  -7.7445e+03  3.89e-05  4.16e-09  1.28e-02  0.00e+00  1.61e+00  4.93e-06  7.86e-03  5.67e-08  7.46e-02  6.18e-01
-   19  -6.9388e+03  -6.3037e+03  3.01e-05  4.33e-09  8.07e-03  0.00e+00  1.02e+00  6.03e-06  3.84e-03  4.38e-08  2.77e-01  3.13e-01
-   20  -6.3166e+03  -5.8358e+03  2.79e-05  4.41e-09  6.94e-03  0.00e+00  8.74e-01  6.50e-06  3.13e-03  4.06e-08  3.62e-01  1.15e-01
-performing correction step
-   21  -5.5429e+03  -4.8864e+03  2.79e-05  5.02e-09  5.84e-03  0.00e+00  7.36e-01  7.72e-06  5.07e-03  4.06e-08  3.76e-01  1.00e+00
-   22  -4.0163e+03  -3.8296e+03  1.76e-05  4.37e-09  2.91e-03  0.00e+00  3.67e-01  9.76e-06  1.83e-03  2.56e-08  2.28e-01  4.79e-01
-   23  -3.1418e+03  -3.0682e+03  1.38e-05  4.39e-09  1.85e-03  0.00e+00  2.33e-01  1.21e-05  8.91e-04  2.01e-08  3.12e-01  3.14e-01
-   24  -2.8288e+03  -2.7769e+03  1.26e-05  4.44e-09  1.53e-03  0.00e+00  1.93e-01  1.33e-05  6.91e-04  1.83e-08  3.89e-01  1.44e-01
-performing correction step
-   25  -2.5892e+03  -2.5046e+03  1.26e-05  4.85e-09  1.39e-03  0.00e+00  1.75e-01  1.46e-05  1.24e-03  1.83e-08  4.02e-01  1.00e+00
-   26  -1.9247e+03  -1.9012e+03  8.22e-06  4.27e-09  7.04e-04  0.00e+00  8.87e-02  1.89e-05  4.46e-04  1.20e-08  2.54e-01  4.64e-01
-   27  -1.5164e+03  -1.5072e+03  6.46e-06  4.26e-09  4.46e-04  0.00e+00  5.62e-02  2.34e-05  2.18e-04  9.41e-09  3.15e-01  3.14e-01
-   28  -1.3708e+03  -1.3643e+03  5.88e-06  4.29e-09  3.70e-04  0.00e+00  4.67e-02  2.56e-05  1.70e-04  8.56e-09  3.68e-01  1.44e-01
-   29  -1.3321e+03  -1.3261e+03  5.72e-06  4.30e-09  3.51e-04  0.00e+00  4.43e-02  2.63e-05  1.59e-04  8.34e-09  3.69e-01  4.23e-02
-performing correction step
-   30  -1.2452e+03  -1.2347e+03  5.72e-06  4.59e-09  3.30e-04  0.00e+00  4.16e-02  2.80e-05  2.97e-04  8.33e-09  3.67e-01  1.00e+00
-   31  -9.3745e+02  -9.3448e+02  3.63e-06  3.87e-09  1.64e-04  0.00e+00  2.07e-02  3.56e-05  1.07e-04  5.29e-09  2.18e-01  4.68e-01
-   32  -7.5061e+02  -7.4941e+02  2.73e-06  3.63e-09  1.02e-04  0.00e+00  1.28e-02  4.31e-05  5.21e-05  3.97e-09  2.43e-01  3.33e-01
-   33  -6.5955e+02  -6.5885e+02  2.24e-06  3.39e-09  7.45e-05  0.00e+00  9.38e-03  4.80e-05  3.43e-05  3.26e-09  2.35e-01  2.39e-01
-   34  -6.4588e+02  -6.4523e+02  2.16e-06  3.34e-09  7.06e-05  0.00e+00  8.89e-03  4.88e-05  3.22e-05  3.15e-09  2.08e-01  4.49e-02
-performing correction step
-   35  -6.3072e+02  -6.2946e+02  2.15e-06  3.42e-09  6.93e-05  0.00e+00  8.73e-03  4.97e-05  6.32e-05  3.14e-09  2.00e-01  1.00e+00
-   36  -5.0994e+02  -5.0956e+02  1.16e-06  2.28e-09  3.17e-05  0.00e+00  3.99e-03  5.86e-05  2.28e-05  1.69e-09  1.53e-01  5.45e-01
-   37  -4.3981e+02  -4.3968e+02  6.22e-07  1.41e-09  1.50e-05  0.00e+00  1.89e-03  6.58e-05  8.73e-06  9.06e-10  4.25e-02  4.88e-01
-   38  -4.0732e+02  -4.0726e+02  3.09e-07  7.60e-10  7.20e-06  0.00e+00  9.07e-04  6.89e-05  3.97e-06  4.51e-10  8.83e-02  5.47e-01
-   39  -3.9673e+02  -3.9669e+02  1.86e-07  4.69e-10  4.47e-06  0.00e+00  5.63e-04  6.85e-05  2.76e-06  2.71e-10  2.19e-01  4.90e-01
-   40  -3.9294e+02  -3.9291e+02  1.35e-07  3.43e-10  3.38e-06  0.00e+00  4.26e-04  6.72e-05  2.24e-06  1.96e-10  2.67e-01  3.51e-01
-   41  -3.9126e+02  -3.9123e+02  1.09e-07  2.79e-10  2.85e-06  0.00e+00  3.59e-04  6.60e-05  1.96e-06  1.59e-10  3.16e-01  2.52e-01
-   42  -3.9022e+02  -3.9020e+02  9.16e-08  2.35e-10  2.49e-06  0.00e+00  3.14e-04  6.48e-05  1.76e-06  1.34e-10  3.64e-01  2.26e-01
-   43  -3.8980e+02  -3.8978e+02  8.37e-08  2.15e-10  2.33e-06  0.00e+00  2.93e-04  6.41e-05  1.67e-06  1.22e-10  4.11e-01  1.29e-01
-   44  -3.8952e+02  -3.8950e+02  7.76e-08  1.99e-10  2.20e-06  0.00e+00  2.77e-04  6.34e-05  1.59e-06  1.13e-10  4.57e-01  1.16e-01
-   45  -3.8925e+02  -3.8923e+02  7.21e-08  1.85e-10  2.09e-06  0.00e+00  2.63e-04  6.28e-05  1.52e-06  1.05e-10  4.10e-01  1.04e-01
-   46  -3.8911e+02  -3.8908e+02  6.86e-08  1.76e-10  2.02e-06  0.00e+00  2.54e-04  6.23e-05  1.48e-06  1.00e-10  4.56e-01  7.44e-02
-   47  -3.8899e+02  -3.8897e+02  6.52e-08  1.68e-10  1.95e-06  0.00e+00  2.46e-04  6.18e-05  1.43e-06  9.51e-11  5.00e-01  8.33e-02
-   48  -3.8887e+02  -3.8885e+02  6.21e-08  1.60e-10  1.88e-06  0.00e+00  2.37e-04  6.14e-05  1.39e-06  9.05e-11  4.54e-01  7.47e-02
-   49  -3.8877e+02  -3.8875e+02  5.90e-08  1.52e-10  1.82e-06  0.00e+00  2.29e-04  6.08e-05  1.35e-06  8.59e-11  4.98e-01  8.36e-02
-   50  -3.8869e+02  -3.8867e+02  5.67e-08  1.46e-10  1.77e-06  0.00e+00  2.23e-04  6.04e-05  1.31e-06  8.26e-11  4.53e-01  6.00e-02
-   51  -3.8863e+02  -3.8861e+02  5.43e-08  1.40e-10  1.73e-06  0.00e+00  2.17e-04  6.00e-05  1.28e-06  7.92e-11  4.97e-01  6.71e-02
-   52  -3.8859e+02  -3.8857e+02  5.20e-08  1.34e-10  1.68e-06  0.00e+00  2.11e-04  5.95e-05  1.25e-06  7.58e-11  5.39e-01  7.52e-02
-   53  -3.8855e+02  -3.8853e+02  5.03e-08  1.29e-10  1.64e-06  0.00e+00  2.07e-04  5.92e-05  1.22e-06  7.33e-11  4.96e-01  5.39e-02
-   54  -3.8852e+02  -3.8850e+02  4.85e-08  1.25e-10  1.61e-06  0.00e+00  2.03e-04  5.88e-05  1.20e-06  7.08e-11  5.38e-01  6.04e-02
-   55  -3.8852e+02  -3.8850e+02  4.71e-08  1.21e-10  1.58e-06  0.00e+00  1.99e-04  5.84e-05  1.18e-06  6.87e-11  5.77e-01  5.41e-02
-   56  -3.8850e+02  -3.8848e+02  4.55e-08  1.17e-10  1.55e-06  0.00e+00  1.95e-04  5.80e-05  1.15e-06  6.63e-11  5.36e-01  6.06e-02
-   57  -3.8850e+02  -3.8849e+02  4.42e-08  1.14e-10  1.52e-06  0.00e+00  1.92e-04  5.76e-05  1.13e-06  6.44e-11  5.76e-01  5.43e-02
-   58  -3.8850e+02  -3.8848e+02  4.29e-08  1.10e-10  1.50e-06  0.00e+00  1.89e-04  5.73e-05  1.12e-06  6.25e-11  5.35e-01  4.86e-02
-   59  -3.8850e+02  -3.8848e+02  4.19e-08  1.08e-10  1.48e-06  0.00e+00  1.86e-04  5.70e-05  1.10e-06  6.11e-11  5.75e-01  4.36e-02
-   60  -3.8850e+02  -3.8848e+02  4.07e-08  1.05e-10  1.45e-06  0.00e+00  1.83e-04  5.66e-05  1.08e-06  5.93e-11  5.34e-01  4.88e-02
-   61  -3.8851e+02  -3.8849e+02  3.97e-08  1.02e-10  1.43e-06  0.00e+00  1.81e-04  5.63e-05  1.07e-06  5.79e-11  5.73e-01  4.37e-02
-   62  -3.8854e+02  -3.8852e+02  3.87e-08  9.96e-11  1.41e-06  0.00e+00  1.78e-04  5.59e-05  1.05e-06  5.64e-11  6.11e-01  4.90e-02
-   63  -3.8855e+02  -3.8853e+02  3.77e-08  9.71e-11  1.40e-06  0.00e+00  1.76e-04  5.56e-05  1.04e-06  5.50e-11  5.72e-01  4.39e-02
-   64  -3.8858e+02  -3.8856e+02  3.68e-08  9.46e-11  1.38e-06  0.00e+00  1.74e-04  5.52e-05  1.02e-06  5.36e-11  6.09e-01  4.92e-02
-   65  -3.8859e+02  -3.8858e+02  3.60e-08  9.27e-11  1.36e-06  0.00e+00  1.72e-04  5.50e-05  1.01e-06  5.25e-11  5.71e-01  3.52e-02
-   66  -3.8862e+02  -3.8860e+02  3.53e-08  9.08e-11  1.35e-06  0.00e+00  1.70e-04  5.47e-05  9.98e-07  5.15e-11  6.08e-01  3.95e-02
-slow progress in consecutive iterations; terminating
-
-status is SlowProgress after 66 iterations and 5509.145 seconds
-
-finished solve, took 5509.145757646 seconds
-
-running p
-starting data building
-finished data building, took 14.215060836 seconds
-barpar is 686, dim_cone is 47236, num_vars is 15876
-running i
-
-model name c_p_i_5_4
-building Hypatia model
-Hypatia model built, took 1357.537345461 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0   8.8669e+04   6.8629e+00  6.86e+02  1.00e+02  9.94e-01  3.55e-03  7.50e+00  1.00e+00  1.00e+00  1.00e+00
-    1   8.8668e+04   6.8615e+00  4.90e+02  7.15e+01  9.94e-01  3.36e-03  7.50e+00  7.15e-01  1.00e+00  7.15e-01  3.04e-01  4.10e-01
-    2   8.8668e+04   6.8584e+00  3.98e+02  5.80e+01  9.94e-01  3.27e-03  7.50e+00  5.79e-01  1.00e+00  5.80e-01  3.53e-01  2.94e-01
-    3   8.8667e+04   6.8513e+00  3.07e+02  4.48e+01  9.94e-01  3.23e-03  7.50e+00  4.46e-01  1.00e+00  4.47e-01  3.02e-01  3.29e-01
-    4   8.8666e+04   6.8300e+00  2.02e+02  2.95e+01  9.94e-01  3.30e-03  7.50e+00  2.93e-01  1.00e+00  2.94e-01  2.52e-01  4.60e-01
-    5   8.8662e+04   6.7650e+00  1.10e+02  1.62e+01  9.94e-01  3.32e-03  7.50e+00  1.59e-01  1.00e+00  1.60e-01  1.14e-01  5.16e-01
-    6   8.8657e+04   6.6578e+00  6.68e+01  1.00e+01  9.94e-01  3.34e-03  7.50e+00  9.69e-02  1.00e+00  9.74e-02  1.56e-01  4.62e-01
-    7   8.8650e+04   6.4827e+00  4.21e+01  6.50e+00  9.94e-01  3.34e-03  7.50e+00  6.13e-02  1.00e+00  6.14e-02  1.12e-01  4.14e-01
-    8   8.8640e+04   6.2114e+00  2.76e+01  4.44e+00  9.94e-01  3.34e-03  7.50e+00  4.03e-02  1.00e+00  4.02e-02  7.44e-02  3.71e-01
-    9   8.8622e+04   5.6490e+00  1.65e+01  2.93e+00  9.94e-01  3.33e-03  7.50e+00  2.43e-02  1.00e+00  2.41e-02  4.32e-02  4.15e-01
-   10   8.8569e+04   3.8511e+00  7.58e+00  1.97e+00  9.94e-01  3.30e-03  7.50e+00  1.12e-02  9.96e-01  1.11e-02  7.33e-02  5.81e-01
-   11   8.8408e+04  -2.1529e+00  2.84e+00       NaN  9.94e-01  3.29e-03  7.50e+00  4.21e-03  9.91e-01  4.14e-03  4.24e-02  6.51e-01
-   12   8.7770e+04  -2.7080e+01  8.05e-01       NaN  9.94e-01  3.29e-03  7.50e+00  1.20e-03  9.84e-01  1.17e-03  1.98e-02  7.29e-01
-   13   8.4346e+04  -1.6087e+02  1.65e-01       NaN  9.92e-01  3.27e-03  7.49e+00  2.48e-04  9.78e-01  2.41e-04  8.01e-03  8.00e-01
-   14   7.7663e+04  -4.1475e+02  6.31e-02       NaN  9.87e-01  3.26e-03  7.45e+00  9.73e-05  9.70e-01  9.20e-05  4.67e-02  6.40e-01
-   15   5.3143e+04  -1.3674e+03  1.88e-02       NaN  9.69e-01  3.20e-03  7.31e+00  2.97e-05  9.47e-01  2.74e-05  2.27e-02  7.17e-01
-   16  -5.8191e+04  -5.7746e+03  3.86e-03  6.63e-08  8.45e-01  2.79e-03  6.38e+00  7.04e-06  8.99e-01  5.63e-06  8.01e-03  8.00e-01
-   17  -1.1835e+05  -9.3734e+03  1.47e-03  1.24e-08  5.49e-01  1.81e-03  4.14e+00  4.22e-06  6.67e-01  2.14e-06  4.67e-02  6.40e-01
-dual infeasibility detected; terminating
-
-status is DualInfeasible after 17 iterations and 4739.212 seconds
-
-finished solve, took 4739.213091163 seconds
-
-min sample value is -352.21675554191535
+for c, skipping n=5, halfdeg=4, since U=15876
+min sample value is Inf
 obj values are
-[-544.9287882334652, -118345.93842368871]
+Float64[]
 
 
 
@@ -636,7 +389,7 @@ n = 5
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 0.000523791 seconds
+finished random objective generation, took 0.000423851 seconds
 running c
 for c, skipping n=5, halfdeg=5, since U=63504
 min sample value is Inf
@@ -649,7 +402,7 @@ n = 5
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 0.001733632 seconds
+finished random objective generation, took 0.001396452 seconds
 running c
 for c, skipping n=5, halfdeg=6, since U=213444
 min sample value is Inf
@@ -662,7 +415,7 @@ n = 6
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 7.359e-6 seconds
+finished random objective generation, took 5.973e-6 seconds
 running c
 for c, skipping n=6, halfdeg=1, since U=49
 min sample value is Inf
@@ -675,7 +428,7 @@ n = 6
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 7.426e-6 seconds
+finished random objective generation, took 5.211e-6 seconds
 running c
 for c, skipping n=6, halfdeg=2, since U=784
 min sample value is Inf
@@ -688,7 +441,7 @@ n = 6
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 6.3472e-5 seconds
+finished random objective generation, took 2.764e-5 seconds
 running c
 for c, skipping n=6, halfdeg=3, since U=7056
 min sample value is Inf
@@ -701,7 +454,7 @@ n = 6
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 0.000225801 seconds
+finished random objective generation, took 0.000201437 seconds
 running c
 for c, skipping n=6, halfdeg=4, since U=44100
 min sample value is Inf
@@ -714,7 +467,7 @@ n = 6
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 0.001209703 seconds
+finished random objective generation, took 0.000893561 seconds
 running c
 for c, skipping n=6, halfdeg=5, since U=213444
 min sample value is Inf
@@ -727,7 +480,7 @@ n = 6
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 0.005392662 seconds
+finished random objective generation, took 0.005727502 seconds
 running c
 for c, skipping n=6, halfdeg=6, since U=853776
 min sample value is Inf
@@ -740,7 +493,7 @@ n = 8
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 1.0962e-5 seconds
+finished random objective generation, took 8.594e-6 seconds
 running c
 for c, skipping n=8, halfdeg=1, since U=81
 min sample value is Inf
@@ -753,7 +506,7 @@ n = 8
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 1.1734e-5 seconds
+finished random objective generation, took 8.364e-6 seconds
 running c
 for c, skipping n=8, halfdeg=2, since U=2025
 min sample value is Inf
@@ -766,12 +519,93 @@ n = 8
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 8.2941e-5 seconds
+finished random objective generation, took 8.2069e-5 seconds
 running c
-for c, skipping n=8, halfdeg=3, since U=27225
-min sample value is Inf
-obj values are
-Float64[]
+starting interpolation
+finished interpolation, took 7715.243762639 seconds
+running w
+starting data building
+dat.F_interp[1] = -45.30293310336941
+finished data building, took 0.50038435 seconds
+barpar is 885, dim_cone is 27225, num_vars is 27224
+running i
+
+model name c_w_i_8_3
+building Hypatia model
+Hypatia model built, took 126.271986681 seconds
+starting solve
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.0846e+01  -4.8185e-02  8.85e+02       NaN  1.00e+00  0.00e+00  1.65e+02  1.00e+00  1.00e+00  1.00e+00
+    1   2.0291e+01  -4.9811e-02  5.70e+02       NaN  1.00e+00  0.00e+00  1.65e+02  6.44e-01  1.00e+00  6.44e-01  3.04e-01  5.12e-01
+    2   1.9473e+01  -5.8795e-02  3.75e+02       NaN  1.00e+00  0.00e+00  1.65e+02  4.23e-01  1.00e+00  4.24e-01  2.54e-01  4.59e-01
+    3   1.7810e+01  -8.4409e-02  2.23e+02       NaN  1.00e+00  0.00e+00  1.65e+02  2.50e-01  1.00e+00  2.51e-01  2.04e-01  5.14e-01
+    4   1.5211e+01  -1.3715e-01  1.36e+02       NaN  1.00e+00  0.00e+00  1.65e+02  1.53e-01  1.00e+00  1.54e-01  1.57e-01  4.60e-01
+    5   9.5455e+00  -2.7162e-01  7.41e+01       NaN  1.00e+00  0.00e+00  1.65e+02  8.32e-02  1.00e+00  8.37e-02  1.14e-01  5.16e-01
+    6  -4.6966e+00  -6.6145e-01  3.43e+01  7.31e+00  1.00e+00  0.00e+00  1.65e+02  3.88e-02  1.01e+00  3.88e-02  7.55e-02  5.77e-01
+    7  -4.7701e+01  -1.9364e+00  1.30e+01  2.72e-01  1.00e+00  0.00e+00  1.65e+02  1.48e-02  1.00e+00  1.47e-02  4.41e-02  6.47e-01
+    8  -2.1555e+02  -7.1202e+00  3.75e+00  1.74e-02  9.99e-01  0.00e+00  1.65e+02  4.31e-03  9.93e-01  4.24e-03  2.10e-02  7.24e-01
+    9  -1.1111e+03  -3.5105e+01  7.70e-01  6.93e-04  9.93e-01  0.00e+00  1.64e+02  8.96e-04  9.83e-01  8.70e-04  8.01e-03  8.00e-01
+   10  -2.8155e+03  -8.7984e+01  2.96e-01  1.05e-04  9.81e-01  0.00e+00  1.62e+02  3.53e-04  9.71e-01  3.34e-04  4.67e-02  6.40e-01
+   11  -8.7750e+03  -2.8135e+02  8.83e-02  1.01e-05  9.40e-01  0.00e+00  1.55e+02  1.10e-04  9.40e-01  9.98e-05  2.27e-02  7.17e-01
+   12  -2.8766e+04  -9.9150e+02  2.09e-02  7.27e-07  7.88e-01  0.00e+00  1.30e+02  3.13e-05  8.70e-01  2.36e-05  4.67e-02  8.00e-01
+   13  -4.5517e+04  -1.9245e+03  7.74e-03  1.70e-07  5.80e-01  0.00e+00  9.56e+01  1.59e-05  6.95e-01  8.75e-06  2.27e-02  6.40e-01
+   14  -4.5160e+04  -2.7344e+03  3.50e-03  7.75e-08  3.74e-01  0.00e+00  6.18e+01  1.12e-05  4.75e-01  3.96e-06  4.67e-02  5.73e-01
+   15  -3.1115e+04  -3.4310e+03  1.30e-03  4.19e-08  1.75e-01  0.00e+00  2.89e+01  8.92e-06  2.47e-01  1.47e-06  2.27e-02  6.42e-01
+   16  -2.2589e+04  -3.5714e+03  8.27e-04  3.66e-08  1.16e-01  0.00e+00  1.91e+01  8.57e-06  1.63e-01  9.36e-07  8.01e-03  3.68e-01
+   17  -1.5375e+04  -3.6481e+03  4.89e-04  3.18e-08  6.97e-02  0.00e+00  1.15e+01  8.39e-06  9.84e-02  5.53e-07  8.01e-03  4.12e-01
+   18  -8.6012e+03  -3.6397e+03  2.09e-04  2.43e-08  2.97e-02  0.00e+00  4.90e+00  8.41e-06  4.17e-02  2.36e-07  8.29e-03  5.77e-01
+   19  -3.9833e+03  -3.3420e+03  4.29e-05  1.08e-08  5.60e-03  0.00e+00  9.24e-01  9.16e-06  5.87e-03  4.85e-08  1.68e-02  8.08e-01
+   20  -2.5762e+03  -2.4808e+03  2.23e-05  8.65e-09  2.16e-03  0.00e+00  3.56e-01  1.23e-05  1.17e-03  2.52e-08  1.28e-01  5.52e-01
+   21  -2.2439e+03  -2.1873e+03  1.91e-05  8.53e-09  1.63e-03  0.00e+00  2.70e-01  1.40e-05  7.90e-04  2.16e-08  3.07e-01  2.05e-01
+   22  -2.1606e+03  -2.1110e+03  1.84e-05  8.50e-09  1.51e-03  0.00e+00  2.50e-01  1.45e-05  7.17e-04  2.07e-08  3.26e-01  6.02e-02
+performing correction step
+   23  -1.8876e+03  -1.8159e+03  1.83e-05  9.72e-09  1.30e-03  0.00e+00  2.15e-01  1.68e-05  1.20e-03  2.07e-08  3.28e-01  1.00e+00
+   24  -1.4239e+03  -1.4127e+03  8.92e-06  6.26e-09  4.94e-04  0.00e+00  8.16e-02  2.15e-05  2.41e-04  1.01e-08  1.81e-01  6.28e-01
+   25  -1.3589e+03  -1.3494e+03  8.55e-06  6.29e-09  4.53e-04  0.00e+00  7.47e-02  2.25e-05  2.15e-04  9.66e-09  3.89e-01  6.74e-02
+performing correction step
+   26  -1.1564e+03  -1.1431e+03  8.55e-06  7.39e-09  3.85e-04  0.00e+00  6.35e-02  2.65e-05  3.53e-04  9.66e-09  3.85e-01  1.00e+00
+   27  -9.1865e+02  -9.1480e+02  5.20e-06  5.66e-09  1.88e-04  0.00e+00  3.10e-02  3.30e-05  1.27e-04  5.87e-09  2.37e-01  5.14e-01
+   28  -7.6058e+02  -7.5902e+02  3.88e-06  5.10e-09  1.16e-04  0.00e+00  1.91e-02  3.97e-05  6.21e-05  4.38e-09  2.33e-01  3.35e-01
+   29  -6.9154e+02  -6.9052e+02  3.33e-06  4.82e-09  9.05e-05  0.00e+00  1.49e-02  4.36e-05  4.47e-05  3.77e-09  2.58e-01  1.92e-01
+   30  -6.6440e+02  -6.6355e+02  3.12e-06  4.69e-09  8.12e-05  0.00e+00  1.34e-02  4.54e-05  3.91e-05  3.52e-09  2.49e-01  8.81e-02
+   31  -6.5509e+02  -6.5428e+02  3.04e-06  4.64e-09  7.81e-05  0.00e+00  1.29e-02  4.60e-05  3.74e-05  3.44e-09  2.41e-01  3.23e-02
+performing correction step
+   32  -6.3160e+02  -6.3009e+02  3.04e-06  4.81e-09  7.54e-05  0.00e+00  1.24e-02  4.77e-05  7.19e-05  3.43e-09  2.37e-01  1.00e+00
+   33  -5.2346e+02  -5.2301e+02  1.69e-06  3.23e-09  3.51e-05  0.00e+00  5.79e-03  5.71e-05  2.59e-05  1.91e-09  1.88e-01  5.46e-01
+   34  -4.4846e+02  -4.4831e+02  9.93e-07  2.21e-09  1.74e-05  0.00e+00  2.87e-03  6.69e-05  9.84e-06  1.12e-09  1.42e-01  4.89e-01
+   35  -4.1477e+02  -4.1470e+02  6.03e-07  1.45e-09  9.77e-06  0.00e+00  1.61e-03  7.22e-05  4.94e-06  6.81e-10  1.00e-01  4.38e-01
+   36  -3.9542e+02  -3.9538e+02  3.47e-07  8.77e-10  5.43e-06  0.00e+00  8.96e-04  7.51e-05  2.78e-06  3.92e-10  1.41e-01  4.91e-01
+   37  -3.8625e+02  -3.8623e+02  2.20e-07  5.70e-10  3.44e-06  0.00e+00  5.68e-04  7.60e-05  1.92e-06  2.49e-10  1.86e-01  4.40e-01
+   38  -3.8140e+02  -3.8139e+02  1.52e-07  3.98e-10  2.40e-06  0.00e+00  3.97e-04  7.60e-05  1.47e-06  1.71e-10  2.33e-01  3.94e-01
+   39  -3.7859e+02  -3.7858e+02  1.12e-07  2.95e-10  1.80e-06  0.00e+00  2.98e-04  7.55e-05  1.19e-06  1.26e-10  2.81e-01  3.53e-01
+   40  -3.7655e+02  -3.7653e+02  8.36e-08  2.22e-10  1.38e-06  0.00e+00  2.27e-04  7.50e-05  9.46e-07  9.44e-11  2.31e-01  3.16e-01
+   41  -3.7571e+02  -3.7570e+02  7.21e-08  1.92e-10  1.20e-06  0.00e+00  1.98e-04  7.45e-05  8.45e-07  8.14e-11  2.80e-01  1.81e-01
+   42  -3.7512e+02  -3.7511e+02  6.38e-08  1.70e-10  1.08e-06  0.00e+00  1.78e-04  7.41e-05  7.72e-07  7.20e-11  3.28e-01  1.62e-01
+   43  -3.7469e+02  -3.7468e+02  5.76e-08  1.54e-10  9.85e-07  0.00e+00  1.62e-04  7.37e-05  7.18e-07  6.51e-11  3.77e-01  1.46e-01
+   44  -3.7430e+02  -3.7429e+02  5.22e-08  1.40e-10  9.03e-07  0.00e+00  1.49e-04  7.34e-05  6.67e-07  5.90e-11  3.27e-01  1.30e-01
+   45  -3.7401e+02  -3.7400e+02  4.81e-08  1.29e-10  8.41e-07  0.00e+00  1.39e-04  7.30e-05  6.28e-07  5.44e-11  3.75e-01  1.17e-01
+   46  -3.7374e+02  -3.7373e+02  4.42e-08  1.18e-10  7.82e-07  0.00e+00  1.29e-04  7.26e-05  5.91e-07  5.00e-11  4.22e-01  1.31e-01
+   47  -3.7349e+02  -3.7348e+02  4.07e-08  1.09e-10  7.28e-07  0.00e+00  1.20e-04  7.22e-05  5.55e-07  4.60e-11  3.73e-01  1.17e-01
+   48  -3.7334e+02  -3.7334e+02  3.86e-08  1.03e-10  6.95e-07  0.00e+00  1.15e-04  7.20e-05  5.34e-07  4.36e-11  4.21e-01  8.41e-02
+   49  -3.7320e+02  -3.7319e+02  3.65e-08  9.78e-11  6.64e-07  0.00e+00  1.09e-04  7.17e-05  5.12e-07  4.12e-11  4.66e-01  9.42e-02
+   50  -3.7303e+02  -3.7302e+02  3.41e-08  9.13e-11  6.26e-07  0.00e+00  1.03e-04  7.13e-05  4.87e-07  3.85e-11  4.19e-01  1.05e-01
+   51  -3.7293e+02  -3.7292e+02  3.26e-08  8.73e-11  6.03e-07  0.00e+00  9.94e-05  7.10e-05  4.71e-07  3.68e-11  4.65e-01  7.56e-02
+optimal solution found; terminating
+
+status is Optimal after 51 iterations and 16477.71 seconds
+
+finished solve, took 16477.710301672 seconds
+
+running p
+starting data building
+finished data building, took 33.313827326 seconds
+barpar is 885, dim_cone is 59625, num_vars is 27225
+running i
+
+model name c_p_i_8_3
+building Hypatia model
+OutOfMemoryError()
 
 
 
@@ -779,7 +613,7 @@ n = 8
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 0.000737856 seconds
+finished random objective generation, took 0.000736932 seconds
 running c
 for c, skipping n=8, halfdeg=4, since U=245025
 min sample value is Inf
@@ -792,7 +626,7 @@ n = 8
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 0.006854838 seconds
+finished random objective generation, took 0.012209903 seconds
 running c
 for c, skipping n=8, halfdeg=5, since U=1656369
 min sample value is Inf
@@ -805,7 +639,7 @@ n = 8
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 0.052146355 seconds
+finished random objective generation, took 0.087449339 seconds
 running c
 for c, skipping n=8, halfdeg=6, since U=9018009
 min sample value is Inf
@@ -818,7 +652,7 @@ n = 10
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 1.4843e-5 seconds
+finished random objective generation, took 1.0209e-5 seconds
 running c
 for c, skipping n=10, halfdeg=1, since U=121
 min sample value is Inf
@@ -831,7 +665,7 @@ n = 10
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 7.993e-6 seconds
+finished random objective generation, took 8.485e-6 seconds
 running c
 for c, skipping n=10, halfdeg=2, since U=4356
 min sample value is Inf
@@ -844,7 +678,7 @@ n = 10
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 0.000142557 seconds
+finished random objective generation, took 0.000110581 seconds
 running c
 for c, skipping n=10, halfdeg=3, since U=81796
 min sample value is Inf
@@ -857,7 +691,7 @@ n = 10
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 0.001775052 seconds
+finished random objective generation, took 0.00163333 seconds
 running c
 for c, skipping n=10, halfdeg=4, since U=1002001
 min sample value is Inf
@@ -870,7 +704,7 @@ n = 10
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 0.024823581 seconds
+finished random objective generation, took 0.024029925 seconds
 running c
 for c, skipping n=10, halfdeg=5, since U=9018009
 min sample value is Inf
@@ -883,7 +717,7 @@ n = 10
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 0.233395277 seconds
+finished random objective generation, took 3.058057917 seconds
 running c
 for c, skipping n=10, halfdeg=6, since U=64128064
 min sample value is Inf
@@ -896,7 +730,7 @@ n = 12
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 2.2256e-5 seconds
+finished random objective generation, took 1.6389e-5 seconds
 running c
 for c, skipping n=12, halfdeg=1, since U=169
 min sample value is Inf
@@ -909,145 +743,12 @@ n = 12
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 9.923e-6 seconds
+finished random objective generation, took 1.0021e-5 seconds
 running c
-starting interpolation
-finished interpolation, took 465.892132193 seconds
-running w
-starting data building
-dat.F_interp[1] = 15.579747942043058
-finished data building, took 0.00089783 seconds
-barpar is 403, dim_cone is 8281, num_vars is 8280
-running i
-
-model name c_w_i_12_2
-building Hypatia model
-Hypatia model built, took 9.943501315 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0  -1.6869e+01  -7.5313e-02  4.03e+02  2.39e+01  9.99e-01  0.00e+00  9.10e+01  1.00e+00  1.00e+00  1.00e+00
-    1  -1.7429e+01  -8.1108e-02  2.59e+02  1.49e+01  9.99e-01  0.00e+00  9.10e+01  6.44e-01  1.00e+00  6.44e-01  3.04e-01  5.12e-01
-    2  -1.8106e+01  -1.0187e-01  1.83e+02  1.01e+01  9.99e-01  0.00e+00  9.10e+01  4.52e-01  1.00e+00  4.53e-01  3.53e-01  4.59e-01
-    3  -1.9695e+01  -1.5920e-01  1.08e+02  5.51e+00  9.99e-01  0.00e+00  9.10e+01  2.68e-01  1.00e+00  2.69e-01  2.04e-01  5.14e-01
-    4  -2.4148e+01  -3.4474e-01  5.07e+01  2.10e+00  9.99e-01  0.00e+00  9.10e+01  1.25e-01  1.00e+00  1.26e-01  7.65e-02  5.75e-01
-    5  -3.7571e+01  -9.3829e-01  1.93e+01  5.13e-01  9.99e-01  0.00e+00  9.10e+01  4.82e-02  1.00e+00  4.79e-02  4.49e-02  6.44e-01
-    6  -8.9643e+01  -3.2983e+00  5.64e+00  6.29e-02  1.00e+00  0.00e+00  9.12e+01  1.41e-02  9.97e-01  1.40e-02  2.15e-02  7.22e-01
-    7  -2.0513e+02  -8.5589e+00  2.19e+00  1.07e-02  1.00e+00  0.00e+00  9.15e+01  5.50e-03  9.94e-01  5.44e-03  4.72e-02  6.40e-01
-    8  -1.5912e+03  -7.1377e+01  2.73e-01  1.71e-04  1.04e+00  0.00e+00  9.49e+01  6.61e-04  9.94e-01  6.76e-04  2.31e-02  8.96e-01
-    9  -3.0080e+03  -1.2941e+02  1.47e-01  4.90e-05  1.07e+00  0.00e+00  9.72e+01  3.57e-04  1.02e+00  3.66e-04  1.27e-01  5.12e-01
-   10  -1.1530e+04  -4.8025e+02  4.45e-02  3.86e-06  1.20e+00  0.00e+00  1.10e+02  9.60e-05  1.06e+00  1.11e-04  2.82e-02  7.17e-01
-   11  -4.3507e+04  -1.8124e+03  9.27e-03  2.13e-07  9.43e-01  0.00e+00  8.59e+01  2.56e-05  1.07e+00  2.30e-05  1.08e-02  8.00e-01
-   12  -8.4888e+03  -1.5017e+03  3.35e-03  3.94e-07  2.91e-01  0.00e+00  2.65e+01  3.05e-05  2.13e-01  8.30e-06  4.55e-02  6.62e-01
-   13  -3.4298e+03  -1.4941e+03  9.14e-04  2.67e-07  7.99e-02  0.00e+00  7.28e+00  3.06e-05  5.92e-02  2.27e-06  2.19e-02  7.41e-01
-   14  -1.7751e+03  -1.2101e+03  5.80e-04  3.27e-07  4.12e-02  0.00e+00  3.75e+00  3.77e-05  2.13e-02  1.44e-06  1.55e-01  4.30e-01
-   15  -1.4777e+03  -1.0986e+03  5.15e-04  3.48e-07  3.32e-02  0.00e+00  3.02e+00  4.16e-05  1.58e-02  1.28e-06  2.88e-01  1.58e-01
-   16  -1.3880e+03  -1.0581e+03  4.95e-04  3.56e-07  3.07e-02  0.00e+00  2.79e+00  4.32e-05  1.42e-02  1.23e-06  3.31e-01  5.79e-02
-   17  -1.3721e+03  -1.0505e+03  4.91e-04  3.58e-07  3.02e-02  0.00e+00  2.75e+00  4.36e-05  1.40e-02  1.22e-06  3.44e-01  1.09e-02
-performing correction step
-   18  -1.0899e+03  -7.8132e+02  4.90e-04  4.50e-07  2.24e-02  0.00e+00  2.04e+00  5.88e-05  1.81e-02  1.22e-06  3.46e-01  1.00e+00
-   19  -7.1739e+02  -6.2845e+02  3.10e-04  4.32e-07  1.13e-02  0.00e+00  1.03e+00  7.36e-05  6.53e-03  7.69e-07  1.98e-01  4.59e-01
-   20  -5.7728e+02  -5.3293e+02  2.59e-04  4.49e-07  7.98e-03  0.00e+00  7.27e-01  8.72e-05  3.85e-03  6.42e-07  3.41e-01  2.50e-01
-   21  -5.3704e+02  -5.0143e+02  2.45e-04  4.56e-07  7.08e-03  0.00e+00  6.45e-01  9.28e-05  3.30e-03  6.07e-07  4.03e-01  9.17e-02
-   22  -5.2823e+02  -4.9431e+02  2.42e-04  4.58e-07  6.89e-03  0.00e+00  6.28e-01  9.42e-05  3.18e-03  5.99e-07  4.13e-01  2.15e-02
-performing correction step
-   23  -4.8593e+02  -4.3506e+02  2.41e-04  4.97e-07  6.04e-03  0.00e+00  5.50e-01  1.08e-04  5.46e-03  5.99e-07  4.14e-01  1.00e+00
-   24  -3.5239e+02  -3.3830e+02  1.61e-04  4.56e-07  3.08e-03  0.00e+00  2.81e-01  1.40e-04  1.97e-03  3.98e-07  2.66e-01  4.57e-01
-   25  -2.8208e+02  -2.7652e+02  1.27e-04  4.49e-07  1.96e-03  0.00e+00  1.79e-01  1.73e-04  9.59e-04  3.14e-07  3.24e-01  3.14e-01
-   26  -2.6268e+02  -2.5841e+02  1.18e-04  4.48e-07  1.69e-03  0.00e+00  1.54e-01  1.86e-04  7.91e-04  2.91e-07  3.74e-01  1.15e-01
-   27  -2.5746e+02  -2.5349e+02  1.15e-04  4.47e-07  1.62e-03  0.00e+00  1.48e-01  1.90e-04  7.51e-04  2.85e-07  3.71e-01  3.38e-02
-performing correction step
-   28  -2.4341e+02  -2.3662e+02  1.15e-04  4.72e-07  1.51e-03  0.00e+00  1.37e-01  2.05e-04  1.38e-03  2.85e-07  3.69e-01  1.00e+00
-   29  -1.9082e+02  -1.8890e+02  7.34e-05  3.85e-07  7.54e-04  0.00e+00  6.86e-02  2.62e-04  4.98e-04  1.82e-07  2.21e-01  4.64e-01
-   30  -1.6280e+02  -1.6199e+02  5.43e-05  3.33e-07  4.68e-04  0.00e+00  4.26e-02  3.11e-04  2.51e-04  1.35e-07  2.11e-01  3.32e-01
-   31  -1.4925e+02  -1.4875e+02  4.39e-05  2.94e-07  3.43e-04  0.00e+00  3.13e-02  3.42e-04  1.67e-04  1.09e-07  1.94e-01  2.38e-01
-   32  -1.4330e+02  -1.4292e+02  3.90e-05  2.72e-07  2.90e-04  0.00e+00  2.65e-02  3.58e-04  1.36e-04  9.65e-08  1.66e-01  1.37e-01
-   33  -1.4095e+02  -1.4060e+02  3.69e-05  2.62e-07  2.70e-04  0.00e+00  2.46e-02  3.65e-04  1.25e-04  9.14e-08  1.47e-01  6.27e-02
-performing correction step
-   34  -1.3927e+02  -1.3861e+02  3.68e-05  2.64e-07  2.66e-04  0.00e+00  2.42e-02  3.71e-04  2.46e-04  9.14e-08  1.39e-01  1.00e+00
-   35  -1.2028e+02  -1.2017e+02  1.39e-05  1.16e-07  8.53e-05  0.00e+00  7.77e-03  4.37e-04  4.93e-05  3.46e-08  3.41e-02  6.44e-01
-   36  -1.1316e+02  -1.1312e+02  6.53e-06  5.77e-08  3.71e-05  0.00e+00  3.38e-03  4.70e-04  1.77e-05  1.62e-08  4.25e-02  5.56e-01
-   37  -1.1019e+02  -1.1018e+02  2.73e-06  2.47e-08  1.53e-05  0.00e+00  1.40e-03  4.80e-04  7.55e-06  6.76e-09  7.23e-02  6.23e-01
-   38  -1.0928e+02  -1.0927e+02  1.33e-06  1.22e-08  7.85e-06  0.00e+00  7.15e-04  4.71e-04  4.46e-06  3.30e-09  1.09e-01  5.58e-01
-   39  -1.0891e+02  -1.0890e+02  7.38e-07  6.77e-09  4.66e-06  0.00e+00  4.25e-04  4.56e-04  2.97e-06  1.83e-09  1.50e-01  5.00e-01
-   40  -1.0872e+02  -1.0872e+02  4.55e-07  4.19e-09  3.08e-06  0.00e+00  2.81e-04  4.41e-04  2.12e-06  1.13e-09  1.95e-01  4.48e-01
-   41  -1.0863e+02  -1.0863e+02  3.07e-07  2.82e-09  2.21e-06  0.00e+00  2.02e-04  4.27e-04  1.60e-06  7.60e-10  2.43e-01  4.02e-01
-   42  -1.0858e+02  -1.0858e+02  2.22e-07  2.04e-09  1.70e-06  0.00e+00  1.55e-04  4.15e-04  1.26e-06  5.50e-10  2.92e-01  3.60e-01
-   43  -1.0856e+02  -1.0856e+02  1.80e-07  1.66e-09  1.44e-06  0.00e+00  1.31e-04  4.06e-04  1.08e-06  4.47e-10  3.40e-01  2.58e-01
-   44  -1.0855e+02  -1.0855e+02  1.57e-07  1.45e-09  1.30e-06  0.00e+00  1.18e-04  4.00e-04  9.77e-07  3.90e-10  3.88e-01  1.85e-01
-   45  -1.0854e+02  -1.0854e+02  1.38e-07  1.27e-09  1.17e-06  0.00e+00  1.07e-04  3.94e-04  8.85e-07  3.42e-10  3.39e-01  1.66e-01
-   46  -1.0854e+02  -1.0854e+02  1.27e-07  1.17e-09  1.10e-06  0.00e+00  1.00e-04  3.90e-04  8.29e-07  3.14e-10  3.87e-01  1.19e-01
-   47  -1.0854e+02  -1.0854e+02  1.16e-07  1.06e-09  1.03e-06  0.00e+00  9.37e-05  3.85e-04  7.75e-07  2.87e-10  4.33e-01  1.33e-01
-optimal solution found; terminating
-
-status is Optimal after 47 iterations and 1064.46 seconds
-
-finished solve, took 1064.461043798 seconds
-
-running p
-starting data building
-finished data building, took 2.280011829 seconds
-barpar is 403, dim_cone is 12337, num_vars is 8281
-running i
-
-model name c_p_i_12_2
-building Hypatia model
-Hypatia model built, took 107.050817985 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0  -1.1676e+04  -1.3378e+00  4.03e+02  3.45e-02  9.93e-01  1.12e-02  9.63e+00  1.00e+00  1.00e+00  1.00e+00
-    1  -1.1677e+04  -1.3423e+00  2.88e+02  2.47e-02  9.93e-01  1.12e-02  9.63e+00  7.15e-01  1.00e+00  7.15e-01  3.04e-01  4.10e-01
-    2  -1.1677e+04  -1.3525e+00  2.26e+02  1.94e-02  9.93e-01  1.12e-02  9.63e+00  5.58e-01  1.00e+00  5.61e-01  2.54e-01  2.94e-01
-    3  -1.1678e+04  -1.3766e+00  1.62e+02  1.38e-02  9.93e-01  1.12e-02  9.63e+00  3.98e-01  1.00e+00  4.01e-01  3.02e-01  4.11e-01
-    4  -1.1679e+04  -1.4141e+00  1.17e+02  1.00e-02  9.93e-01  1.12e-02  9.63e+00  2.89e-01  1.00e+00  2.91e-01  2.52e-01  3.68e-01
-    5  -1.1682e+04  -1.4864e+00  7.88e+01  6.75e-03  9.93e-01  1.12e-02  9.63e+00  1.94e-01  1.01e+00  1.96e-01  2.03e-01  4.12e-01
-    6  -1.1687e+04  -1.6609e+00  4.51e+01  3.86e-03  9.93e-01  1.12e-02  9.64e+00  1.11e-01  1.01e+00  1.12e-01  7.55e-02  4.62e-01
-    7  -1.1707e+04  -2.3548e+00  1.72e+01  1.47e-03  9.94e-01  1.12e-02  9.64e+00  4.23e-02  1.01e+00  4.26e-02  4.41e-02  6.47e-01
-    8  -1.1788e+04  -5.1628e+00  4.98e+00  4.22e-04  9.96e-01  1.12e-02  9.66e+00  1.23e-02  1.01e+00  1.23e-02  2.10e-02  7.24e-01
-    9  -1.1967e+04  -1.1364e+01  1.94e+00  1.62e-04  9.99e-01  1.13e-02  9.69e+00  4.78e-03  1.01e+00  4.80e-03  4.73e-02  6.40e-01
-   10  -1.2663e+04  -3.5514e+01  5.79e-01  4.57e-05  1.01e+00  1.14e-02  9.83e+00  1.41e-03  1.01e+00  1.44e-03  2.31e-02  7.17e-01
-   11  -1.4422e+04  -9.6371e+01  2.15e-01  1.49e-05  1.05e+00  1.18e-02  1.02e+01  5.09e-04  1.03e+00  5.34e-04  9.93e-03  6.34e-01
-   12  -2.1905e+04  -3.5512e+02  6.41e-02  2.93e-06  1.16e+00  1.31e-02  1.13e+01  1.37e-04  1.07e+00  1.59e-04  1.26e-02  7.10e-01
-   13  -3.7902e+04  -9.7551e+02  2.36e-02  6.23e-07  1.19e+00  1.34e-02  1.15e+01  4.95e-05  1.14e+00  5.86e-05  9.06e-03  6.37e-01
-   14  -2.8221e+04  -1.4240e+03  6.90e-03  2.45e-07  5.07e-01  5.72e-03  4.91e+00  3.39e-05  7.07e-01  1.71e-05  8.01e-03  7.13e-01
-   15  -6.4243e+03  -1.2017e+03  2.34e-03  3.65e-07  1.45e-01  1.64e-03  1.41e+00  4.02e-05  1.41e-01  5.81e-06  3.64e-02  6.85e-01
-   16  -2.2159e+03  -1.1347e+03  6.01e-04  2.71e-07  3.53e-02  3.99e-04  3.43e-01  4.25e-05  2.83e-02  1.49e-06  1.71e-02  7.56e-01
-   17  -1.2793e+03  -8.6796e+02  4.28e-04  3.35e-07  1.94e-02  2.18e-04  1.88e-01  5.54e-05  1.02e-02  1.06e-06  2.52e-01  3.82e-01
-   18  -1.1539e+03  -8.0891e+02  4.05e-04  3.51e-07  1.71e-02  1.93e-04  1.66e-01  5.94e-05  8.57e-03  1.00e-06  4.09e-01  8.97e-02
-   19  -1.1208e+03  -7.9231e+02  3.99e-04  3.56e-07  1.65e-02  1.86e-04  1.60e-01  6.07e-05  8.18e-03  9.89e-07  4.25e-01  2.63e-02
-performing correction step
-   20  -8.6899e+02  -5.9153e+02  3.98e-04  4.59e-07  1.23e-02  1.39e-04  1.19e-01  8.12e-05  1.08e-02  9.88e-07  4.28e-01  1.00e+00
-   21  -5.7365e+02  -4.6177e+02  2.63e-04  4.59e-07  6.34e-03  7.16e-05  6.15e-02  1.04e-04  3.88e-03  6.53e-07  2.81e-01  4.72e-01
-   22  -4.5977e+02  -3.8856e+02  2.21e-04  4.81e-07  4.48e-03  5.06e-05  4.35e-02  1.24e-04  2.29e-03  5.49e-07  3.61e-01  2.50e-01
-   23  -4.3331e+02  -3.6975e+02  2.12e-04  4.89e-07  4.08e-03  4.60e-05  3.96e-02  1.30e-04  2.03e-03  5.25e-07  4.09e-01  7.35e-02
-   24  -4.2599e+02  -3.6445e+02  2.09e-04  4.91e-07  3.97e-03  4.48e-05  3.85e-02  1.32e-04  1.96e-03  5.18e-07  4.12e-01  2.16e-02
-performing correction step
-   25  -3.9423e+02  -3.2836e+02  2.09e-04  5.30e-07  3.58e-03  4.04e-05  3.47e-02  1.46e-04  3.49e-03  5.18e-07  4.12e-01  1.00e+00
-   26  -2.8070e+02  -2.5267e+02  1.39e-04  4.94e-07  1.82e-03  2.06e-05  1.77e-02  1.91e-04  1.26e-03  3.44e-07  2.64e-01  4.58e-01
-   27  -2.2220e+02  -2.0608e+02  1.07e-04  4.84e-07  1.15e-03  1.30e-05  1.11e-02  2.34e-04  6.14e-04  2.66e-07  2.96e-01  3.20e-01
-   28  -2.0286e+02  -1.8978e+02  9.68e-05  4.77e-07  9.52e-04  1.07e-05  9.24e-03  2.55e-04  4.79e-04  2.40e-07  3.25e-01  1.47e-01
-   29  -1.9663e+02  -1.8447e+02  9.33e-05  4.74e-07  8.91e-04  1.01e-05  8.64e-03  2.62e-04  4.42e-04  2.31e-07  3.15e-01  5.39e-02
-performing correction step
-   30  -1.8802e+02  -1.7506e+02  9.31e-05  4.95e-07  8.46e-04  9.54e-06  8.20e-03  2.76e-04  8.35e-04  2.31e-07  3.08e-01  1.00e+00
-   31  -1.3871e+02  -1.3440e+02  4.72e-05  3.40e-07  3.28e-04  3.70e-06  3.18e-03  3.60e-04  1.67e-04  1.17e-07  1.63e-01  5.90e-01
-   32  -1.3352e+02  -1.2972e+02  4.35e-05  3.26e-07  2.91e-04  3.28e-06  2.82e-03  3.74e-04  1.45e-04  1.08e-07  1.94e-01  9.83e-02
-   33  -1.3283e+02  -1.2909e+02  4.30e-05  3.24e-07  2.86e-04  3.23e-06  2.77e-03  3.76e-04  1.42e-04  1.06e-07  1.75e-01  1.48e-02
-performing correction step
-   34  -1.2819e+02  -1.2425e+02  4.28e-05  3.34e-07  2.76e-04  3.11e-06  2.68e-03  3.89e-04  2.73e-04  1.06e-07  1.72e-01  1.00e+00
-   35  -1.0629e+02  -1.0512e+02  1.64e-05  1.55e-07  8.94e-05  1.01e-06  8.67e-04  4.61e-04  5.46e-05  4.07e-08  5.44e-02  6.52e-01
-   36  -9.8310e+01  -9.7812e+01  7.77e-06  7.90e-08  3.91e-05  4.41e-07  3.79e-04  4.97e-04  1.97e-05  1.92e-08  4.46e-02  5.53e-01
-   37  -9.4927e+01  -9.4719e+01  3.28e-06  3.45e-08  1.63e-05  1.84e-07  1.58e-04  5.08e-04  8.43e-06  8.12e-09  7.50e-02  6.20e-01
-   38  -9.3873e+01  -9.3764e+01  1.61e-06  1.72e-08  8.42e-06  9.50e-08  8.17e-05  4.99e-04  5.02e-06  4.00e-09  1.12e-01  5.55e-01
-optimal solution found; terminating
-
-status is Optimal after 38 iterations and 1016.767 seconds
-
-finished solve, took 1016.767613433 seconds
-
-min sample value is -42.18398724573347
+for c, skipping n=12, halfdeg=2, since U=8281
+min sample value is Inf
 obj values are
-[-92.95806264809639, -93.87346701154641]
+Float64[]
 
 
 
@@ -1055,7 +756,7 @@ n = 12
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 0.000293441 seconds
+finished random objective generation, took 0.000197152 seconds
 running c
 for c, skipping n=12, halfdeg=3, since U=207025
 min sample value is Inf
@@ -1068,7 +769,7 @@ n = 12
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 0.00832068 seconds
+finished random objective generation, took 0.00396196 seconds
 running c
 for c, skipping n=12, halfdeg=4, since U=3312400
 min sample value is Inf
@@ -1081,7 +782,7 @@ n = 12
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 0.106146264 seconds
+finished random objective generation, took 0.094189188 seconds
 running c
 for c, skipping n=12, halfdeg=5, since U=38291344
 min sample value is Inf
@@ -1094,7 +795,7 @@ n = 12
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 0.970245251 seconds
+finished random objective generation, took 0.980281565 seconds
 running c
 for c, skipping n=12, halfdeg=6, since U=344622096
 min sample value is Inf
@@ -1107,7 +808,7 @@ n = 14
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 1.7172e-5 seconds
+finished random objective generation, took 1.637e-5 seconds
 running c
 for c, skipping n=14, halfdeg=1, since U=225
 min sample value is Inf
@@ -1120,155 +821,12 @@ n = 14
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 1.153e-5 seconds
+finished random objective generation, took 1.4879e-5 seconds
 running c
-starting interpolation
-finished interpolation, took 1133.722532789 seconds
-running w
-starting data building
-dat.F_interp[1] = -6.916306184035584
-finished data building, took 0.00137109 seconds
-barpar is 540, dim_cone is 14400, num_vars is 14399
-running i
-
-model name c_w_i_14_2
-building Hypatia model
-Hypatia model built, took 31.548459512 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0   5.8428e+00  -3.9106e-02  5.40e+02       NaN  1.00e+00  0.00e+00  1.20e+02  1.00e+00  1.00e+00  1.00e+00
-    1   5.3573e+00  -4.2698e-02  3.64e+02       NaN  1.00e+00  0.00e+00  1.20e+02  6.75e-01  1.00e+00  6.75e-01  2.06e-01  4.10e-01
-    2   4.5700e+00  -5.8620e-02  2.41e+02       NaN  1.00e+00  0.00e+00  1.20e+02  4.44e-01  1.00e+00  4.47e-01  2.54e-01  4.59e-01
-    3   3.2623e+00  -9.4919e-02  1.54e+02       NaN  1.00e+00  0.00e+00  1.20e+02  2.85e-01  1.00e+00  2.86e-01  3.02e-01  5.14e-01
-    4  -1.7064e-01  -2.0465e-01  7.94e+01  4.65e+02  1.00e+00  0.00e+00  1.20e+02  1.47e-01  1.00e+00  1.47e-01  1.57e-01  5.75e-01
-    5  -1.1530e+01  -5.9767e-01  3.02e+01  2.62e+00  1.00e+00  0.00e+00  1.20e+02  5.63e-02  1.00e+00  5.59e-02  4.49e-02  6.44e-01
-    6  -5.5684e+01  -2.1693e+00  8.78e+00  1.58e-01  1.00e+00  0.00e+00  1.20e+02  1.65e-02  9.97e-01  1.63e-02  2.15e-02  7.22e-01
-    7  -1.5349e+02  -5.6978e+00  3.42e+00  2.23e-02  1.01e+00  0.00e+00  1.21e+02  6.41e-03  9.91e-01  6.33e-03  4.76e-02  6.40e-01
-    8  -5.4152e+02  -1.9561e+01  1.02e+00  1.89e-03  1.03e+00  0.00e+00  1.24e+02  1.88e-03  9.95e-01  1.89e-03  2.33e-02  7.17e-01
-    9  -1.4889e+03  -5.2040e+01  4.03e-01  2.71e-04  1.08e+00  0.00e+00  1.30e+02  7.07e-04  1.02e+00  7.47e-04  5.46e-02  6.40e-01
-   10  -6.5307e+03  -2.1060e+02  1.22e-01  1.87e-05  1.33e+00  0.00e+00  1.60e+02  1.75e-04  1.11e+00  2.26e-04  2.83e-02  7.17e-01
-   11  -4.3047e+04  -1.0510e+03  4.69e-02  1.09e-06  2.56e+00  0.00e+00  3.07e+02  3.49e-05  1.47e+00  8.68e-05  5.67e-02  6.53e-01
-   12  -2.0639e+05  -2.9083e+03  2.88e-02  1.40e-07  4.36e+00  0.00e+00  5.24e+02  1.26e-05  2.56e+00  5.34e-05  1.48e-01  4.52e-01
-   13  -5.1488e+05  -5.8279e+03  1.13e-02  2.19e-08  3.44e+00  0.00e+00  4.13e+02  6.25e-06  3.18e+00  2.09e-05  3.94e-02  6.33e-01
-   14  -9.5603e+04  -5.1813e+03  3.74e-03  3.91e-08  1.01e+00  0.00e+00  1.22e+02  7.03e-06  6.36e-01  6.92e-06  3.37e-02  6.92e-01
-   15  -4.9682e+04  -5.8788e+03  8.81e-04  1.77e-08  2.71e-01  0.00e+00  3.26e+01  6.19e-06  2.71e-01  1.63e-06  1.42e-02  7.75e-01
-   16  -1.1512e+04  -4.6160e+03  4.08e-04  3.54e-08  9.91e-02  0.00e+00  1.19e+01  7.87e-06  5.43e-02  7.55e-07  9.17e-02  5.90e-01
-   17  -7.9906e+03  -4.2449e+03  2.94e-04  3.68e-08  6.57e-02  0.00e+00  7.88e+00  8.55e-06  3.20e-02  5.44e-07  9.83e-02  3.10e-01
-   18  -7.7723e+03  -4.1994e+03  2.88e-04  3.71e-08  6.38e-02  0.00e+00  7.65e+00  8.64e-06  3.09e-02  5.33e-07  1.99e-01  2.38e-02
-performing correction step
-   19  -5.9685e+03  -2.9769e+03  2.88e-04  4.82e-08  4.53e-02  0.00e+00  5.43e+00  1.22e-05  3.64e-02  5.33e-07  2.06e-01  1.00e+00
-   20  -3.2685e+03  -2.3998e+03  1.83e-04  5.58e-08  2.31e-02  0.00e+00  2.78e+00  1.51e-05  1.31e-02  3.38e-07  1.61e-01  4.37e-01
-   21  -2.5833e+03  -2.0775e+03  1.61e-04  6.25e-08  1.77e-02  0.00e+00  2.13e+00  1.74e-05  8.82e-03  2.99e-07  3.86e-01  1.88e-01
-   22  -2.4180e+03  -1.9824e+03  1.57e-04  6.48e-08  1.64e-02  0.00e+00  1.97e+00  1.83e-05  7.96e-03  2.90e-07  4.70e-01  5.51e-02
-performing correction step
-   23  -1.9199e+03  -1.4853e+03  1.57e-04  8.15e-08  1.23e-02  0.00e+00  1.48e+00  2.44e-05  1.06e-02  2.90e-07  4.88e-01  1.00e+00
-   24  -1.2086e+03  -1.0932e+03  1.17e-04  9.64e-08  6.76e-03  0.00e+00  8.11e-01  3.30e-05  3.81e-03  2.16e-07  3.47e-01  3.92e-01
-   25  -1.0012e+03  -9.3360e+02  1.06e-04  1.06e-07  5.27e-03  0.00e+00  6.32e-01  3.86e-05  2.61e-03  1.97e-07  5.08e-01  1.80e-01
-   26  -9.5081e+02  -8.9183e+02  1.04e-04  1.09e-07  4.91e-03  0.00e+00  5.89e-01  4.04e-05  2.39e-03  1.92e-07  5.46e-01  5.28e-02
-   27  -9.3670e+02  -8.7996e+02  1.03e-04  1.10e-07  4.81e-03  0.00e+00  5.77e-01  4.10e-05  2.33e-03  1.90e-07  5.50e-01  1.55e-02
-performing correction step
-   28  -8.4187e+02  -7.5934e+02  1.03e-04  1.22e-07  4.16e-03  0.00e+00  4.99e-01  4.74e-05  3.92e-03  1.90e-07  5.51e-01  1.00e+00
-   29  -5.6917e+02  -5.4768e+02  7.69e-05  1.35e-07  2.25e-03  0.00e+00  2.70e-01  6.56e-05  1.41e-03  1.42e-07  4.18e-01  4.34e-01
-   30  -4.5961e+02  -4.4919e+02  6.67e-05  1.45e-07  1.60e-03  0.00e+00  1.92e-01  7.98e-05  8.32e-04  1.23e-07  4.44e-01  2.40e-01
-   31  -4.1231e+02  -4.0494e+02  6.18e-05  1.50e-07  1.34e-03  0.00e+00  1.61e-01  8.84e-05  6.51e-04  1.14e-07  4.70e-01  1.38e-01
-   32  -4.0587e+02  -3.9885e+02  6.11e-05  1.51e-07  1.31e-03  0.00e+00  1.57e-01  8.97e-05  6.31e-04  1.13e-07  4.70e-01  2.07e-02
-performing correction step
-   33  -3.8413e+02  -3.7194e+02  6.11e-05  1.59e-07  1.22e-03  0.00e+00  1.46e-01  9.61e-05  1.17e-03  1.13e-07  4.69e-01  1.00e+00
-   34  -2.7917e+02  -2.7590e+02  4.29e-05  1.54e-07  6.38e-04  0.00e+00  7.65e-02  1.29e-04  4.22e-04  7.94e-08  3.25e-01  4.42e-01
-   35  -2.2567e+02  -2.2435e+02  3.35e-05  1.49e-07  4.06e-04  0.00e+00  4.88e-02  1.58e-04  2.09e-04  6.20e-08  3.08e-01  3.17e-01
-   36  -2.0831e+02  -2.0735e+02  3.02e-05  1.45e-07  3.38e-04  0.00e+00  4.06e-02  1.71e-04  1.65e-04  5.58e-08  3.07e-01  1.45e-01
-   37  -2.0544e+02  -2.0453e+02  2.96e-05  1.44e-07  3.27e-04  0.00e+00  3.93e-02  1.73e-04  1.59e-04  5.47e-08  2.87e-01  2.73e-02
-performing correction step
-   38  -1.9948e+02  -1.9776e+02  2.96e-05  1.48e-07  3.17e-04  0.00e+00  3.80e-02  1.79e-04  3.06e-04  5.47e-08  2.82e-01  1.00e+00
-   39  -1.5185e+02  -1.5159e+02  1.46e-05  9.61e-08  1.21e-04  0.00e+00  1.45e-02  2.31e-04  6.13e-05  2.70e-08  1.39e-01  5.88e-01
-   40  -1.4504e+02  -1.4484e+02  1.25e-05  8.65e-08  9.93e-05  0.00e+00  1.19e-02  2.41e-04  4.84e-05  2.32e-08  1.28e-01  1.62e-01
-   41  -1.4344e+02  -1.4326e+02  1.20e-05  8.37e-08  9.40e-05  0.00e+00  1.13e-02  2.44e-04  4.55e-05  2.22e-08  1.01e-01  4.76e-02
-performing correction step
-   42  -1.4209e+02  -1.4173e+02  1.19e-05  8.41e-08  9.35e-05  0.00e+00  1.12e-02  2.46e-04  9.05e-05  2.21e-08  9.46e-02  1.00e+00
-   43  -1.2462e+02  -1.2455e+02  3.95e-06  3.17e-08  2.73e-05  0.00e+00  3.28e-03  2.78e-04  1.81e-05  7.32e-09  1.35e-02  6.78e-01
-   44  -1.2057e+02  -1.2054e+02  1.85e-06  1.53e-08  1.28e-05  0.00e+00  1.53e-03  2.82e-04  8.83e-06  3.42e-09  1.35e-01  6.08e-01
-   45  -1.1934e+02  -1.1932e+02  9.97e-07  8.35e-09  7.16e-06  0.00e+00  8.59e-04  2.78e-04  5.38e-06  1.85e-09  1.79e-01  5.44e-01
-   46  -1.1878e+02  -1.1877e+02  6.04e-07  5.08e-09  4.55e-06  0.00e+00  5.46e-04  2.72e-04  3.63e-06  1.12e-09  2.26e-01  4.88e-01
-   47  -1.1856e+02  -1.1855e+02  4.41e-07  3.72e-09  3.46e-06  0.00e+00  4.15e-04  2.67e-04  2.83e-06  8.17e-10  2.74e-01  3.50e-01
-   48  -1.1848e+02  -1.1847e+02  3.77e-07  3.18e-09  3.03e-06  0.00e+00  3.63e-04  2.64e-04  2.50e-06  6.97e-10  3.23e-01  2.01e-01
-   49  -1.1844e+02  -1.1843e+02  3.30e-07  2.79e-09  2.71e-06  0.00e+00  3.26e-04  2.61e-04  2.25e-06  6.12e-10  3.71e-01  1.80e-01
-   50  -1.1843e+02  -1.1842e+02  3.03e-07  2.56e-09  2.53e-06  0.00e+00  3.04e-04  2.59e-04  2.11e-06  5.61e-10  4.18e-01  1.29e-01
-   51  -1.1841e+02  -1.1840e+02  2.79e-07  2.35e-09  2.37e-06  0.00e+00  2.84e-04  2.57e-04  1.97e-06  5.16e-10  3.70e-01  1.15e-01
-   52  -1.1840e+02  -1.1840e+02  2.60e-07  2.20e-09  2.24e-06  0.00e+00  2.69e-04  2.55e-04  1.87e-06  4.82e-10  4.17e-01  1.03e-01
-   53  -1.1840e+02  -1.1839e+02  2.42e-07  2.04e-09  2.12e-06  0.00e+00  2.54e-04  2.53e-04  1.77e-06  4.48e-10  4.62e-01  1.16e-01
-   54  -1.1840e+02  -1.1839e+02  2.26e-07  1.90e-09  2.00e-06  0.00e+00  2.40e-04  2.51e-04  1.68e-06  4.18e-10  4.15e-01  1.04e-01
-   55  -1.1840e+02  -1.1839e+02  2.13e-07  1.80e-09  1.92e-06  0.00e+00  2.30e-04  2.49e-04  1.60e-06  3.94e-10  4.61e-01  9.30e-02
-   56  -1.1841e+02  -1.1840e+02  2.00e-07  1.69e-09  1.83e-06  0.00e+00  2.20e-04  2.47e-04  1.53e-06  3.71e-10  5.05e-01  1.04e-01
-   57  -1.1841e+02  -1.1841e+02  1.89e-07  1.59e-09  1.75e-06  0.00e+00  2.10e-04  2.46e-04  1.46e-06  3.49e-10  4.60e-01  9.33e-02
-   58  -1.1842e+02  -1.1841e+02  1.80e-07  1.52e-09  1.69e-06  0.00e+00  2.03e-04  2.44e-04  1.41e-06  3.33e-10  5.03e-01  8.36e-02
-   59  -1.1843e+02  -1.1842e+02  1.69e-07  1.43e-09  1.62e-06  0.00e+00  1.94e-04  2.42e-04  1.35e-06  3.13e-10  4.58e-01  9.36e-02
-   60  -1.1843e+02  -1.1843e+02  1.61e-07  1.36e-09  1.56e-06  0.00e+00  1.87e-04  2.40e-04  1.30e-06  2.98e-10  5.02e-01  8.39e-02
-   61  -1.1844e+02  -1.1843e+02  1.53e-07  1.30e-09  1.51e-06  0.00e+00  1.81e-04  2.39e-04  1.25e-06  2.84e-10  4.57e-01  7.52e-02
-   62  -1.1845e+02  -1.1844e+02  1.46e-07  1.23e-09  1.46e-06  0.00e+00  1.75e-04  2.37e-04  1.21e-06  2.70e-10  5.01e-01  8.42e-02
-   63  -1.1846e+02  -1.1845e+02  1.39e-07  1.17e-09  1.41e-06  0.00e+00  1.69e-04  2.35e-04  1.16e-06  2.57e-10  4.55e-01  7.54e-02
-   64  -1.1846e+02  -1.1846e+02  1.33e-07  1.13e-09  1.37e-06  0.00e+00  1.64e-04  2.34e-04  1.13e-06  2.47e-10  4.99e-01  6.76e-02
-   65  -1.1848e+02  -1.1847e+02  1.28e-07  1.08e-09  1.33e-06  0.00e+00  1.59e-04  2.32e-04  1.09e-06  2.37e-10  5.41e-01  7.57e-02
-   66  -1.1849e+02  -1.1848e+02  1.21e-07  1.03e-09  1.28e-06  0.00e+00  1.54e-04  2.30e-04  1.05e-06  2.25e-10  4.98e-01  8.48e-02
-   67  -1.1850e+02  -1.1849e+02  1.16e-07  9.82e-10  1.25e-06  0.00e+00  1.49e-04  2.29e-04  1.02e-06  2.16e-10  5.40e-01  7.60e-02
-   68  -1.1851e+02  -1.1850e+02  1.12e-07  9.42e-10  1.21e-06  0.00e+00  1.45e-04  2.27e-04  9.87e-07  2.07e-10  4.97e-01  6.81e-02
-   69  -1.1852e+02  -1.1851e+02  1.07e-07  9.03e-10  1.18e-06  0.00e+00  1.41e-04  2.26e-04  9.56e-07  1.98e-10  5.38e-01  7.62e-02
-   70  -1.1853e+02  -1.1852e+02  1.03e-07  8.66e-10  1.14e-06  0.00e+00  1.37e-04  2.24e-04  9.26e-07  1.90e-10  4.95e-01  6.83e-02
-   71  -1.1854e+02  -1.1853e+02  9.82e-08  8.29e-10  1.11e-06  0.00e+00  1.33e-04  2.22e-04  8.97e-07  1.82e-10  5.37e-01  7.65e-02
-   72  -1.1855e+02  -1.1854e+02  9.41e-08  7.94e-10  1.08e-06  0.00e+00  1.30e-04  2.21e-04  8.69e-07  1.74e-10  4.94e-01  6.85e-02
-   73  -1.1856e+02  -1.1855e+02  9.01e-08  7.60e-10  1.05e-06  0.00e+00  1.26e-04  2.19e-04  8.41e-07  1.67e-10  5.36e-01  7.68e-02
-   74  -1.1857e+02  -1.1856e+02  8.63e-08  7.28e-10  1.02e-06  0.00e+00  1.23e-04  2.17e-04  8.14e-07  1.60e-10  4.92e-01  6.88e-02
-   75  -1.1858e+02  -1.1858e+02  8.26e-08  6.96e-10  9.93e-07  0.00e+00  1.19e-04  2.16e-04  7.88e-07  1.53e-10  5.34e-01  7.70e-02
-   76  -1.1859e+02  -1.1859e+02  7.91e-08  6.67e-10  9.65e-07  0.00e+00  1.16e-04  2.14e-04  7.62e-07  1.46e-10  4.91e-01  6.90e-02
-   77  -1.1860e+02  -1.1860e+02  7.63e-08  6.43e-10  9.44e-07  0.00e+00  1.13e-04  2.13e-04  7.42e-07  1.41e-10  5.33e-01  6.18e-02
-   78  -1.1861e+02  -1.1861e+02  7.31e-08  6.16e-10  9.17e-07  0.00e+00  1.10e-04  2.11e-04  7.18e-07  1.35e-10  4.90e-01  6.93e-02
-   79  -1.1862e+02  -1.1862e+02  6.98e-08  5.89e-10  8.91e-07  0.00e+00  1.07e-04  2.09e-04  6.94e-07  1.29e-10  5.32e-01  7.76e-02
-   80  -1.1863e+02  -1.1863e+02  6.68e-08  5.63e-10  8.66e-07  0.00e+00  1.04e-04  2.08e-04  6.72e-07  1.24e-10  4.88e-01  6.95e-02
-   81  -1.1864e+02  -1.1864e+02  6.39e-08  5.38e-10  8.41e-07  0.00e+00  1.01e-04  2.06e-04  6.49e-07  1.18e-10  5.30e-01  7.79e-02
-   82  -1.1865e+02  -1.1865e+02  6.11e-08  5.15e-10  8.18e-07  0.00e+00  9.81e-05  2.04e-04  6.28e-07  1.13e-10  4.87e-01  6.98e-02
-optimal solution found; terminating
-
-status is Optimal after 82 iterations and 7185.456 seconds
-
-finished solve, took 7185.456525635 seconds
-
-running p
-starting data building
-finished data building, took 6.927948525 seconds
-barpar is 540, dim_cone is 20700, num_vars is 14400
-running i
-
-model name c_p_i_14_2
-building Hypatia model
-Hypatia model built, took 452.338777397 seconds
-starting solve
-
- iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
-    0  -5.6283e+04  -1.1110e+00  5.40e+02  9.59e-03  9.97e-01  6.84e-03  9.93e+00  1.00e+00  1.00e+00  1.00e+00
-    1  -5.6284e+04  -1.1135e+00  3.99e+02  7.10e-03  9.97e-01  6.84e-03  9.93e+00  7.40e-01  1.00e+00  7.40e-01  2.06e-01  3.28e-01
-    2  -5.6286e+04  -1.1201e+00  3.06e+02  5.43e-03  9.97e-01  6.84e-03  9.93e+00  5.64e-01  1.00e+00  5.66e-01  3.53e-01  3.67e-01
-    3  -5.6289e+04  -1.1328e+00  2.36e+02  4.20e-03  9.97e-01  6.84e-03  9.93e+00  4.35e-01  1.00e+00  4.37e-01  3.02e-01  3.29e-01
-    4  -5.6292e+04  -1.1508e+00  1.84e+02  3.28e-03  9.97e-01  6.84e-03  9.93e+00  3.39e-01  1.00e+00  3.42e-01  2.52e-01  2.95e-01
-    5  -5.6298e+04  -1.1869e+00  1.31e+02  2.33e-03  9.97e-01  6.85e-03  9.93e+00  2.41e-01  1.01e+00  2.43e-01  3.01e-01  4.12e-01
-    6  -5.6307e+04  -1.2489e+00  9.04e+01  1.60e-03  9.97e-01  6.85e-03  9.93e+00  1.66e-01  1.01e+00  1.67e-01  1.56e-01  3.70e-01
-    7  -5.6323e+04  -1.3708e+00  5.71e+01  1.01e-03  9.98e-01  6.85e-03  9.93e+00  1.05e-01  1.01e+00  1.06e-01  1.12e-01  4.14e-01
-    8  -5.6375e+04  -1.7698e+00  2.64e+01  4.68e-04  9.98e-01  6.85e-03  9.94e+00  4.86e-02  1.01e+00  4.89e-02  7.44e-02  5.79e-01
-    9  -5.6529e+04  -3.0275e+00  9.97e+00  1.76e-04  1.00e+00  6.87e-03  9.96e+00  1.84e-02  1.01e+00  1.85e-02  4.32e-02  6.49e-01
-   10  -5.7136e+04  -8.1228e+00  2.87e+00  5.02e-05  1.01e+00  6.93e-03  1.00e+01  5.25e-03  1.01e+00  5.31e-03  2.04e-02  7.27e-01
-   11  -6.0535e+04  -3.6645e+01  5.99e-01  9.90e-06  1.05e+00  7.24e-03  1.05e+01  1.05e-03  1.02e+00  1.11e-03  9.14e-03  7.98e-01
-   12  -6.8146e+04  -9.9953e+01  2.36e-01  3.46e-06  1.15e+00  7.93e-03  1.15e+01  3.78e-04  1.08e+00  4.37e-04  1.43e-02  6.15e-01
-   13  -1.0861e+05  -4.3067e+02  7.82e-02  7.20e-07  1.66e+00  1.14e-02  1.65e+01  8.70e-05  1.25e+00  1.45e-04  2.84e-02  6.88e-01
-   14  -2.0983e+05  -1.1933e+03  4.53e-02  2.16e-07  2.67e+00  1.84e-02  2.66e+01  3.13e-05  1.81e+00  8.38e-05  1.08e-01  4.72e-01
-   15  -6.6670e+05  -4.4465e+03  2.45e-02  3.68e-08  5.40e+00  3.71e-02  5.38e+01  8.39e-06  3.00e+00  4.53e-05  1.31e-01  5.28e-01
-dual infeasibility detected; terminating
-
-status is DualInfeasible after 15 iterations and 1906.168 seconds
-
-finished solve, took 1906.168257814 seconds
-
-min sample value is -56.51185662823831
+for c, skipping n=14, halfdeg=2, since U=14400
+min sample value is Inf
 obj values are
-[-125.56763265858663, -666700.4171555236]
+Float64[]
 
 
 
@@ -1276,7 +834,7 @@ n = 14
 halfdeg = 3
 
 starting random objective generation
-finished random objective generation, took 0.00046257 seconds
+finished random objective generation, took 0.000322303 seconds
 running c
 for c, skipping n=14, halfdeg=3, since U=462400
 min sample value is Inf
@@ -1289,7 +847,7 @@ n = 14
 halfdeg = 4
 
 starting random objective generation
-finished random objective generation, took 0.01177994 seconds
+finished random objective generation, took 0.008736223 seconds
 running c
 for c, skipping n=14, halfdeg=4, since U=9363600
 min sample value is Inf
@@ -1302,7 +860,7 @@ n = 14
 halfdeg = 5
 
 starting random objective generation
-finished random objective generation, took 1.291300065 seconds
+finished random objective generation, took 0.286300094 seconds
 running c
 for c, skipping n=14, halfdeg=5, since U=135210384
 min sample value is Inf
@@ -1315,7 +873,7 @@ n = 14
 halfdeg = 6
 
 starting random objective generation
-finished random objective generation, took 3.431030054 seconds
+finished random objective generation, took 3.444563556 seconds
 running c
 for c, skipping n=14, halfdeg=6, since U=1502337600
 min sample value is Inf
@@ -1328,7 +886,7 @@ n = 16
 halfdeg = 1
 
 starting random objective generation
-finished random objective generation, took 1.8503e-5 seconds
+finished random objective generation, took 1.9948e-5 seconds
 running c
 for c, skipping n=16, halfdeg=1, since U=289
 min sample value is Inf
@@ -1341,220 +899,47 @@ n = 16
 halfdeg = 2
 
 starting random objective generation
-finished random objective generation, took 1.5998e-5 seconds
+finished random objective generation, took 2.2707e-5 seconds
 running c
-for c, skipping n=16, halfdeg=2, since U=23409
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 16
-halfdeg = 3
-
-starting random objective generation
-finished random objective generation, took 0.000530043 seconds
-running c
-for c, skipping n=16, halfdeg=3, since U=938961
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 16
-halfdeg = 4
-
-starting random objective generation
-finished random objective generation, took 0.021991302 seconds
-running c
-for c, skipping n=16, halfdeg=4, since U=23474025
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 16
-halfdeg = 5
-
-starting random objective generation
-finished random objective generation, took 0.723182412 seconds
-running c
-for c, skipping n=16, halfdeg=5, since U=414081801
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 16
-halfdeg = 6
-
-starting random objective generation
-finished random objective generation, took 10.508910979 seconds
-running c
-for c, skipping n=16, halfdeg=6, since U=5567099769
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 18
-halfdeg = 1
-
-starting random objective generation
-finished random objective generation, took 6.0482e-5 seconds
-running c
-for c, skipping n=18, halfdeg=1, since U=361
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 18
-halfdeg = 2
-
-starting random objective generation
-finished random objective generation, took 3.5106e-5 seconds
-running c
-for c, skipping n=18, halfdeg=2, since U=36100
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 18
-halfdeg = 3
-
-starting random objective generation
-finished random objective generation, took 0.000748789 seconds
-running c
-for c, skipping n=18, halfdeg=3, since U=1768900
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 18
-halfdeg = 4
-
-starting random objective generation
-finished random objective generation, took 0.504042049 seconds
-running c
-for c, skipping n=18, halfdeg=4, since U=53509225
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 18
-halfdeg = 5
-
-starting random objective generation
-finished random objective generation, took 1.360019013 seconds
-running c
-for c, skipping n=18, halfdeg=5, since U=1132255201
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 18
-halfdeg = 6
-
-starting random objective generation
-finished random objective generation, took 28.534557792 seconds
-running c
-for c, skipping n=18, halfdeg=6, since U=18116083216
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 20
-halfdeg = 1
-
-starting random objective generation
-finished random objective generation, took 5.7886e-5 seconds
-running c
-for c, skipping n=20, halfdeg=1, since U=441
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 20
-halfdeg = 2
-
-starting random objective generation
-finished random objective generation, took 3.0241e-5 seconds
-running c
-for c, skipping n=20, halfdeg=2, since U=53361
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 20
-halfdeg = 3
-
-starting random objective generation
-finished random objective generation, took 0.001234801 seconds
-running c
-for c, skipping n=20, halfdeg=3, since U=3136441
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 20
-halfdeg = 4
-
-starting random objective generation
-finished random objective generation, took 0.921076993 seconds
-running c
-for c, skipping n=20, halfdeg=4, since U=112911876
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 20
-halfdeg = 5
-
-starting random objective generation
-finished random objective generation, took 2.861543084 seconds
-running c
-for c, skipping n=20, halfdeg=5, since U=2822796900
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
-n = 20
-halfdeg = 6
-
-starting random objective generation
-finished random objective generation, took 71.901183142 seconds
-running c
-for c, skipping n=20, halfdeg=6, since U=53005852900
-min sample value is Inf
-obj values are
-Float64[]
-
-
-
+starting interpolation
+finished interpolation, took 4220.340588408 seconds
+running w
+starting data building
+dat.F_interp[1] = 10.202778979461808
+finished data building, took 0.001963221 seconds
+barpar is 697, dim_cone is 23409, num_vars is 23408
+running i
+
+model name c_w_i_16_2
+building Hypatia model
+Hypatia model built, took 93.100762431 seconds
+starting solve
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -1.1542e+01  -3.6591e-02  6.97e+02  6.04e+01  1.00e+00  0.00e+00  1.53e+02  1.00e+00  1.00e+00  1.00e+00
+    1  -1.2230e+01  -4.0200e-02  4.14e+02  3.38e+01  1.00e+00  0.00e+00  1.53e+02  5.93e-01  1.00e+00  5.93e-01  2.06e-01  5.12e-01
+    2  -1.2765e+01  -4.9977e-02  3.14e+02  2.46e+01  1.00e+00  0.00e+00  1.53e+02  4.52e-01  1.00e+00  4.50e-01  3.53e-01  3.67e-01
+    3  -1.3667e+01  -6.9489e-02  2.24e+02  1.64e+01  1.00e+00  0.00e+00  1.53e+02  3.23e-01  9.98e-01  3.21e-01  3.02e-01  4.11e-01
+    4  -1.6047e+01  -1.2755e-01  1.27e+02  7.93e+00  1.00e+00  0.00e+00  1.53e+02  1.84e-01  9.96e-01  1.83e-01  2.52e-01  5.75e-01
+    5  -2.3431e+01  -3.2928e-01  5.41e+01  2.31e+00  9.99e-01  0.00e+00  1.53e+02  7.89e-02  9.94e-01  7.77e-02  1.14e-01  6.44e-01
+    6  -4.9139e+01  -1.0598e+00  1.78e+01  3.62e-01  9.99e-01  0.00e+00  1.53e+02  2.63e-02  9.87e-01  2.55e-02  7.55e-02  7.22e-01
+    7  -1.0880e+02  -2.7991e+00  6.87e+00  6.32e-02  9.96e-01  0.00e+00  1.52e+02  1.02e-02  9.76e-01  9.86e-03  4.41e-02  6.40e-01
+    8  -2.1743e+02  -6.0015e+00  3.22e+00  1.48e-02  9.92e-01  0.00e+00  1.52e+02  4.81e-03  9.68e-01  4.62e-03  7.44e-02  5.73e-01
+    9  -5.3544e+02  -1.5457e+01  1.24e+00  2.32e-03  9.80e-01  0.00e+00  1.50e+02  1.88e-03  9.58e-01  1.78e-03  4.32e-02  6.42e-01
+   10  -1.6712e+03  -5.0070e+01  3.66e-01  2.19e-04  9.36e-01  0.00e+00  1.43e+02  5.81e-04  9.36e-01  5.25e-04  2.04e-02  7.19e-01
+   11  -3.6506e+03  -1.1666e+02  1.43e-01  3.90e-05  8.50e-01  0.00e+00  1.30e+02  2.50e-04  8.80e-01  2.04e-04  4.67e-02  6.40e-01
+   12  -7.6691e+03  -2.8690e+02  4.27e-02  5.56e-06  6.26e-01  0.00e+00  9.58e+01  1.02e-04  7.49e-01  6.12e-05  2.27e-02  7.17e-01
+   13  -8.5573e+03  -4.6686e+02  1.56e-02  1.82e-06  3.72e-01  0.00e+00  5.69e+01  6.24e-05  5.05e-01  2.24e-05  8.01e-03  6.40e-01
+   14  -6.2418e+03  -5.7069e+02  7.06e-03  1.13e-06  2.06e-01  0.00e+00  3.15e+01  5.11e-05  2.90e-01  1.01e-05  4.67e-02  5.73e-01
+   15  -4.0178e+03  -6.2190e+02  3.52e-03  8.76e-07  1.12e-01  0.00e+00  1.71e+01  4.70e-05  1.59e-01  5.05e-06  2.27e-02  5.14e-01
+   16  -2.6090e+03  -6.4144e+02  1.91e-03  7.33e-07  6.25e-02  0.00e+00  9.56e+00  4.56e-05  8.96e-02  2.75e-06  8.01e-03  4.60e-01
+   17  -1.3564e+03  -6.4410e+02  6.90e-04  5.09e-07  2.26e-02  0.00e+00  3.46e+00  4.54e-05  3.24e-02  9.91e-07  8.01e-03  6.44e-01
+   18  -6.1204e+02  -5.8641e+02  7.82e-05  1.28e-07  2.32e-03  0.00e+00  3.55e-01  5.00e-05  1.28e-03  1.12e-07  1.70e-02  9.02e-01
+   19  -5.3966e+02  -5.2284e+02  7.16e-05  1.33e-07  1.89e-03  0.00e+00  2.89e-01  5.63e-05  9.46e-04  1.03e-07  3.94e-01  1.40e-01
+   20  -5.1308e+02  -4.9885e+02  6.88e-05  1.34e-07  1.73e-03  0.00e+00  2.64e-01  5.91e-05  8.40e-04  9.87e-08  3.85e-01  6.43e-02
+   21  -5.0731e+02  -4.9359e+02  6.82e-05  1.34e-07  1.69e-03  0.00e+00  2.59e-01  5.97e-05  8.18e-04  9.77e-08  3.79e-01  1.51e-02
+performing correction step
+   22  -3.8352e+02  -3.7014e+02  6.81e-05  1.78e-07  1.26e-03  0.00e+00  1.93e-01  8.03e-05  1.07e-03  9.77e-08  3.77e-01  1.00e+00
+   23  -3.1635e+02  -3.1231e+02  3.82e-05  1.21e-07  5.92e-04  0.00e+00  9.06e-02  9.57e-05  3.86e-04  5.47e-08  2.29e-01  5.70e-01
+   24  -2.6867e+02  -2.6699e+02  2.75e-05  1.03e-07  3.62e-04  0.00e+00  5.54e-02  1.13e-04  1.89e-04  3.95e-08  1.97e-01  3.48e-01
+   25  -2.5124e+02  -2.5003e+02  2.42e-05  9.62e-08  2.96e-04  0.00e+00  4.52e-02  1.21e-04  1.46e-04  3.46e-08  2.24e-01  1.60e-01

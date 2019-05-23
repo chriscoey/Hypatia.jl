@@ -348,7 +348,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
         println("running $str_is_complex")
 
         U = is_complex ? binomial(n + halfdeg, n)^2 : binomial(2n + 2halfdeg, 2n)
-        if U > maxU || U < 7500
+        if U > maxU || U < 20000
             println("for $str_is_complex, skipping n=$n, halfdeg=$halfdeg, since U=$U")
             continue
         end
@@ -388,7 +388,7 @@ function speedtest(n::Int, halfdeg::Int, maxU::Int, num_samples::Int; rseed::Int
                 stepper = SO.CombinedHSDStepper(model, infty_nbhd = is_infty_nbhd)
                 solver = SO.HSDSolver(model, stepper = stepper,
                     tol_rel_opt = 1e-5, tol_abs_opt = 1e-4, tol_feas = 1e-4,
-                    time_limit = 7200.0, max_iters = 250,)
+                    time_limit = 6*3600.0, max_iters = 500,)
                 println("Hypatia model built, took $tb seconds")
                 flush(stdout)
 
@@ -457,9 +457,9 @@ halfdegs = [1,2,3,4,5,6]
 # halfdegs = [3,4,5]
 
 # maxU = 2500
-maxU = 20000
+maxU = 30000
 
-num_samples = 20000
+num_samples = 30000
 
 
 ####
