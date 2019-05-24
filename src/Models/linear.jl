@@ -102,7 +102,7 @@ mutable struct PreprocessedLinearModel <: LinearModel
     y_keep_idxs::AbstractVector{Int}
     Ap_R::AbstractMatrix{Float64}
     Ap_Q1::AbstractMatrix{Float64}
-    Ap_Q2::AbstractMatrix{Float64}
+    Ap_Q2
 
     initial_point::Point
 
@@ -229,7 +229,7 @@ mutable struct PreprocessedLinearModel <: LinearModel
             y_keep_idxs = Int[]
             model.Ap_R = UpperTriangular(zeros(0, 0))
             model.Ap_Q1 = zeros(n, 0)
-            model.Ap_Q2 = 1.0I(n)
+            model.Ap_Q2 = I
         end
 
         model.n = n

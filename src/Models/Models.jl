@@ -11,6 +11,10 @@ using SparseArrays
 
 import Hypatia.Cones
 
+using TimerOutputs
+import Hypatia
+# import Hypatia.to
+
 mutable struct Point
     x::Vector{Float64}
     y::Vector{Float64}

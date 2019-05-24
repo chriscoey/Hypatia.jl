@@ -14,6 +14,9 @@ using Test
 import Hypatia.Cones
 import Hypatia.Models
 
+using TimerOutputs
+import Hypatia
+
 abstract type Solver end
 
 # homogeneous self-dual embedding algorithm

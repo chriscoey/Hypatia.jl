@@ -24,6 +24,8 @@ import Combinatorics
 import Random
 import Distributions
 using Test
+using Printf
+using TimerOutputs
 import Hypatia
 const HYP = Hypatia
 const CO = HYP.Cones
@@ -340,14 +342,14 @@ function run_all(
     println()
     println("starting solves")
     objs = Dict()
-    println("C wsos primal:")
-    objs[:Cwp] = solve_model(C_wsos_primal, false)
+    # println("C wsos primal:")
+    # objs[:Cwp] = solve_model(C_wsos_primal, false)
     println("C wsos dual:")
     objs[:Cwd] = solve_model(C_wsos_dual, true)
     println("C psd dual:")
     objs[:Cp] = solve_model(C_psd_dual, true)
-    println("R wsos primal:")
-    objs[:Rwp] = solve_model(R_wsos_primal, false)
+    # println("R wsos primal:")
+    # objs[:Rwp] = solve_model(R_wsos_primal, false)
     println("R wsos dual:")
     objs[:Rwd] = solve_model(R_wsos_dual, true)
     println("R psd dual:")
@@ -377,14 +379,121 @@ function run_all_rand(
     return objs
 end
 
-run_3_2_1() = run_all_rand(3, 2, 1, 0.9, 1.1)
-run_3_2_05() = run_all_rand(3, 2, 1, 0.95, 1.05)
-run_3_2_5() = run_all_rand(3, 2, 1, 0.5, 1.5)
-run_5_2_5() = run_all_rand(5, 2, 1, 0.5, 1.5)
-run_3_3_5() = run_all_rand(3, 3, 1, 0.5, 1.5)
-run_5_3_5() = run_all_rand(5, 3, 1, 0.5, 1.5)
-run_2_2_5() = run_all_rand(2, 2, 1, 0.5, 1.5)
+
+function speedtest(instance::Function; options, rseed::Int = 1)
+    Random.seed!(rseed)
+
+    d = instance()
+
+    for nbhd in ["_infty", "_hess"]
+
+        infty_nbhd = (nbhd == "_infty")
+
+        build_time = 0
+        obj = 0
+        for _ in 1:2
+            reset_timer!(Hypatia.to)
+            build_time = @elapsed model = MO.PreprocessedLinearModel(d.c, d.A, d.b, d.G, d.h, d.cones, d.cone_idxs)
+            stepper = SO.CombinedHSDStepper(model, infty_nbhd = infty_nbhd)
+            solver = SO.HSDSolver(model; options..., stepper = stepper)
+            SO.solve(solver)
+            obj = SO.get_primal_obj(solver)
+        end
+
+        polyname = string(methods(instance).mt.name)
+        open(joinpath("timings", polyname * nbhd * ".txt"), "w") do f
+            print_timer(f, Hypatia.to)
+        end
+
+        open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "a") do f
+            G1 = size(d.G, 1)
+            tt = TimerOutputs.tottime(Hypatia.to) # total solving time (nanoseconds)
+            tts = tt / 1e6
+            tb = build_time
+            ta = TimerOutputs.time(Hypatia.to["aff alpha"]) / tt # % of time in affine alpha
+            tc = TimerOutputs.time(Hypatia.to["comb alpha"]) / tt # % of time in comb alpha
+            td = TimerOutputs.time(Hypatia.to["directions"]) / tt # % of time calculating directions
+            ti = d.interp_time
+            num_iters = TimerOutputs.ncalls(Hypatia.to["directions"])
+            aff_per_iter = TimerOutputs.ncalls(Hypatia.to["aff alpha"]["linstep"]) / num_iters
+            comb_per_iter = TimerOutputs.ncalls(Hypatia.to["comb alpha"]["linstep"]) / num_iters
+
+            if "corr alpha" in keys(Hypatia.to.inner_timers)
+                num_corr = TimerOutputs.ncalls(Hypatia.to["corr alpha"])
+            else
+                num_corr = 0
+            end
+
+            @printf(f, "%15s, %15.3f, %15d, %15d, %15d, %15d, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15.2f, %15d, %15d, %15.2f, %15.2f\n",
+                polyname, obj, d.n, d.halfdeg, G1, d.nu, ti, tb, tts, ta, tc, td, num_iters, num_corr, aff_per_iter, comb_per_iter
+                )
+        end
+    end # nbhd
+
+    return
+end
+
+function polyminannulus(n, halfdeg, deg, inner_radius, outer_radius; use_real::Bool = true, use_wsos::Bool = true) # TODO rename degs, is it the right halfdeg?
+    (F_coef, F_fun) = rand_obj(n, deg) # TODO am i meant to use F_coef?
+    if use_real
+        interp_time = @elapsed interp = setup_R_interp(n, halfdeg, F_fun, inner_radius, outer_radius)
+    else
+        interp_time = @elapsed interp = setup_C_interp(n, halfdeg, F_fun, inner_radius, outer_radius)
+    end
+    if use_wsos
+        d = build_wsos_dual(interp)
+    else
+        d = build_psd_dual(interp)
+    end
+    nu = sum(size(Pk, 2) for Pk in interp.P_data)
+    return (c=d.c, A=d.A, b=d.b, G=d.G, h=d.h, cones=d.cones, cone_idxs=d.cone_idxs,
+        n=n, halfdeg=halfdeg, nu=nu, interp_time=interp_time)
+end
+
+rp_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
+cp_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
+rw_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
+cw_3_2() = polyminannulus(3, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
+
+rp_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = false)
+cp_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = false)
+rw_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = true, use_wsos = true)
+cw_2_2() = polyminannulus(2, 2, 1, 0.5, 1.5, use_real = false, use_wsos = true)
+
+function speedtest(; options...)
+    if !isdir("timings")
+        mkdir("timings")
+    end
+    for nbhd in ["_infty", "_hess"]
+        open(joinpath("timings", "polyannulus" * nbhd * ".csv"), "a") do f
+            @printf(f, "%15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s, %15s\n",
+                "poly", "obj", "n", "halfdeg", "G dim", "nu", "interp t", "build t", "solve t", "affine %t", "comb %t", "dir %t", "# iters", "# corr steps", "aff / iter",
+                "comb / iter",
+                )
+        end
+    end
+    speedtest.([
+        realpsd1,
+        complexpsd1,
+        realwsos1,
+        complexwsos1,
+        realpsd2,
+        complexpsd2,
+        realwsos2,
+        complexwsos2,
+        ], options = options)
+    return
+end
+
+
+# run_3_2_1() = run_all_rand(3, 2, 1, 0.9, 1.1)
+# run_3_2_05() = run_all_rand(3, 2, 1, 0.95, 1.05)
+# run_3_2_5() = run_all_rand(3, 2, 1, 0.5, 1.5)
+# run_5_2_5() = run_all_rand(5, 2, 1, 0.5, 1.5)
+# run_3_3_5() = run_all_rand(3, 3, 1, 0.5, 1.5)
+# run_5_3_5() = run_all_rand(5, 3, 1, 0.5, 1.5)
+# run_2_2_5() = run_all_rand(2, 2, 1, 0.5, 1.5)
 
 # run_2_2_5()
 # run_3_2_5()
-run_3_3_5()
+# run_3_3_5()

@@ -75,6 +75,12 @@ function test_envelope(instance::Function; options, rseed::Int = 1)
     return
 end
 
+test_envelope_dual(; options...) = test_envelope.([
+    envelope4,
+    envelope5,
+    envelope6,
+    ], options = options)
+
 test_envelope_all(; options...) = test_envelope.([
     envelope1,
     envelope2,

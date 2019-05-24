@@ -67,7 +67,7 @@ set_initial_point(arr::AbstractVector{Float64}, cone::WSOSPolyInterp) = (@. arr 
 _AtA!(U::Matrix{T}, A::Matrix{T}) where {T <: Real} = BLAS.syrk!('U', 'T', one(T), A, zero(T), U)
 _AtA!(U::Matrix{Complex{T}}, A::Matrix{Complex{T}}) where {T <: Real} = BLAS.herk!('U', 'C', one(T), A, zero(T), U)
 
-function check_in_cone(cone::WSOSPolyInterp)
+function check_in_cone(cone::WSOSPolyInterp; invert_hess::Bool = true)
     Ps = cone.Ps
     LLs = cone.tmpLL
     ULs = cone.tmpUL
@@ -76,6 +76,8 @@ function check_in_cone(cone::WSOSPolyInterp)
     ΛFs = cone.ΛFs
     D = Diagonal(cone.point)
 
+    # @timeit Hypatia.to "buildlam" begin
+
     for k in eachindex(Ps) # TODO can be done in parallel
         # Λ = Pk' * Diagonal(point) * Pk
         # TODO LDLT calculation could be faster
@@ -83,10 +85,13 @@ function check_in_cone(cone::WSOSPolyInterp)
         Pk = Ps[k]
         ULk = ULs[k]
         LLk = LLs[k]
+        # @timeit Hypatia.to "UL"
         mul!(ULk, D, Pk)
+        # @timeit Hypatia.to "LL"
         mul!(LLk, Pk', ULk)
 
         # pivoted cholesky and triangular solve method
+        # @timeit Hypatia.to "cholesky"
         ΛFk = cholesky!(Hermitian(LLk, :L), Val(true), check = false)
         if !isposdef(ΛFk)
             return false
@@ -94,25 +99,71 @@ function check_in_cone(cone::WSOSPolyInterp)
         ΛFs[k] = ΛFk
     end
 
+    # end # incone check
+    # @timeit Hypatia.to "gradhess" begin
+
     g = cone.g
     H = cone.H
     @. g = 0.0
     @. H = 0.0
+    # UUd = view(UU, diagind(UU))
+    # UUH = Hermitian(UU, :U)
 
     for k in eachindex(Ps) # TODO can be done in parallel, but need multiple tmp3s
         LUk = LUs[k]
         ΛFk = ΛFs[k]
-        LUk .= view(Ps[k]', ΛFk.p, :)
-        ldiv!(ΛFk.L, LUk) # TODO check calls best triangular solve
-        _AtA!(UU, LUk)
+        @timeit Hypatia.to "view" LUk .= view(Ps[k]', ΛFk.p, :)
+        @timeit Hypatia.to "ldiv" ldiv!(LowerTriangular(ΛFk.L), LUk) # TODO check calls best triangular solve
+        @timeit Hypatia.to "AtA" _AtA!(UU, LUk)
 
-        @inbounds for j in eachindex(g)
-            g[j] -= real(UU[j, j])
-            @inbounds for i in 1:j
-                H[i, j] += abs2(UU[i, j])
+        # LUk = LUs[k]
+        # ΛFk = ΛFs[k]
+        # ULk = ULs[k]
+        # # @timeit Hypatia.to "view"
+        # LUk .= view(Ps[k]', ΛFk.p, :)
+        # # @timeit Hypatia.to "ldiv"
+        # ldiv!(LowerTriangular(ΛFk.L), LUk) # TODO check calls best triangular solve
+        # # @timeit Hypatia.to "AtA"
+        # _AtA!(UU, LUk)
+
+        # LAPACK.trtri!('U', 'N', ΛFk.factors)
+        # ULk .= view(Ps[k], :, ΛFk.p)
+        # BLAS.trmm!('R', 'U', 'N', 'N', 1.0, ΛFk.factors, ULk)
+        # ULk = ULk * UpperTriangular(ΛFk.factors)
+        # UU = ULk * ULk'
+
+        # U_i = inv(ΛFk.U)
+        # # LAPACK.trtri!('U', 'N', ΛFk.factors)
+        # ULk .= view(Ps[k], :, ΛFk.p)
+        # ULk = ULk * U_i
+        # UU = ULk * ULk'
+
+        # lambda_i = inv(ΛFk)
+        # mul!(LUk, lambda_i, Ps[k]')
+        # mul!(UU, Ps[k], LUk)
+
+        # @timeit Hypatia.to "g" @. g -= real(UUd)
+        # @timeit Hypatia.to "H" @. H += abs2(UU)
+
+        @timeit Hypatia.to "gH" begin
+        for j in eachindex(g)
+            @inbounds g[j] -= real(UU[j, j])
+            @simd for i in 1:j
+                @inbounds H[i, j] += abs2(UU[i, j])
             end
         end
+        end
     end
+    # end # timeit gradhess
+    # @assert -dot(cone.point, cone.g) ≈ get_nu(cone) atol=1e-3 rtol=1e-3
+    # if norm(Symmetric(cone.H, :U) * cone.point + cone.g) > 1e-3
+    #     @show Symmetric(cone.H, :U) * cone.point + cone.g
+    # end
+    # @assert Symmetric(cone.H, :U) * cone.point ≈ -cone.g atol=1e-1 rtol=1e-1
 
-    return factorize_hess(cone)
+    # if invert_hess
+    #     return factorize_hess(cone)
+    # else
+        return true
+    # end
 end

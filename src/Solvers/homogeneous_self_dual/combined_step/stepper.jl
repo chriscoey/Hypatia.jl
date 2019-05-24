@@ -17,10 +17,13 @@ mutable struct CombinedHSDStepper <: HSDStepper
     cones_outside_nbhd::Vector{Bool}
     cones_loaded::Vector{Bool}
 
+    infty_nbhd::Bool
+
     function CombinedHSDStepper(
         model::Models.LinearModel;
         system_solver::CombinedHSDSystemSolver = (model isa Models.PreprocessedLinearModel ? QRCholCombinedHSDSystemSolver(model) : NaiveCombinedHSDSystemSolver(model)),
-        max_nbhd::Float64 = 0.75,
+        max_nbhd::Float64 = 0.5,
+        infty_nbhd::Bool = false,
         )
         stepper = new()
 
@@ -41,6 +44,8 @@ mutable struct CombinedHSDStepper <: HSDStepper
         stepper.cones_outside_nbhd = trues(length(model.cones))
         stepper.cones_loaded = trues(length(model.cones))
 
+        stepper.infty_nbhd = infty_nbhd
+
         return stepper
     end
 end
@@ -50,8 +55,9 @@ function step(solver::HSDSolver, stepper::CombinedHSDStepper)
     point = solver.point
 
     # calculate affine/prediction and correction directions
-    # @timeit "directions" begin
+    @timeit Hypatia.to "directions" begin
     (x_pred, x_corr, y_pred, y_corr, z_pred, z_corr, s_pred, s_corr, tau_pred, tau_corr, kap_pred, kap_corr) = get_combined_directions(solver, stepper.system_solver)
+    end
 
     # st = SymIndefCombinedHSDSystemSolver(model)
     # (_x_pred, _x_corr, _y_pred, _y_corr, _z_pred, _z_corr, _s_pred, _s_corr, _tau_pred, _tau_corr, _kap_pred, _kap_corr) = get_combined_directions(solver, st)
@@ -72,16 +78,13 @@ function step(solver::HSDSolver, stepper::CombinedHSDStepper)
     # end
 
     # calculate correction factor gamma by finding distance affine_alpha for stepping in affine direction
-    # @timeit "aff alpha" begin
-    (affine_alpha, affine_alpha_iters) = find_max_alpha_in_nbhd(z_pred, s_pred, tau_pred, kap_pred, 0.9999, stepper.prev_affine_alpha, stepper, solver)
+    @timeit Hypatia.to "aff alpha" (affine_alpha, affine_alpha_iters) = find_max_alpha_in_nbhd(z_pred, s_pred, tau_pred, kap_pred, 0.9999, stepper.prev_affine_alpha, stepper, solver)
     gamma = (1.0 - affine_alpha)^3 # TODO allow different function (heuristic)
     stepper.prev_affine_alpha = affine_alpha
     stepper.prev_affine_alpha_iters = affine_alpha_iters
     stepper.prev_gamma = gamma
-    # end
 
     # find distance alpha for stepping in combined direction
-    # @timeit "comb alpha"
     z_comb = z_pred
     s_comb = s_pred
     pred_factor = 1.0 - gamma
@@ -89,20 +92,17 @@ function step(solver::HSDSolver, stepper::CombinedHSDStepper)
     @. s_comb = pred_factor * s_pred + gamma * s_corr
     tau_comb = pred_factor * tau_pred + gamma * tau_corr
     kap_comb = pred_factor * kap_pred + gamma * kap_corr
-    (alpha, alpha_iters) = find_max_alpha_in_nbhd(z_comb, s_comb, tau_comb, kap_comb, stepper.max_nbhd, stepper.prev_alpha, stepper, solver)
-    # end
+    @timeit Hypatia.to "comb alpha" (alpha, alpha_iters) = find_max_alpha_in_nbhd(z_comb, s_comb, tau_comb, kap_comb, stepper.max_nbhd, stepper.prev_alpha, stepper, solver)
 
     if iszero(alpha)
         # could not step far in combined direction, so perform a pure correction step
         println("performing correction step")
-        # @timeit "corr alpha" begin
         z_comb = z_corr
         s_comb = s_corr
         tau_comb = tau_corr
         kap_comb = kap_corr
-        (alpha, corr_alpha_iters) = find_max_alpha_in_nbhd(z_comb, s_comb, tau_comb, kap_comb, stepper.max_nbhd, 0.9999, stepper, solver)
+        @timeit Hypatia.to "corr alpha" (alpha, corr_alpha_iters) = find_max_alpha_in_nbhd(z_comb, s_comb, tau_comb, kap_comb, stepper.max_nbhd, 0.9999, stepper, solver)
         alpha_iters += corr_alpha_iters
-        # end
 
         @. point.x += alpha * x_corr
         @. point.y += alpha * y_corr
@@ -146,6 +146,47 @@ function print_iteration_stats(solver::HSDSolver, stepper::CombinedHSDStepper)
     flush(stdout)
 end
 
+# function update_nbhd_sqrt_cheap(cone_k::Cones.Cone, res_k::AbstractVector, full_nbhd_sqr::Float64, ::AbstractVector) # replace with passing in stepper
+#     gradnorm = norm(Cones.grad(cone_k), Inf)
+#     nbhd_sqr_k = abs2(norm(res_k, Inf) ./ gradnorm)
+#     return nbhd_sqr_k
+#     # return max(nbhd_sqr_k, full_nbhd_sqr)
+# end
+#
+# function update_nbhd_sqrt_expensive(cone_k::Cones.Cone, res_k::AbstractVector, full_nbhd_sqr::Float64, nbhd_temp::AbstractVector)
+#     @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(nbhd_temp, res_k, cone_k)
+#     nbhd_sqr_k = dot(res_k, nbhd_temp)
+#     return nbhd_sqr_k
+#     # if nbhd_sqr_k < -1e-5
+#     #     return Inf
+#     # end
+#     # return full_nbhd_sqr + nbhd_sqr_k
+# end
+
+# function check_in_nbhds(cones, full_nbhd_sqr, stepper, mu_temp, nbhd)
+#     in_nbhds = true
+#     for k in eachindex(cones)
+#         cone_k = cones[k]
+#         if !stepper.cones_loaded[k]
+#             Cones.load_point(cone_k, stepper.primal_views[k])
+#             if !Cones.check_in_cone(cone_k, invert_hess = false)
+#                 in_nbhds = false
+#                 break
+#             end
+#         end
+#
+#         # modifies dual_views
+#         @timeit Hypatia.to "update_z" stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
+#         full_nbhd_sqr = update_nbhd_sqrt_expensive(cone_k, stepper.dual_views[k], full_nbhd_sqr, stepper.nbhd_temp[k])
+#
+#         if full_nbhd_sqr > abs2(mu_temp * nbhd)
+#             in_nbhds = false
+#             break
+#         end
+#     end # cones
+#     return in_nbhds
+# end
+
 # backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
 # TODO try infinite norm neighborhood, which is cheaper to check, or enforce that for each cone we are within a smaller neighborhood separately
 function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractVector{Float64}, tau_dir::Float64, kap_dir::Float64, nbhd::Float64, prev_alpha::Float64, stepper::CombinedHSDStepper, solver::HSDSolver)
@@ -173,12 +214,14 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
     while num_pred_iters < 100
         num_pred_iters += 1
 
+        @timeit Hypatia.to "linstep" begin
         @. z_temp = point.z + alpha * z_dir
         @. s_temp = point.s + alpha * s_dir
         tau_temp = solver.tau + alpha * tau_dir
         kap_temp = solver.kap + alpha * kap_dir
         taukap_temp = tau_temp * kap_temp
         mu_temp = (dot(s_temp, z_temp) + taukap_temp) / (1.0 + model.nu)
+        end
 
         if mu_temp > 0.0
             # accept primal iterate if it is inside the cone and neighborhood
@@ -188,7 +231,7 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                 if stepper.cones_outside_nbhd[k]
                     cone_k = cones[k]
                     Cones.load_point(cone_k, stepper.primal_views[k])
-                    if Cones.check_in_cone(cone_k)
+                    if Cones.check_in_cone(cone_k, invert_hess = false)
                         stepper.cones_outside_nbhd[k] = false
                         stepper.cones_loaded[k] = true
                     else
@@ -208,38 +251,47 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
                         cone_k = cones[k]
                         if !stepper.cones_loaded[k]
                             Cones.load_point(cone_k, stepper.primal_views[k])
-                            if !Cones.check_in_cone(cone_k)
+                            if !Cones.check_in_cone(cone_k, invert_hess = !stepper.infty_nbhd)
                                 in_nbhds = false
                                 break
                             end
                         end
 
                         # modifies dual_views
-                        stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
-                        Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
-                        # mul!(stepper.nbhd_temp[k], Cones.inv_hess(cone_k), stepper.dual_views[k])
-                        nbhd_sqr_k = dot(stepper.dual_views[k], stepper.nbhd_temp[k])
+                        @timeit Hypatia.to "update_z" stepper.dual_views[k] .+= mu_temp .* Cones.grad(cone_k)
 
-                        if nbhd_sqr_k <= -1e-5
-                            println("numerical issue for cone: nbhd_sqr_k is $nbhd_sqr_k")
-                            in_nbhds = false
-                            break
-                        elseif nbhd_sqr_k > 0.0
-                            full_nbhd_sqr += nbhd_sqr_k
-                            if full_nbhd_sqr > abs2(mu_temp * nbhd)
+                        if stepper.infty_nbhd
+                            nbhd_sqr_k = abs2(norm(stepper.dual_views[k], Inf) / norm(Cones.grad(cone_k), Inf))
+                            full_nbhd_sqr = max(nbhd_sqr_k, full_nbhd_sqr)
+                        else
+                            @timeit Hypatia.to "inv_hess_prod" Cones.inv_hess_prod!(stepper.nbhd_temp[k], stepper.dual_views[k], cone_k)
+                            nbhd_sqr_k = dot(stepper.dual_views[k], stepper.nbhd_temp[k])
+                            if nbhd_sqr_k <= -1e-5
+                                println("numerical issue for cone: nbhd_sqr_k is $nbhd_sqr_k")
                                 in_nbhds = false
                                 break
+                            elseif nbhd_sqr_k > 0
+                                full_nbhd_sqr += nbhd_sqr_k
                             end
+                            # open("nhood.csv", "a") do f
+                            #     println(f, "$full_nbhd_sqr, $cheap")
+                            # end
                         end
-                    end
+
+                        if full_nbhd_sqr > abs2(mu_temp * nbhd)
+                            in_nbhds = false
+                            break
+                        end
+                    end # cones
+
                     if in_nbhds
                         break
                     end
-                end
-            end
+                end # alternative condition
+            end # in cones
         end
 
-        if alpha < 1e-3
+        if alpha < 1e-2
             # alpha is very small so just let it be zero
             alpha = 0.0
             break
@@ -247,7 +299,7 @@ function find_max_alpha_in_nbhd(z_dir::AbstractVector{Float64}, s_dir::AbstractV
 
         # iterate is outside the neighborhood: decrease alpha
         alpha *= 0.8 # TODO option for parameter
-    end
+    end # pred iters
 
     return (alpha, num_pred_iters)
 end

@@ -93,6 +93,8 @@ mutable struct QRCholCombinedHSDSystemSolver <: CombinedHSDSystemSolver
         system_solver.GHGQ1x = Matrix{Float64}(undef, n, 3)
         system_solver.Q2div = Matrix{Float64}(undef, nmp, 3)
         system_solver.GQ2 = model.G * model.Ap_Q2
+        # @show typeof(model.G)
+        # @show typeof(system_solver.GQ2)
         system_solver.HGQ2 = Matrix{Float64}(undef, q, nmp)
         system_solver.Q2GHGQ2 = Matrix{Float64}(undef, nmp, nmp)
         system_solver.Q2x = similar(system_solver.Q1x)
@@ -163,16 +165,16 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
     HGxi_k = system_solver.HGxi_k
     Gxi_k = system_solver.Gxi_k
 
-    # @timeit "setup xy" begin
+    @timeit Hypatia.to "setup xy" begin
     @. x1 = -model.c
     @. x2 = solver.x_residual
     @. x3 = 0.0
     @. y1 = model.b
     @. y2 = -solver.y_residual
     @. y3 = 0.0
-    # end
+    end
 
-    # @timeit "setup z" begin
+    @timeit Hypatia.to "setup z" begin
     @. z1_temp = model.h
     @. z2_temp = -solver.z_residual
     for k in eachindex(cones)
@@ -185,7 +187,7 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
             @. z3_temp_k[k] = duals_k / mu + grad_k
             # ldiv!(z_k[k], Cones.hess_fact(cone_k), z_temp_k[k])
             # mul!(z_k[k], Cones.inv_hess(cone_k), z_temp_k[k])
-            Cones.inv_hess_prod!(z_k[k], z_temp_k[k], cone_k)
+            @timeit Hypatia.to "dir_i_h_prod" Cones.inv_hess_prod!(z_k[k], z_temp_k[k], cone_k)
         else
             @. z1_temp_k[k] *= mu
             @. z2_temp_k[k] *= mu
@@ -197,7 +199,7 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
             @. z3_k[k] = duals_k + grad_k * mu
         end
     end
-    # end
+    end
 
     function block_hessian_product!(prod_k, arr_k)
         for k in eachindex(cones)
@@ -209,13 +211,13 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
                 prod_k[k] ./= mu
             else
                 # mul!(prod_k[k], Cones.hess(cone_k), arr_k[k])
-                Cones.hess_prod!(prod_k[k], arr_k[k], cone_k)
+                @timeit Hypatia.to "hess k prod" Cones.hess_prod!(prod_k[k], arr_k[k], cone_k)
                 prod_k[k] .*= mu
             end
         end
     end
 
-    # @timeit "pre fact" begin
+    @timeit Hypatia.to "pre fact" begin # cheap
     # bxGHbz = bx + G'*Hbz
     mul!(bxGHbz, model.G', zi)
     @. bxGHbz += xi
@@ -226,42 +228,55 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
 
     # Q2x = Q2*(K22_F\(Q2'*(bxGHbz - GHG*Q1x)))
     mul!(GQ1x, model.G, Q1x)
+    # @timeit Hypatia.to "block_h_prod" # cheap
     block_hessian_product!(HGQ1x_k, GQ1x_k)
     mul!(GHGQ1x, model.G', HGQ1x)
     @. GHGQ1x = bxGHbz - GHGQ1x
     mul!(Q2div, model.Ap_Q2', GHGQ1x)
-    # end
+    end # "pre fact"
 
+    @timeit Hypatia.to "middle" begin
     if !iszero(size(Q2div, 1))
-        # @timeit "mat" begin
-        block_hessian_product!(HGQ2_k, GQ2_k)
-        mul!(Q2GHGQ2, GQ2', HGQ2)
-        # end
+        if issparse(GQ2)
+            @timeit Hypatia.to "mul manual" begin
+            H = cones[1].H
+            @. Q2GHGQ2 = mu * (H[1, 1] + H[2:end, 2:end] - H[1:1, 2:end] - H[1:1, 2:end]')
+            # for j in 2:size(H, 2), i in 2:j
+            #     @inbounds Q2GHGQ2[i-1, j-1] = mu * (H[1, 1] - H[i, 1] - H[1, j] + H[i, j])
+            # end
+
+            # @. Q2GHGQ2 = H[1, 1] - H[2:end, 1:1] - H[1:1, 2:end] + H[2:end, 2:end]
+            # Q2GHGQ2 .*= mu
+            end
+        else
+            @timeit Hypatia.to "block prod" block_hessian_product!(HGQ2_k, GQ2_k)
+            @timeit Hypatia.to "mul!" mul!(Q2GHGQ2, GQ2', HGQ2)
+        end
 
         # TODO prealloc cholesky auxiliary vectors using posvx
         # TODO use old sysvx code
-        F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
-        if !issuccess(F)
-        # @timeit "chol" begin
-        # F = cholesky!(Symmetric(Q2GHGQ2), Val(true), check = false)
-        # end
-        # if !isposdef(F)
-            # @timeit "recover" begin
+        # @timeit Hypatia.to "bk" F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
+        # if !issuccess(F)
+        @timeit Hypatia.to "chol" F = cholesky!(Symmetric(Q2GHGQ2, :U), Val(true), check = false)
+        if !isposdef(F)
+            @timeit Hypatia.to "recover" begin
             println("linear system matrix factorization failed")
+            solver.slow_prev = true
             mul!(Q2GHGQ2, GQ2', HGQ2)
             Q2GHGQ2 += 1e-4I
             F = bunchkaufman!(Symmetric(Q2GHGQ2), true, check = false)
+            end # recover
             if !issuccess(F)
                 error("could not fix failure of positive definiteness (mu is $mu); terminating")
             end
-            # end
         end
-        # @timeit "ldiv" begin
+        @timeit Hypatia.to "ldiv" begin # cheap
         ldiv!(F, Q2div)
-        # end
+        end
     end
+    end # middle
 
-    # @timeit "post fact" begin
+    @timeit Hypatia.to "post fact" begin # cheap
     mul!(Q2x, model.Ap_Q2, Q2div)
 
     # xi = Q1x + Q2x
@@ -298,7 +313,7 @@ function get_combined_directions(solver::HSDSolver, system_solver::QRCholCombine
     (tau_pred, kap_pred) = lift!(x2, y2, z2, z2_temp, solver.kap + solver.primal_obj_t - solver.dual_obj_t, -solver.kap)
     @. z2_temp -= solver.z_residual
     (tau_corr, kap_corr) = lift!(x3, y3, z3, z3_temp, 0.0, -solver.kap + mu / solver.tau)
-    # end
+    end
 
     return (x2, x3, y2, y3, z2, z3, z2_temp, z3_temp, tau_pred, tau_corr, kap_pred, kap_corr)
 end
