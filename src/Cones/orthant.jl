@@ -14,6 +14,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     use_dual::Bool
     dim::Int
     point::Vector{T}
+    dual_point::Vector{T}
 
     feas_updated::Bool
     grad_updated::Bool
@@ -23,6 +24,9 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     grad::Vector{T}
     hess::Diagonal{T, Vector{T}}
     inv_hess::Diagonal{T, Vector{T}}
+
+    WWt_updated::Bool
+    WWt::Diagonal{T, Vector{T}}
 
     function Nonnegative{T}(dim::Int, is_dual::Bool) where {T <: Real}
         @assert dim >= 1
@@ -62,7 +66,7 @@ Nonpositive{T}(dim::Int) where {T <: Real} = Nonpositive{T}(dim, false)
 
 const OrthantCone{T <: Real} = Union{Nonnegative{T}, Nonpositive{T}}
 
-reset_data(cone::OrthantCone) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
+reset_data(cone::OrthantCone) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.WWt_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::OrthantCone{T}) where {T <: Real}
@@ -127,6 +131,22 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Ort
     @assert cone.is_feas
     @. prod = arr * cone.point * cone.point
     return prod
+end
+
+function W_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::OrthantCone)
+    @. prod = arr * sqrt(cone.point) / sqrt(cone.dual_point)
+    return prod
+end
+
+function update_WWt(cone::OrthantCone)
+    @. cone.WWt.diag = cone.point / cone.dual_point
+    cone.WWt_updated = true
+    return cone.WWt
+end
+
+function lambda_ldiv!(div, cone::OrthantCone, arr)
+    @. div = arr / sqrt(cone.point) / sqrt(cone.dual_point)
+    return div
 end
 
 hess_nz_count(cone::OrthantCone, ::Bool) = cone.dim
