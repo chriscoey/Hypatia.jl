@@ -87,7 +87,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
     # TODO try using formulae for symmetric cones
     @timeit solver.timer "aff_alpha" aff_alpha = find_max_alpha_in_nbhd(
-        stepper.z_dirs, stepper.s_dirs, stepper.tau_dirs[1], stepper.kap_dirs[1], solver,
+        stepper.z_dirs[:, 1], stepper.s_dirs[:, 1], stepper.tau_dirs[1], stepper.kap_dirs[1], solver,
         nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(1e-3)), min_alpha = T(1e-3))
     solver.prev_aff_alpha = aff_alpha
 
@@ -99,8 +99,8 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dirs" dirs = get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    @timeit solver.timer "comb_alpha" comb_alpha = find_max_alpha_in_nbhd(
-        stepper.z_dirs, stepper.s_dirs, stepper.tau_dirs[1], stepper.kap_dirs[1], solver,
+    @timeit solver.timer "comb_alpha" alpha = find_max_alpha_in_nbhd(
+        stepper.z_dirs[:, 1], stepper.s_dirs[:, 1], stepper.tau_dirs[1], stepper.kap_dirs[1], solver,
         nbhd = one(T), prev_alpha = max(solver.prev_alpha, T(1e-3)), min_alpha = T(1e-3))
 
     if iszero(alpha)
@@ -112,10 +112,10 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # step distance alpha in combined direction
     solver.prev_alpha = alpha
-    @. point.x += alpha * stepper.x_dirs
-    @. point.y += alpha * stepper.y_dirs
-    @. point.z += alpha * stepper.z_dirs
-    @. point.s += alpha * stepper.s_dirs
+    @. point.x += alpha * stepper.x_dirs[:, 1]
+    @. point.y += alpha * stepper.y_dirs[:, 1]
+    @. point.z += alpha * stepper.z_dirs[:, 1]
+    @. point.s += alpha * stepper.s_dirs[:, 1]
     solver.tau += alpha * stepper.tau_dirs[1]
     solver.kap += alpha * stepper.kap_dirs[1]
     calc_mu(solver)
@@ -129,7 +129,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     return point
 end
 
-# return affine or combined directions, depending on stepper.is_affine_phase
+# return affine or combined directions, depending on stepper.in_affine_phase
 # TODO try to refactor the iterative refinement
 function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     dirs = stepper.dirs
@@ -173,7 +173,7 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
     rhs = stepper.rhs
 
     sqrtmu = sqrt(solver.mu)
-    if stepper.is_affine_phase
+    if stepper.in_affine_phase
         # x, y, z, tau rhs
         stepper.x_rhs .= solver.x_residual
         stepper.y_rhs .= solver.y_residual
@@ -244,7 +244,7 @@ function calc_system_residual(stepper::ScalingStepper{T}, solver::Solver{T}) whe
     res_kap = stepper.kap_rhs * solver.tau + stepper.tau_rhs * solver.kap
 
     # RHS part
-    if stepper.is_affine_phase
+    if stepper.in_affine_phase
         # x, y, z, tau rhs
         @. res_x[:, 1] -= solver.x_residual
         @. res_y[:, 1] -= solver.y_residual
