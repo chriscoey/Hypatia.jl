@@ -66,7 +66,7 @@ Nonnegative{T}(dim::Int) where {T <: Real} = Nonnegative{T}(dim, false)
 # const OrthantCone{T <: Real} = Union{Nonnegative{T}, Nonpositive{T}}
 const OrthantCone{T <: Real} = Nonnegative{T}
 
-reset_data(cone::OrthantCone) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.WWt_updated = false)
+reset_data(cone::OrthantCone) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::OrthantCone{T}) where {T <: Real}
