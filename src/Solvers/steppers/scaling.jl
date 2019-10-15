@@ -8,7 +8,7 @@ mutable struct ScalingStepper{T <: Real} <: Stepper{T}
     in_affine_phase::Bool
     gamma::T
 
-    rhs::Matrix{T}
+    rhs::Matrix{T} # TODO make it a vector
     x_rhs
     y_rhs
     z_rhs
@@ -18,7 +18,7 @@ mutable struct ScalingStepper{T <: Real} <: Stepper{T}
     s_rhs_k
     kap_rhs
 
-    dirs::Matrix{T}
+    dirs::Matrix{T} # TODO make it a vector
     x_dirs
     y_dirs
     z_dirs
@@ -138,32 +138,32 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     @timeit solver.timer "update_rhs" rhs = update_rhs(stepper, solver) # different for affine vs combined phases
     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs, rhs) # NOTE dense solve with cache destroys RHS
 
-    # use iterative refinement - note calc_system_residual is different for affine vs combined phases
-    iter_ref_steps = 3 # TODO handle, maybe change dynamically
-    dirs_new = rhs
-    dirs_new .= dirs # TODO avoid?
-    for i in 1:iter_ref_steps
-        # perform iterative refinement step
-        @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver) # modifies rhs
-        norm_inf = norm(res, Inf)
-        norm_2 = norm(res, 2)
-
-        if norm_inf > eps(T)
-            dirs_new .= zero(T)
-            @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs_new, res)
-            dirs_new .*= -1
-            dirs_new .+= dirs
-            @timeit solver.timer "calc_sys_res" res_new = calc_system_residual(stepper, solver)
-            norm_inf_new = norm(res_new, Inf)
-            norm_2_new = norm(res_new, 2)
-            if norm_inf_new < norm_inf && norm_2_new < norm_2
-                solver.verbose && @printf("used iter ref, norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", norm_inf, norm_inf_new, norm_2, norm_2_new)
-                copyto!(dirs, dirs_new)
-            else
-                break
-            end
-        end
-    end
+    # # use iterative refinement - note calc_system_residual is different for affine vs combined phases
+    # iter_ref_steps = 3 # TODO handle, maybe change dynamically
+    # dirs_new = rhs
+    # dirs_new .= dirs # TODO avoid?
+    # for i in 1:iter_ref_steps
+    #     # perform iterative refinement step
+    #     @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver) # modifies rhs
+    #     norm_inf = norm(res, Inf)
+    #     norm_2 = norm(res, 2)
+    #
+    #     if norm_inf > eps(T)
+    #         dirs_new .= zero(T)
+    #         @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs_new, res)
+    #         dirs_new .*= -1
+    #         dirs_new .+= dirs
+    #         @timeit solver.timer "calc_sys_res" res_new = calc_system_residual(stepper, solver)
+    #         norm_inf_new = norm(res_new, Inf)
+    #         norm_2_new = norm(res_new, 2)
+    #         if norm_inf_new < norm_inf && norm_2_new < norm_2
+    #             solver.verbose && @printf("used iter ref, norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", norm_inf, norm_inf_new, norm_2, norm_2_new)
+    #             copyto!(dirs, dirs_new)
+    #         else
+    #             break
+    #         end
+    #     end
+    # end
 
     return dirs
 end
@@ -201,8 +201,13 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         gamma_sqrtmu = stepper.gamma * sqrtmu
         for (k, cone_k) in enumerate(solver.model.cones)
             duals_k = solver.point.dual_views[k]
-            grad_k = Cones.grad(cone_k)
-            @. stepper.s_rhs_k[k] = -duals_k - gamma_sqrtmu * grad_k # TODO Mehrotra correction term
+            if Cones.use_scaling(cone_k)
+                scalmat_scalveci = Cones.scalmat_scalveci(cone_k)
+                @. stepper.s_rhs_k[k] = -duals_k + stepper.gamma * solver.mu * scalmat_scalveci
+            else
+                grad_k = Cones.grad(cone_k)
+                @. stepper.s_rhs_k[k] = -duals_k - gamma_sqrtmu * grad_k # TODO Mehrotra correction term
+            end
         end
 
         # kap rhs

@@ -266,7 +266,8 @@ function load(system_solver::NaiveDenseSystemSolver{T}, solver::Solver{T}) where
 end
 
 function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
-    system_solver.lhs6[end, system_solver.tau_row] = solver.mu / solver.tau / solver.tau
+    system_solver.lhs6[end, system_solver.tau_row] = solver.kap
+    system_solver.lhs6[end, end] = solver.tau
 
     for (k, cone_k) in enumerate(solver.model.cones)
         copyto!(system_solver.lhs6_H_k[k], Cones.hess(cone_k))

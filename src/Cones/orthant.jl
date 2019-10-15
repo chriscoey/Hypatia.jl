@@ -156,7 +156,7 @@ end
 
 # calculates W times lambda inverse times e
 function scalmat_scalveci(cone::OrthantCone)
-    return inv(cone.dual_point)
+    return inv.(cone.dual_point)
 end
 
 hess_nz_count(cone::OrthantCone, ::Bool) = cone.dim
