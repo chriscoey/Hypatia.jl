@@ -253,19 +253,21 @@ function calc_system_residual(stepper::ScalingStepper{T}, solver::Solver{T}) whe
 
         # s rhs
         @timeit solver.timer "resz" for (k, cone_k) in enumerate(model.cones)
-            # srhs_k = [-duals_k, -duals_k - mu * grad_k]
+            # srhs_k = -duals_k
             idxs_k = model.cone_idxs[k]
             duals_k = solver.point.dual_views[k]
             @. @views res_s[idxs_k, 1] += duals_k
         end
 
         # kap rhs
-        # TODO
+        res_kap[1] += solver.kap * solver.tau
     else
         # x, y, z, tau rhs
-        # TODO
-
         rhs_factor = 1 - stepper.gamma
+        @. res_x[:, 1] -= rhs_factor * solver.x_residual
+        @. res_y[:, 1] -= rhs_factor * solver.y_residual
+        @. res_z[:, 1] -= rhs_factor * solver.z_residual
+        res_tau[1] -= rhs_factor * (solver.kap + solver.primal_obj_t - solver.dual_obj_t)
 
         # s rhs
         gamma_sqrtmu = stepper.gamma * sqrt(solver.mu)
@@ -274,52 +276,12 @@ function calc_system_residual(stepper::ScalingStepper{T}, solver::Solver{T}) whe
             idxs_k = model.cone_idxs[k]
             duals_k = solver.point.dual_views[k]
             grad_k = Cones.grad(cone_k)
-            @. @views res_s[idxs_k, 2] += duals_k + gamma_sqrtmu * grad_k
+            @. @views res_s[idxs_k, 1] += duals_k + gamma_sqrtmu * grad_k
         end
 
         # kap rhs
-        # TODO
+        res_kap[1] += solver.kap * solver.tau - stepper.gamma * solver.mu
     end
-
-
-
-    # # A'*y + G'*z + c*tau = [x_residual, 0]
-    # @timeit solver.timer "resx" res_x = model.A' * stepper.y_rhs + model.G' * stepper.z_rhs + model.c * stepper.tau_rhs
-    # @. res_x[:, 1] -= solver.x_residual
-    # # -A*x + b*tau = [y_residual, 0]
-    # @timeit solver.timer "resy" res_y = -model.A * stepper.x_rhs + model.b * stepper.tau_rhs
-    # @. res_y[:, 1] -= solver.y_residual
-    # # -G*x + h*tau - s = [z_residual, 0]
-    # @timeit solver.timer "resz" res_z = -model.G * stepper.x_rhs + model.h * stepper.tau_rhs - stepper.s_rhs
-    # @. res_z[:, 1] -= solver.z_residual
-    # # -c'*x - b'*y - h'*z - kap = [kap + primal_obj_t - dual_obj_t, 0]
-    # @timeit solver.timer "restau" res_tau = -model.c' * stepper.x_rhs - model.b' * stepper.y_rhs - model.h' * stepper.z_rhs - stepper.kap_rhs
-    # res_tau[1] -= solver.kap + solver.primal_obj_t - solver.dual_obj_t
-    #
-    # sqrtmu = sqrt(solver.mu)
-    # res_s = similar(res_z)
-    # @timeit solver.timer "resz" for (k, cone_k) in enumerate(model.cones)
-    #     idxs_k = model.cone_idxs[k]
-    #     if Cones.use_dual(cone_k)
-    #         # (du bar) mu*H_k*z_k + s_k = srhs_k
-    #         @views Cones.hess_prod!(res_s[idxs_k, :], stepper.z_rhs_k[k], cone_k)
-    #         @. @views res_s[idxs_k, :] += stepper.s_rhs_k[k]
-    #     else
-    #         # (pr bar) z_k + mu*H_k*s_k = srhs_k
-    #         @views Cones.hess_prod!(res_s[idxs_k, :], stepper.s_rhs_k[k], cone_k)
-    #         @. @views res_s[idxs_k, :] += stepper.z_rhs_k[k]
-    #     end
-    #     # srhs_k = [-duals_k, -duals_k - mu * grad_k]
-    #     duals_k = solver.point.dual_views[k]
-    #     grad_k = Cones.grad(cone_k)
-    #     @. @views res_s[idxs_k, 1] += duals_k
-    #     @. @views res_s[idxs_k, 2] += duals_k + grad_k * sqrtmu
-    # end
-    #
-    # # mu/(taubar^2)*tau + kap = [-kap, -kap + mu/tau]
-    # res_kap = stepper.kap_rhs + solver.mu / solver.tau * stepper.tau_rhs / solver.tau
-    # res_kap[1] += solver.kap
-    # res_kap[2] += solver.kap - solver.mu / solver.tau
 
     return vcat(res_x, res_y, res_z, res_tau, res_s, res_kap) # TODO don't vcat
 end
