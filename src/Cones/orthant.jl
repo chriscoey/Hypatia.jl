@@ -106,7 +106,11 @@ end
 
 function update_hess(cone::OrthantCone)
     @assert cone.grad_updated
-    @. cone.hess.diag = abs2(cone.grad)
+    if cone.use_scaling
+        @. cone.hess.diag = cone.dual_point / cone.point
+    else
+        @. cone.hess.diag = abs2(cone.grad)
+    end
     cone.hess_updated = true
     return cone.hess
 end
@@ -114,7 +118,7 @@ end
 function update_inv_hess(cone::OrthantCone)
     @assert cone.is_feas
     if cone.use_scaling
-        @. cone.WWt.diag = cone.point / cone.dual_point
+        @. cone.inv_hess.diag = cone.point / cone.dual_point
     else
         @. cone.inv_hess.diag = abs2(cone.point)
     end
