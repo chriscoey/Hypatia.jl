@@ -77,6 +77,7 @@ function check_nbhd(
     end
 
     Cones.load_point.(cones, solver.primal_views, sqrtmu)
+    Cones.load_dual_point.(cones, solver.dual_views, sqrtmu) # TODO needed?
 
     # accept primal iterate if it is inside the cone and neighborhood
     # first check inside cone for whichever cones were violated last line search iteration
