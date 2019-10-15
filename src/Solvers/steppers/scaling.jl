@@ -201,13 +201,13 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         gamma_sqrtmu = stepper.gamma * sqrtmu
         for (k, cone_k) in enumerate(solver.model.cones)
             duals_k = solver.point.dual_views[k]
-            if Cones.use_scaling(cone_k)
-                scalmat_scalveci = Cones.scalmat_scalveci(cone_k)
-                @. stepper.s_rhs_k[k] = -duals_k + stepper.gamma * solver.mu * scalmat_scalveci
-            else
+            # if Cones.use_scaling(cone_k)
+            #     scalmat_scalveci = Cones.scalmat_scalveci(cone_k) # TODO if this is the same as -grad, don't need this oracle and special case
+            #     @. stepper.s_rhs_k[k] = -duals_k + gamma_sqrtmu * scalmat_scalveci
+            # else
                 grad_k = Cones.grad(cone_k)
                 @. stepper.s_rhs_k[k] = -duals_k - gamma_sqrtmu * grad_k # TODO Mehrotra correction term
-            end
+            # end
         end
 
         # kap rhs
