@@ -12,6 +12,7 @@ nonpositive cone: -sum_i(log(-u_i))
 
 mutable struct Nonnegative{T <: Real} <: Cone{T}
     use_dual::Bool
+    use_scaling::Bool
     dim::Int
     point::Vector{T}
     dual_point::Vector{T}
@@ -24,9 +25,6 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     grad::Vector{T}
     hess::Diagonal{T, Vector{T}}
     inv_hess::Diagonal{T, Vector{T}}
-
-    WWt_updated::Bool
-    WWt::Diagonal{T, Vector{T}}
 
     function Nonnegative{T}(dim::Int, is_dual::Bool) where {T <: Real}
         @assert dim >= 1
@@ -53,16 +51,17 @@ mutable struct Nonpositive{T <: Real} <: Cone{T}
     hess::Diagonal{T, Vector{T}}
     inv_hess::Diagonal{T, Vector{T}}
 
-    function Nonpositive{T}(dim::Int, is_dual::Bool) where {T <: Real}
+    function Nonpositive{T}(dim::Int, is_dual::Bool, use_scaling::Bool) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.use_dual = is_dual
+        cone.use_scaling = use_scaling
         cone.dim = dim
         return cone
     end
 end
 
-Nonpositive{T}(dim::Int) where {T <: Real} = Nonpositive{T}(dim, false)
+Nonpositive{T}(dim::Int) where {T <: Real} = Nonpositive{T}(dim, false, false)
 
 const OrthantCone{T <: Real} = Union{Nonnegative{T}, Nonpositive{T}}
 
@@ -113,7 +112,11 @@ end
 
 function update_inv_hess(cone::OrthantCone)
     @assert cone.is_feas
-    @. cone.inv_hess.diag = abs2(cone.point)
+    if cone.use_scaling
+        @. cone.WWt.diag = cone.point / cone.dual_point
+    else
+        @. cone.inv_hess.diag = abs2(cone.point)
+    end
     cone.inv_hess_updated = true
     return cone.inv_hess
 end
@@ -133,20 +136,21 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Ort
     return prod
 end
 
-function W_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::OrthantCone)
+# multiplies arr by W, the squareroot of the scaling matrix
+function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::OrthantCone)
     @. prod = arr * sqrt(cone.point) / sqrt(cone.dual_point)
     return prod
 end
 
-function update_WWt(cone::OrthantCone)
-    @. cone.WWt.diag = cone.point / cone.dual_point
-    cone.WWt_updated = true
-    return cone.WWt
-end
-
-function lambda_ldiv!(div, cone::OrthantCone, arr)
+# divides arr by lambda, the scaled point
+function scalvec_ldiv!(div, cone::OrthantCone, arr)
     @. div = arr / sqrt(cone.point) / sqrt(cone.dual_point)
     return div
+end
+
+# calculates W times lambda inverse times e
+function scalmat_scalveci(cone::OrthantCone)
+    return inv(cone.dual_point)
 end
 
 hess_nz_count(cone::OrthantCone, ::Bool) = cone.dim

@@ -45,7 +45,6 @@ is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
-scaling_matrix(cone::Cone) = (cone.WWt_updated ? cone.WWt : update_WWt(cone))
 
 # fallbacks
 
