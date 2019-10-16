@@ -95,34 +95,41 @@ end
 function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
 
+    # TODO is this needed?
+    Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(solver.model.cones, point.dual_views)
+
     # update LHS of linear systems
     @timeit solver.timer "update_fact" update_fact(solver.system_solver, solver)
-
     # calculate affine/prediction directions
     stepper.in_affine_phase = true
     @timeit solver.timer "aff_dir" dir = get_directions(stepper, solver)
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
     # TODO try using formulae for symmetric cones
-    @timeit solver.timer "aff_alpha" aff_alpha = find_max_alpha_in_nbhd(
-        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-        nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(1e-3)), min_alpha = T(1e-3))
+    # @timeit solver.timer "aff_alpha" aff_alpha = find_max_alpha_in_nbhd(
+    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+    #     nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(1e-3)), min_alpha = T(1e-3))
+    # TODO put minimum function in cones module
+    aff_alpha = 0.999 * minimum(Cones.step_max_dist(cone_k, stepper.s_dir[idxs_k], stepper.z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
     solver.prev_aff_alpha = aff_alpha
+    @show aff_alpha
+    @assert 0 < aff_alpha < 1
 
-    gamma = (one(T) - aff_alpha)^3 # TODO allow different function (heuristic)
+    gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic)
     solver.prev_gamma = stepper.gamma = gamma
 
     # calculate combined directions
     stepper.in_affine_phase = false
-    sqrtmu = sqrt(solver.mu)
-    Cones.load_point.(solver.model.cones, point.primal_views, sqrtmu)
-    Cones.load_dual_point.(solver.model.cones, point.dual_views, sqrtmu)
     @timeit solver.timer "comb_dir" dir = get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    @timeit solver.timer "comb_alpha" alpha = find_max_alpha_in_nbhd(
-        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-        nbhd = one(T), prev_alpha = max(solver.prev_alpha, T(1e-3)), min_alpha = T(1e-3))
+    # @timeit solver.timer "comb_alpha" alpha = find_max_alpha_in_nbhd(
+    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+    #     nbhd = one(T), prev_alpha = max(solver.prev_alpha, T(1e-3)), min_alpha = T(1e-3))
+    alpha = 0.999 * minimum(Cones.step_max_dist(cone_k, stepper.s_dir[idxs_k], stepper.z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
+    @show alpha
+    @assert 0 < alpha < 1
 
     if iszero(alpha)
         @warn("numerical failure: could not step in correction direction; terminating")
@@ -209,14 +216,14 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         rhs[stepper.tau_row] *= rhs_factor
 
         # s rhs (with Mehrotra correction for symmetric cones)
-        gamma_sqrtmu = stepper.gamma * sqrt(solver.mu)
+        gamma_mu = stepper.gamma * solver.mu
         for (k, cone_k) in enumerate(solver.model.cones)
             grad_k = Cones.grad(cone_k) # TODO store this so don't need to reload the point right before combined phase
-            @. stepper.s_rhs_k[k] -= gamma_sqrtmu * grad_k # TODO mehrotra term
+            @. stepper.s_rhs_k[k] -= gamma_mu * grad_k # TODO mehrotra term
         end
 
         # kap rhs (with Mehrotra correction)
-        rhs[end] += stepper.gamma * solver.mu - stepper.tau_dir[1] * stepper.kap_dir[1]
+        rhs[end] += gamma_mu - stepper.tau_dir[1] * stepper.kap_dir[1]
     end
 
     return rhs

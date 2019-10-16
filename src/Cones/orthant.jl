@@ -169,18 +169,17 @@ end
 #     return inv.(cone.point) # TODO this is minus gradient - remove the oracle if it is always the same
 # end
 
+# TODO optimize this
 function step_max_dist(cone::Nonnegative, s_sol, z_sol)
     @assert cone.is_feas
 
     max_step = Inf
-    for i in eachindex(cone.point)
-        primal_rel = cone.point[i] ./ s_sol[i]
-        if s_sol[i] < 0 && abs(primal_rel) < max_step
-            max_step = abs(primal_rel)
+    @inbounds for i in eachindex(cone.point)
+        if s_sol[i] < 0
+            max_step = min(max_step, -cone.point[i] / s_sol[i])
         end
-        dual_rel = cone.dual_point[i] ./ z_sol[i]
-        if z_sol[i] < 0 && abs(dual_rel) < max_step
-            max_step = abs(dual_rel)
+        if z_sol[i] < 0
+            max_step = min(max_step, -cone.dual_point[i] / z_sol[i])
         end
     end
     if max_step == Inf
