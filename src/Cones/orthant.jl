@@ -26,6 +26,8 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     hess::Diagonal{T, Vector{T}}
     inv_hess::Diagonal{T, Vector{T}}
 
+    mehrotra_correction::Vector{T}
+
     function Nonnegative{T}(dim::Int, is_dual::Bool) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
@@ -170,16 +172,16 @@ end
 # end
 
 # TODO optimize this
-function step_max_dist(cone::Nonnegative, s_sol, z_sol)
+function step_max_dist(cone::Nonnegative{T}, s_sol, z_sol, fact::T = one(T)) where {T}
     @assert cone.is_feas
 
     max_step = Inf
     @inbounds for i in eachindex(cone.point)
         if s_sol[i] < 0
-            max_step = min(max_step, -cone.point[i] / s_sol[i])
+            max_step = min(max_step, -cone.point[i] / s_sol[i] / fact)
         end
         if z_sol[i] < 0
-            max_step = min(max_step, -cone.dual_point[i] / z_sol[i])
+            max_step = min(max_step, -cone.dual_point[i] / z_sol[i] / fact)
         end
     end
     if max_step == Inf
@@ -187,6 +189,11 @@ function step_max_dist(cone::Nonnegative, s_sol, z_sol)
     end
 
     return max_step
+end
+
+function mehrotra_correction(cone::Nonnegative, s_sol, z_sol)
+    @. cone.mehrotra_correction = -s_sol * z_sol
+    return cone.mehrotra_correction
 end
 
 hess_nz_count(cone::OrthantCone, ::Bool) = cone.dim
