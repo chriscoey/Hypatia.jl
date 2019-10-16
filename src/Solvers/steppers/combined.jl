@@ -262,7 +262,7 @@ function calc_system_residual(stepper::CombinedStepper{T}, solver::Solver{T}) wh
 
     sqrtmu = sqrt(solver.mu)
     res_s = similar(res_z)
-    @timeit solver.timer "resz" for (k, cone_k) in enumerate(model.cones)
+    @timeit solver.timer "ress" for (k, cone_k) in enumerate(model.cones)
         idxs_k = model.cone_idxs[k]
         if Cones.use_dual(cone_k)
             # (du bar) mu*H_k*z_k + s_k = srhs_k
