@@ -209,6 +209,8 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}) where {T
             else
                 break
             end
+        else
+            break
         end
     end
 

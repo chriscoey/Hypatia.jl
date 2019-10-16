@@ -12,19 +12,28 @@ mutable struct ScalingStepper{T <: Real} <: Stepper{T}
     x_rhs
     y_rhs
     z_rhs
-    z_rhs_k
     tau_rhs
     s_rhs
     s_rhs_k
     kap_rhs
 
-    dirs::Vector{T}
-    x_dirs
-    y_dirs
-    z_dirs
-    tau_dirs
-    s_dirs
-    kap_dirs
+    dir::Vector{T}
+    x_dir
+    y_dir
+    z_dir
+    z_dir_k
+    tau_dir
+    s_dir
+    s_dir_k
+    kap_dir
+
+    res::Vector{T}
+    x_res
+    y_res
+    z_res
+    tau_res
+    s_res
+    kap_res
 
     tau_row::Int
 
@@ -40,35 +49,44 @@ function load(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     dim = n + p + 2q + 2
     rhs = zeros(T, dim)
-    dirs = zeros(T, dim)
+    dir = zeros(T, dim)
+    res = zeros(T, dim)
     stepper.rhs = rhs
-    stepper.dirs = dirs
+    stepper.dir = dir
+    stepper.res = res
 
     rows = 1:n
     stepper.x_rhs = view(rhs, rows)
-    stepper.x_dirs = view(dirs, rows)
+    stepper.x_dir = view(dir, rows)
+    stepper.x_res = view(res, rows)
 
     rows = n .+ (1:p)
     stepper.y_rhs = view(rhs, rows)
-    stepper.y_dirs = view(dirs, rows)
+    stepper.y_dir = view(dir, rows)
+    stepper.y_res = view(res, rows)
 
     rows = (n + p) .+ (1:q)
     stepper.z_rhs = view(rhs, rows)
-    stepper.z_rhs_k = [view(rhs, (n + p) .+ idxs_k) for idxs_k in cone_idxs]
-    stepper.z_dirs = view(dirs, rows)
+    stepper.z_dir = view(dir, rows)
+    stepper.z_dir_k = [view(dir, (n + p) .+ idxs_k) for idxs_k in cone_idxs]
+    stepper.z_res = view(res, rows)
 
     tau_row = n + p + q + 1
     stepper.tau_row = tau_row
     stepper.tau_rhs = view(rhs, tau_row:tau_row)
-    stepper.tau_dirs = view(dirs, tau_row:tau_row)
+    stepper.tau_dir = view(dir, tau_row:tau_row)
+    stepper.tau_res = view(res, tau_row:tau_row)
 
     rows = tau_row .+ (1:q)
     stepper.s_rhs = view(rhs, rows)
     stepper.s_rhs_k = [view(rhs, tau_row .+ idxs_k) for idxs_k in cone_idxs]
-    stepper.s_dirs = view(dirs, rows)
+    stepper.s_dir = view(dir, rows)
+    stepper.s_dir_k = [view(dir, tau_row .+ idxs_k) for idxs_k in cone_idxs]
+    stepper.s_res = view(res, rows)
 
     stepper.kap_rhs = view(rhs, dim:dim)
-    stepper.kap_dirs = view(dirs, dim:dim)
+    stepper.kap_dir = view(dir, dim:dim)
+    stepper.kap_res = view(res, dim:dim)
 
     return stepper
 end
@@ -82,12 +100,12 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # calculate affine/prediction directions
     stepper.in_affine_phase = true
-    @timeit solver.timer "aff_dirs" dirs = get_directions(stepper, solver)
+    @timeit solver.timer "aff_dir" dir = get_directions(stepper, solver)
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
     # TODO try using formulae for symmetric cones
     @timeit solver.timer "aff_alpha" aff_alpha = find_max_alpha_in_nbhd(
-        stepper.z_dirs, stepper.s_dirs, stepper.tau_dirs[1], stepper.kap_dirs[1], solver,
+        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
         nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(1e-3)), min_alpha = T(1e-3))
     solver.prev_aff_alpha = aff_alpha
 
@@ -99,11 +117,11 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     sqrtmu = sqrt(solver.mu)
     Cones.load_point.(solver.model.cones, point.primal_views, sqrtmu)
     Cones.load_dual_point.(solver.model.cones, point.dual_views, sqrtmu)
-    @timeit solver.timer "comb_dirs" dirs = get_directions(stepper, solver)
+    @timeit solver.timer "comb_dir" dir = get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
     @timeit solver.timer "comb_alpha" alpha = find_max_alpha_in_nbhd(
-        stepper.z_dirs, stepper.s_dirs, stepper.tau_dirs[1], stepper.kap_dirs[1], solver,
+        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
         nbhd = one(T), prev_alpha = max(solver.prev_alpha, T(1e-3)), min_alpha = T(1e-3))
 
     if iszero(alpha)
@@ -115,12 +133,12 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # step distance alpha in combined direction
     solver.prev_alpha = alpha
-    @. point.x += alpha * stepper.x_dirs
-    @. point.y += alpha * stepper.y_dirs
-    @. point.z += alpha * stepper.z_dirs
-    @. point.s += alpha * stepper.s_dirs
-    solver.tau += alpha * stepper.tau_dirs[1]
-    solver.kap += alpha * stepper.kap_dirs[1]
+    @. point.x += alpha * stepper.x_dir
+    @. point.y += alpha * stepper.y_dir
+    @. point.z += alpha * stepper.z_dir
+    @. point.s += alpha * stepper.s_dir
+    solver.tau += alpha * stepper.tau_dir[1]
+    solver.kap += alpha * stepper.kap_dir[1]
     calc_mu(solver)
 
     if solver.tau <= zero(T) || solver.kap <= zero(T) || solver.mu <= zero(T)
@@ -135,40 +153,32 @@ end
 # return affine or combined directions, depending on stepper.in_affine_phase
 # TODO try to refactor the iterative refinement
 function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
-    dirs = stepper.dirs
+    rhs = stepper.rhs
+    dir = stepper.dir
+    res = stepper.res
     system_solver = solver.system_solver
 
-    @timeit solver.timer "update_rhs" rhs = update_rhs(stepper, solver) # different for affine vs combined phases
-    @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs, rhs) # NOTE dense solve with cache destroys RHS
+    @timeit solver.timer "update_rhs" update_rhs(stepper, solver) # different for affine vs combined phases
+    @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, rhs)
 
-    # use iterative refinement - note calc_system_residual is different for affine vs combined phases
+    # use iterative refinement - note apply_LHS is different for affine vs combined phases
+    dir_new = similar(res) # TODO avoid alloc
     iter_ref_steps = 3 # TODO handle, maybe change dynamically
-    dirs_new = rhs
-    dirs_new .= dirs # TODO avoid?
     for i in 1:iter_ref_steps
-        # perform iterative refinement step
-        @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver) # modifies rhs
-        norm_inf = norm(res, Inf)
-        norm_2 = norm(res, 2)
+        res = apply_LHS(stepper, solver) # modifies res
+        res .-= rhs
 
-        if norm_inf > eps(T)
-            dirs_new .= zero(T)
-            @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs_new, res)
-            dirs_new .*= -1
-            dirs_new .+= dirs
-            @timeit solver.timer "calc_sys_res" res_new = calc_system_residual(stepper, solver)
-            norm_inf_new = norm(res_new, Inf)
-            norm_2_new = norm(res_new, 2)
-            if norm_inf_new < norm_inf && norm_2_new < norm_2
-                solver.verbose && @printf("used iter ref, norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", norm_inf, norm_inf_new, norm_2, norm_2_new)
-                copyto!(dirs, dirs_new)
-            else
-                break
-            end
+        norm_inf = norm(res, Inf)
+        @show i, norm_inf
+        if norm_inf < 1000 * eps(T)
+            break
         end
+
+        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir_new, res)
+        dir .-= dir_new
     end
 
-    return dirs
+    return dir
 end
 
 # update the 6x2 RHS matrix
@@ -185,7 +195,6 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         # s rhs
         for (k, cone_k) in enumerate(solver.model.cones)
             duals_k = solver.point.dual_views[k]
-            grad_k = Cones.grad(cone_k)
             @. stepper.s_rhs_k[k] = -duals_k
         end
 
@@ -194,26 +203,20 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
     else
         # x, y, z, tau rhs
         rhs_factor = 1 - stepper.gamma
-        stepper.x_rhs .= rhs_factor * solver.x_residual
-        stepper.y_rhs .= rhs_factor * solver.y_residual
-        stepper.z_rhs .= rhs_factor * solver.z_residual
-        rhs[stepper.tau_row] = rhs_factor * (solver.kap + solver.primal_obj_t - solver.dual_obj_t)
+        stepper.x_rhs .*= rhs_factor
+        stepper.y_rhs .*= rhs_factor
+        stepper.z_rhs .*= rhs_factor
+        rhs[stepper.tau_row] *= rhs_factor
 
-        # s rhs
+        # s rhs (with Mehrotra correction for symmetric cones)
         gamma_sqrtmu = stepper.gamma * sqrt(solver.mu)
         for (k, cone_k) in enumerate(solver.model.cones)
-            duals_k = solver.point.dual_views[k]
-            # if Cones.use_scaling(cone_k)
-            #     scalmat_scalveci = Cones.scalmat_scalveci(cone_k) # TODO if this is the same as -grad, don't need this oracle and special case
-            #     @. stepper.s_rhs_k[k] = -duals_k + gamma_sqrtmu * scalmat_scalveci
-            # else
-                grad_k = Cones.grad(cone_k)
-                @. stepper.s_rhs_k[k] = -duals_k - gamma_sqrtmu * grad_k # TODO Mehrotra correction term
-            # end
+            grad_k = Cones.grad(cone_k) # TODO store this so don't need to reload the point right before combined phase
+            @. stepper.s_rhs_k[k] -= gamma_sqrtmu * grad_k # TODO mehrotra term
         end
 
-        # kap rhs
-        rhs[end] = -solver.tau * solver.kap + stepper.gamma * solver.mu # TODO Mehrotra correction term
+        # kap rhs (with Mehrotra correction)
+        rhs[end] += stepper.gamma * solver.mu - stepper.tau_dir[1] * stepper.kap_dir[1]
     end
 
     return rhs
@@ -222,76 +225,34 @@ end
 # calculate residual on 6x6 linear system
 # TODO make efficient / in-place
 # TODO this is very similar to the CombinedStepper version - combine into one
-function calc_system_residual(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
+function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     model = solver.model
-    tau = stepper.tau_rhs[1]
-    kap = stepper.kap_rhs[1]
+    tau_dir = stepper.tau_dir[1]
+    kap_dir = stepper.kap_dir[1]
 
-    # LHS part
     # A'*y + G'*z + c*tau
-    @timeit solver.timer "resx" res_x = model.A' * stepper.y_rhs + model.G' * stepper.z_rhs + model.c * tau
+    stepper.x_res .= model.A' * stepper.y_dir + model.G' * stepper.z_dir + model.c * tau_dir
     # -A*x + b*tau
-    @timeit solver.timer "resy" res_y = -model.A * stepper.x_rhs + model.b * tau
+    stepper.y_res .= -model.A * stepper.x_dir + model.b * tau_dir
     # -G*x + h*tau - s
-    @timeit solver.timer "resz" res_z = -model.G * stepper.x_rhs + model.h * tau - stepper.s_rhs
+    stepper.z_res .= -model.G * stepper.x_dir + model.h * tau_dir - stepper.s_dir
     # -c'*x - b'*y - h'*z - kap
-    @timeit solver.timer "restau" res_tau = -model.c' * stepper.x_rhs - model.b' * stepper.y_rhs - model.h' * stepper.z_rhs - kap
+    stepper.tau_res .= -model.c' * stepper.x_dir - model.b' * stepper.y_dir - model.h' * stepper.z_dir - kap_dir
     # s
-    res_s = similar(res_z)
-    @timeit solver.timer "ress" for (k, cone_k) in enumerate(model.cones)
+    for (k, cone_k) in enumerate(model.cones)
         idxs_k = model.cone_idxs[k]
         if Cones.use_dual(cone_k)
             # (du bar) mu*H_k*z_k + s_k
-            @views Cones.hess_prod!(res_s[idxs_k], stepper.z_rhs_k[k], cone_k)
-            @. @views res_s[idxs_k] += stepper.s_rhs_k[k]
+            @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.z_dir_k[k], cone_k)
+            @. @views stepper.s_res[idxs_k] += stepper.s_dir_k[k]
         else
             # (pr bar) z_k + mu*H_k*s_k
-            @views Cones.hess_prod!(res_s[idxs_k], stepper.s_rhs_k[k], cone_k)
-            @. @views res_s[idxs_k] += stepper.z_rhs_k[k]
+            @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.s_dir_k[k], cone_k)
+            @. @views stepper.s_res[idxs_k] += stepper.z_dir_k[k]
         end
     end
     # kapbar * tau + taubar * kap
-    res_kap = solver.kap * tau + solver.tau * kap
+    stepper.kap_res .= solver.kap * tau_dir + solver.tau * kap_dir
 
-    # RHS part
-    if stepper.in_affine_phase
-        # x, y, z, tau rhs
-        @. res_x -= solver.x_residual
-        @. res_y -= solver.y_residual
-        @. res_z -= solver.z_residual
-        res_tau -= solver.kap + solver.primal_obj_t - solver.dual_obj_t
-
-        # s rhs
-        @timeit solver.timer "ress" for (k, cone_k) in enumerate(model.cones)
-            # srhs_k = -duals_k
-            idxs_k = model.cone_idxs[k]
-            duals_k = solver.point.dual_views[k]
-            @. @views res_s[idxs_k] += duals_k
-        end
-
-        # kap rhs
-        res_kap += solver.kap * solver.tau
-    else
-        # x, y, z, tau rhs
-        rhs_factor = 1 - stepper.gamma
-        @. res_x -= rhs_factor * solver.x_residual
-        @. res_y -= rhs_factor * solver.y_residual
-        @. res_z -= rhs_factor * solver.z_residual
-        res_tau -= rhs_factor * (solver.kap + solver.primal_obj_t - solver.dual_obj_t)
-
-        # s rhs
-        gamma_sqrtmu = stepper.gamma * sqrt(solver.mu)
-        @timeit solver.timer "ress" for (k, cone_k) in enumerate(model.cones)
-            # srhs_k = -duals_k - mu * grad_k
-            idxs_k = model.cone_idxs[k]
-            duals_k = solver.point.dual_views[k]
-            grad_k = Cones.grad(cone_k)
-            @. @views res_s[idxs_k] += duals_k + gamma_sqrtmu * grad_k
-        end
-
-        # kap rhs
-        res_kap += solver.kap * solver.tau - stepper.gamma * solver.mu
-    end
-
-    return vcat(res_x, res_y, res_z, res_tau, res_s, res_kap) # TODO don't vcat
+    return stepper.res
 end
