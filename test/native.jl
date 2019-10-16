@@ -124,17 +124,17 @@ function orthant2(T; options...)
     G = rand(T, q, n) - Matrix(T(2) * I, q, n)
     h = G * ones(T, n)
 
-    # use dual barrier
-    cones = CO.Cone{T}[CO.Nonnegative{T}(q, true)]
-    r1 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r1.status == :Optimal
+    # # use dual barrier
+    # cones = CO.Cone{T}[CO.Nonnegative{T}(q, true)]
+    # r1 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    # @test r1.status == :Optimal
 
     # use primal barrier
     cones = CO.Cone{T}[CO.Nonnegative{T}(q, false)]
     r2 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r2.status == :Optimal
 
-    @test r1.primal_obj ≈ r2.primal_obj atol=tol rtol=tol
+    # @test r1.primal_obj ≈ r2.primal_obj atol=tol rtol=tol
 end
 
 function orthant3(T; options...)
@@ -170,17 +170,17 @@ function orthant4(T; options...)
     G = rand(T, q, n) - Matrix(T(2) * I, q, n)
     h = vec(sum(G, dims = 2))
 
-    # mixture of nonnegative and nonpositive cones
-    cones = CO.Cone{T}[CO.Nonnegative{T}(4, false), CO.Nonnegative{T}(6, true)]
-    r1 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r1.status == :Optimal
+    # # mixture of nonnegative and nonpositive cones
+    # cones = CO.Cone{T}[CO.Nonnegative{T}(4, false), CO.Nonnegative{T}(6, true)]
+    # r1 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    # @test r1.status == :Optimal
 
     # only nonnegative cone
     cones = CO.Cone{T}[CO.Nonnegative{T}(10, false)]
     r2 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r2.status == :Optimal
 
-    @test r1.primal_obj ≈ r2.primal_obj atol=tol rtol=tol
+    # @test r1.primal_obj ≈ r2.primal_obj atol=tol rtol=tol
 end
 
 function epinorminf1(T; options...)

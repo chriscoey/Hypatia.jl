@@ -31,6 +31,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
         cone = new{T}()
         cone.use_dual = is_dual
         cone.dim = dim
+        cone.use_scaling = true # TODO make it an option? probably a kwarg
         return cone
     end
 end
@@ -106,10 +107,11 @@ function update_grad(cone::OrthantCone)
 end
 
 function update_hess(cone::OrthantCone)
-    @assert cone.grad_updated
+    @assert cone.is_feas
     if cone.use_scaling
         @. cone.hess.diag = cone.dual_point / cone.point
     else
+        @assert cone.grad_updated
         @. cone.hess.diag = abs2(cone.grad)
     end
     cone.hess_updated = true
@@ -152,13 +154,13 @@ end
 
 # multiplies arr by W, the squareroot of the scaling matrix
 function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::OrthantCone)
-    @. prod = arr * sqrt(cone.point) / sqrt(cone.dual_point)
+    @. prod = arr * sqrt(cone.point / cone.dual_point)
     return prod
 end
 
 # divides arr by lambda, the scaled point
 function scalvec_ldiv!(div, cone::OrthantCone, arr)
-    @. div = arr / sqrt(cone.point) / sqrt(cone.dual_point)
+    @. div = arr / sqrt(cone.point * cone.dual_point)
     return div
 end
 

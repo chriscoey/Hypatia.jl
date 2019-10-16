@@ -278,7 +278,7 @@ function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
     return system_solver
 end
 
-function solve_system(system_solver::NaiveDenseSystemSolver, solver::Solver, sol6::Matrix, rhs6::Matrix)
+function solve_system(system_solver::NaiveDenseSystemSolver, solver::Solver, sol6::VecOrMat, rhs6::VecOrMat)
     copyto!(sol6, rhs6)
     solve_system(system_solver.fact_cache, sol6)
     # TODO recover if fails - check issuccess
