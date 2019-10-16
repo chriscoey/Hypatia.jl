@@ -172,20 +172,22 @@ end
 # end
 
 # TODO optimize this
-function step_max_dist(cone::Nonnegative{T}, s_sol, z_sol, fact::T = one(T)) where {T}
+function step_max_dist(cone::Nonnegative{T}, s_sol, z_sol) where {T}
     @assert cone.is_feas
+    any(cone.dual_point .< 0) && error("dual pt infeasible")
+    any(cone.point .== 0) || any(cone.dual_point .== 0) && return 0
 
-    max_step = Inf
+    max_step = one(T)
     @inbounds for i in eachindex(cone.point)
         if s_sol[i] < 0
-            max_step = min(max_step, -cone.point[i] / s_sol[i] / fact)
+            max_step = min(max_step, -cone.point[i] / s_sol[i])
         end
         if z_sol[i] < 0
-            max_step = min(max_step, -cone.dual_point[i] / z_sol[i] / fact)
+            max_step = min(max_step, -cone.dual_point[i] / z_sol[i])
         end
     end
-    if max_step == Inf
-        error("not sure if this should ever happen, can step infinitely far")
+    if isequal(max_step, 1)
+        @warn("not sure if this should happen")
     end
 
     return max_step
