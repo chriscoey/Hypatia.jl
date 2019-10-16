@@ -171,9 +171,23 @@ end
 
 function step_max_dist(cone::Nonnegative, s_sol, z_sol)
     @assert cone.is_feas
-    alpha = -min(minimum(cone.point ./ s_sol), minimum(cone.dual_point ./ z_sol))
-    @assert 0 <= alpha <= 1
-    return alpha
+
+    max_step = Inf
+    for i in eachindex(cone.point)
+        primal_rel = cone.point[i] ./ s_sol[i]
+        if s_sol[i] < 0 && abs(primal_rel) < max_step
+            max_step = abs(primal_rel)
+        end
+        dual_rel = cone.dual_point[i] ./ z_sol[i]
+        if z_sol[i] < 0 && abs(dual_rel) < max_step
+            max_step = abs(dual_rel)
+        end
+    end
+    if max_step == Inf
+        error("not sure if this should ever happen, can step infinitely far")
+    end
+
+    return max_step
 end
 
 hess_nz_count(cone::OrthantCone, ::Bool) = cone.dim
