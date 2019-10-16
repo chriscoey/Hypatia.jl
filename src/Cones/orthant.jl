@@ -163,8 +163,15 @@ function scalvec_ldiv!(div, cone::OrthantCone, arr)
 end
 
 # calculates W inverse times lambda inverse times e
-function scalmat_scalveci(cone::OrthantCone)
-    return inv.(cone.point) # TODO this is minus gradient - remove the oracle if it is always the same
+# function scalmat_scalveci(cone::OrthantCone)
+#     return inv.(cone.point) # TODO this is minus gradient - remove the oracle if it is always the same
+# end
+
+function step_max_dist(cone::Nonnegative, s_sol, z_sol)
+    @assert cone.is_feas
+    alpha = -min(minimum(cone.point ./ s_sol), minimum(cone.dual_point ./ z_sol))
+    @assert 0 <= alpha <= 1
+    return alpha
 end
 
 hess_nz_count(cone::OrthantCone, ::Bool) = cone.dim
