@@ -4,8 +4,8 @@ Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 epigraph of Euclidean (2-)norm (AKA second-order cone)
 (u in R, w in R^n) : u >= norm_2(w)
 
-barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Programming" by Nesterov & Todd
--log(u^2 - norm_2(w)^2)
+barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Programming" by Nesterov & Todd, halved
+-log(u^2 - norm_2(w)^2) / 2
 =#
 
 mutable struct EpiNormEucl{T <: Real} <: Cone{T}
@@ -48,7 +48,7 @@ function setup_data(cone::EpiNormEucl{T}) where {T <: Real}
     return
 end
 
-get_nu(cone::EpiNormEucl) = 2
+get_nu(cone::EpiNormEucl) = 1
 
 function set_initial_point(arr::AbstractVector, cone::EpiNormEucl{T}) where {T <: Real}
     arr .= 0
@@ -61,7 +61,7 @@ function update_feas(cone::EpiNormEucl)
     u = cone.point[1]
     if u > 0
         w = view(cone.point, 2:cone.dim)
-        cone.dist = (abs2(u) - sum(abs2, w)) / 2
+        cone.dist = (abs2(u) - sum(abs2, w))
         cone.is_feas = (cone.dist > 0)
     else
         cone.is_feas = false
@@ -80,7 +80,7 @@ end
 
 function update_hess(cone::EpiNormEucl)
     @assert cone.grad_updated
-    mul!(cone.hess.data, cone.grad, cone.grad')
+    mul!(cone.hess.data, 2 * cone.grad, cone.grad')
     cone.hess += inv(cone.dist) * I
     cone.hess[1, 1] -= 2 / cone.dist
     cone.hess_updated = true
@@ -89,7 +89,7 @@ end
 
 function update_inv_hess(cone::EpiNormEucl)
     @assert cone.is_feas
-    mul!(cone.inv_hess.data, cone.point, cone.point')
+    mul!(cone.inv_hess.data, 2 * cone.point, cone.point')
     cone.inv_hess += cone.dist * I
     cone.inv_hess[1, 1] -= 2 * cone.dist
     cone.inv_hess_updated = true
@@ -107,7 +107,7 @@ function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNorm
         arr_1j = arr[1, j]
         arr_2j = @view arr[2:end, j]
         ga = dot(p2, arr_2j) - p1 * arr_1j
-        ga /= cone.dist
+        ga /= (cone.dist / 2)
         prod[1, j] = -ga * p1 - arr_1j
         @. prod[2:end, j] = ga * p2 + arr_2j
     end
@@ -119,9 +119,39 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Epi
     @assert cone.is_feas
     @inbounds for j in 1:size(prod, 2)
         @views pa = dot(cone.point, arr[:, j])
-        @. prod[:, j] = pa * cone.point
+        @. prod[:, j] = pa * cone.point * 2
     end
     @. @views prod[1, :] -= cone.dist * arr[1, :]
     @. @views prod[2:end, :] += cone.dist * arr[2:end, :]
     return prod
 end
+
+
+function foo()
+    dual_dist = abs2(cone.dual_point[1]) - sum(abs2, cone.dual_point[2:end])
+    scaled_primal = cone.point ./ sqrt(cone.dist)
+    scaled_dual = cone.dual_point ./ sqrt(dual_dist)
+
+    gamma = sqrt((1 + dot(scaled_primal, scaled_dual)) / 2) # TODO maybe not /2
+
+    w[1] = scaled_primal[1] + scaled_dual[1]
+    w[2:end] = (scaled_primal[2:end] - scaled_dual[2:end]) / 2 / gamma # TODO probably not /2
+
+    W = w * w'♠
+    W[2:end, 2:end] ./= (w[1] + 1)
+    W[2:end, 2:end] += I
+    W .*= sqrt(sqrt(primal_dist / dual_dist))
+
+    lambda_scaled[1] = gamma
+    lambda_scaled[2:end] = (gamma + scaled_dual[1]) * scaled_primal[2:end] + (gamma + scaled_primal[1]) * scaled_dual[2:end]
+    lambda_scaled[2:end] /= (scaled_primal[1] + scaled_dual[1] + 2 * gamma)
+
+    lambda = sqrt(sqrt(primal_dist * primal_dist)) * lambda_scaled
+
+end
+
+# # multiplies arr by W, the squareroot of the scaling matrix
+# function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::OrthantCone)
+#     @. prod = arr * sqrt(cone.point / cone.dual_point)
+#     return prod
+# end
