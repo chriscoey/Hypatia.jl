@@ -175,7 +175,6 @@ end
 function step_max_dist(cone::Nonnegative{T}, s_sol, z_sol) where {T}
     @assert cone.is_feas
     any(cone.dual_point .< 0) && error("dual pt infeasible")
-    any(cone.point .== 0) || any(cone.dual_point .== 0) && return 0
 
     max_step = one(T)
     @inbounds for i in eachindex(cone.point)

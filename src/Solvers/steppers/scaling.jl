@@ -111,12 +111,12 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
     #     nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(1e-3)), min_alpha = T(1e-3))
     # TODO put minimum function in cones module
-    # aff_alpha = 0.999 * minimum(Cones.step_max_dist(cone_k, stepper.s_dir[idxs_k], stepper.z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
-    aff_alpha = minimum(Cones.step_max_dist(cone_k, stepper.s_dir[idxs_k], stepper.z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
+
+    aff_alpha = find_max_alpha_in_nbhd2(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
 
     solver.prev_aff_alpha = aff_alpha
     @show aff_alpha
-    @assert 0 < aff_alpha < 1
+    @assert 0 <= aff_alpha <= 1
 
     gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic)
     solver.prev_gamma = stepper.gamma = gamma
@@ -129,7 +129,8 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # @timeit solver.timer "comb_alpha" alpha = find_max_alpha_in_nbhd(
     #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
     #     nbhd = one(T), prev_alpha = max(solver.prev_alpha, T(1e-3)), min_alpha = T(1e-3))
-    alpha = 0.99 * minimum(Cones.step_max_dist(cone_k, stepper.s_dir[idxs_k], stepper.z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
+    alpha = 0.99 * find_max_alpha_in_nbhd2(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+
     @show alpha
     @assert 0 < alpha < 1
 
