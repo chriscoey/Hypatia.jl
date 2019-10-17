@@ -80,7 +80,9 @@ function test_barrier_oracles(
     cone.dual_point = cone.point + T(noise) * (rand(T, dim) .- inv(T(2))) / scale
     # not the same hessian and inverse hessians as above
     hess = CO.hess(cone)
+    @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
     inv_hess = CO.inv_hess(cone)
+    @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
     @test hess * inv_hess ≈ I atol=tol rtol=tol
     @test CO.hess_prod!(prod, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod, Matrix(hess), cone) ≈ I atol=tol rtol=tol
@@ -94,7 +96,7 @@ function test_barrier_oracles(
     @test W * W' ≈ inv_hess atol=tol rtol=tol
     # WW' * z = W * λ
     WWz = CO.inv_hess_prod!(prod, cone.dual_point, cone)
-    Wλ = CO.scalmat_prod!(prod, cone.dual_point, cone)
+    Wλ = CO.scalmat_prod!(prod, λ, cone)
     @test WWz ≈ Wλ atol=tol rtol=tol
     # NOTE this may be testing an oracle that will be deprecated
     e = CO.set_initial_point(zeros(T, cone.dim), cone)

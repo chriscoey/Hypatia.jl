@@ -125,12 +125,12 @@ function update_hess(cone::EpiNormEucl)
         w = cone.w
 
         # dumb instantiation
-        Wbar = similar(cone.inv_hess)
+        Wbar = similar(cone.hess)
         Wbar.data[1, 1] = w[1]
-        Wbar.data[1, 2:end] .= w[2:end]
+        Wbar.data[1, 2:end] .= -w[2:end]
         Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
         Wbar.data[2:end, 2:end] += I
-        cone.inv_hess.data .= Wbar * Wbar / (cone.dist / cone.dual_dist) ^ (1 / 2)
+        cone.hess.data .= Wbar * Wbar * (cone.dual_dist / cone.dist) ^ (1 / 2)
 
         # TODO faster way
     else
@@ -230,13 +230,12 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
         update_scaling(cone)
     end
     w = cone.w
-    dist = cone.dist
-    dual_dist = cone.dual_dist
 
-    W = w * w'
-    W[2:end, 2:end] ./= (w[1] + 1)
-    W[2:end, 2:end] += I
-    W .*= (dist / dual_dist) ^ (1 / 4)
+    Wbar = similar(cone.inv_hess)
+    Wbar.data[1, :] .= w
+    Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
+    Wbar.data[2:end, 2:end] += I
+    W = Wbar * (cone.dist / cone.dual_dist) ^ (1 / 4)
 
     prod .= W * arr
     return prod
