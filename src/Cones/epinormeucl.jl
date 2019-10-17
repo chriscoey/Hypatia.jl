@@ -125,16 +125,24 @@ function update_hess(cone::EpiNormEucl)
             update_scaling(cone)
         end
         w = cone.w
+        hess = cone.hess.data
 
         # dumb instantiation
-        Wbar = similar(cone.hess)
-        Wbar.data[1, 1] = w[1]
-        Wbar.data[1, 2:end] .= -w[2:end]
-        Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
-        Wbar.data[2:end, 2:end] += I
-        cone.hess.data .= Wbar * Wbar * (cone.dual_dist / cone.dist) ^ (1 / 2)
+        # Wbar = similar(cone.hess)
+        # Wbar.data[1, 1] = w[1]
+        # Wbar.data[1, 2:end] .= -w[2:end]
+        # Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
+        # Wbar.data[2:end, 2:end] += I
+        # cone.hess.data .= Wbar * Wbar * (cone.dual_dist / cone.dist) ^ (1 / 2)
 
-        # TODO faster way
+        w2nw2n = sum(abs2, w[2:end])
+        hess[1, 1] = abs2(w[1]) + w2nw2n
+        b = 1 + 2 / (1 + w[1]) + w2nw2n / abs2(1 + w[1])
+        c = 1 + w[1] + w2nw2n / (1 + w[1])
+        @. hess[1, 2:end] = -c * w[2:end]
+        @views mul!(hess[2:end, 2:end], w[2:end], w[2:end]', b, false)
+        hess[2:end, 2:end] += I
+        hess .*= sqrt(cone.dual_dist / cone.dist)
     else
         mul!(cone.hess.data, cone.grad, cone.grad', 2, false)
         cone.hess += inv(cone.dist) * I
@@ -162,7 +170,7 @@ function update_inv_hess(cone::EpiNormEucl)
 
         # see https://github.com/embotech/ecos/blob/develop/src/kkt.c
         w2nw2n = sum(abs2, w[2:end])
-        cone.inv_hess[1, 1] = abs2(w[1]) + w2nw2n
+        inv_hess[1, 1] = abs2(w[1]) + w2nw2n
         b = 1 + 2 / (1 + w[1]) + w2nw2n / abs2(1 + w[1])
         c = 1 + w[1] + w2nw2n / (1 + w[1])
         @. inv_hess[1, 2:end] = c * w[2:end]
