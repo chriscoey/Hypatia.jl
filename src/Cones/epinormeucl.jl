@@ -8,6 +8,8 @@ barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Program
 -log(u^2 - norm_2(w)^2) / 2
 
 TODO tidy up modifications due to halving barrier
+TODO contains some adapted code from https://github.com/embotech/ecos, maybe reference
+TODO all oracles assumed we are using dense version of the Nesterov Todd scaling
 =#
 
 mutable struct EpiNormEucl{T <: Real} <: Cone{T}
@@ -105,12 +107,12 @@ function update_scaling(cone::EpiNormEucl)
     @assert dual_dist >= 0
     scaled_point = cone.scaled_point = cone.point ./ sqrt(cone.dist)
     scaled_dual_point = cone.scaled_dual_point = cone.dual_point ./ sqrt(dual_dist)
-    gamma = cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
+    cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
 
     cone.w[1] = scaled_point[1] + scaled_dual_point[1]
-    cone.w[2:end] = (scaled_point[2:end] - scaled_dual_point[2:end])
+    @. @views cone.w[2:end] = scaled_point[2:end] - scaled_dual_point[2:end]
     cone.w ./= 2 # NOTE probably not /2 for unhalved barrier
-    cone.w ./= gamma
+    cone.w ./= cone.gamma
 
     cone.scaling_updated = true
 end
@@ -134,7 +136,7 @@ function update_hess(cone::EpiNormEucl)
 
         # TODO faster way
     else
-        mul!(cone.hess.data, 2 * cone.grad, cone.grad')
+        mul!(cone.hess.data, cone.grad, cone.grad', 2, false)
         cone.hess += inv(cone.dist) * I
         cone.hess[1, 1] -= 2 / cone.dist
         cone.hess_updated = true
@@ -149,31 +151,26 @@ function update_inv_hess(cone::EpiNormEucl)
             update_scaling(cone)
         end
         w = cone.w
+        inv_hess = cone.inv_hess.data
 
         # dumb instantiation
-        Wbar = similar(cone.inv_hess)
-        Wbar.data[1, :] .= w
-        Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
-        Wbar.data[2:end, 2:end] += I
-        cone.inv_hess.data .= Wbar * Wbar * (cone.dist / cone.dual_dist) ^ (1 / 2)
+        # Wbar = similar(cone.inv_hess)
+        # Wbar.data[1, :] .= w
+        # Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
+        # Wbar.data[2:end, 2:end] += I
+        # cone.inv_hess.data .= Wbar * Wbar * (cone.dist / cone.dual_dist) ^ (1 / 2)
 
-        # more efficiently (from ECOS)
-
-        # NOTE only forms upper triangle
-        # cone.inv_hess[1, 1] = w[1]
-        # ww = sum(abs2, w[2:end])
-        #
-        # rel_w_dist = ww / abs2(1 + w[1])
-        # # NOTE not sure about this constant
-        # b = 1 + 2 / (1 + w[1]) + rel_w_dist
-        # cone.inv_hess[1, 2:end] = b * w[2:end]
-        # c = 1 + w[1] + rel_w_dist
-        #
-        # cone.inv_hess.data[2:end, 2:end] = w[2:end] * w[2:end]' * c
-        # cone.inv_hess.data[2:end, 2:end] += I
-        # cone.inv_hess.data .*= sqrt(dist / dual_dist)
+        # see https://github.com/embotech/ecos/blob/develop/src/kkt.c
+        w2nw2n = sum(abs2, w[2:end])
+        cone.inv_hess[1, 1] = abs2(w[1]) + w2nw2n
+        b = 1 + 2 / (1 + w[1]) + w2nw2n / abs2(1 + w[1])
+        c = 1 + w[1] + w2nw2n / (1 + w[1])
+        @. inv_hess[1, 2:end] = c * w[2:end]
+        @views mul!(inv_hess[2:end, 2:end], w[2:end], w[2:end]', b, false)
+        inv_hess[2:end, 2:end] += I
+        inv_hess .*= sqrt(cone.dist / cone.dual_dist)
     else
-        mul!(cone.inv_hess.data, 2 * cone.point, cone.point')
+        mul!(cone.inv_hess.data, cone.point, cone.point', 2, false)
         cone.inv_hess += cone.dist * I
         cone.inv_hess[1, 1] -= 2 * cone.dist
         cone.inv_hess_updated = true
@@ -231,12 +228,27 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     end
     w = cone.w
 
+    # prod[1, :] .= arr' * w
+    # @views begin
+    #     for j in 1:size(prod, 2)
+    #         @show arr[2:end, j]
+    #         pa = dot(w[2:end], arr[2:end, j])
+    #         @. prod[2:end, j] = w[2:end] * pa
+    #     end
+    #     @. prod[2:end, :] /= (w[1] + 1)
+    #     @. prod[2:end, :] += arr[2:end, :]
+    #     @. prod[2:end, :] += w[2:end] * arr[1]
+    # end
+    # prod .*= (cone.dist / cone.dual_dist) ^ (1 / 4)
+
     Wbar = similar(cone.inv_hess)
     Wbar.data[1, :] .= w
     Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
     Wbar.data[2:end, 2:end] += I
     W = Wbar * (cone.dist / cone.dual_dist) ^ (1 / 4)
 
+    # @show  W * arr ./ prod
+    #
     prod .= W * arr
     return prod
 end
@@ -256,17 +268,23 @@ function scalvec_ldiv!(div, cone::EpiNormEucl, arr)
 
     lambda_scaled = similar(cone.point)
 
-    lambda_scaled[1] = gamma
-    lambda_scaled[2:end] = (gamma + scaled_dual_point[1]) * scaled_point[2:end] + (gamma + scaled_point[1]) * scaled_dual_point[2:end]
-    lambda_scaled[2:end] /= (scaled_point[1] + scaled_dual_point[1] + 2 * gamma)
+    # lambda_scaled[1] = gamma
+    # lambda_scaled[2:end] = (gamma + scaled_dual_point[1]) * scaled_point[2:end] + (gamma + scaled_point[1]) * scaled_dual_point[2:end]
+    # lambda_scaled[2:end] /= (scaled_point[1] + scaled_dual_point[1] + 2 * gamma)
+    scalmat_prod!(lambda_scaled, cone.scaled_dual_point, cone)
 
-    lambda = sqrt(sqrt(dist * dual_dist)) * lambda_scaled
+    lambda = (dist * dual_dist) ^ (1 / 4) * lambda_scaled
+    # @show lambda
+    #
+    # @show jordan_ldiv!(div, lambda, arr)
+    # @show arr
+    # @show Symmetric([lambda[1] lambda[2]; lambda[2] lambda[1]]) \ arr
 
-    return jordan_ldiv(div, lambda, arr)
+    return jordan_ldiv!(div, lambda, arr)
 
 end
 
-function jordan_ldiv(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
+function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     m = length(A)
     @assert m == size(B, 1)
     @assert size(B) == size(C)
