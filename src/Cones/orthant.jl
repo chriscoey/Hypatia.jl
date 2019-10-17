@@ -161,6 +161,8 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Orth
 end
 
 # divides arr by lambda, the scaled point
+# TODO change order of args
+# TODO think better about whether this oracle is needed
 function scalvec_ldiv!(div, cone::OrthantCone, arr)
     @. div = arr / sqrt(cone.point * cone.dual_point)
     return div
