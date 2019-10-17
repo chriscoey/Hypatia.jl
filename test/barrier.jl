@@ -74,6 +74,8 @@ function test_barrier_oracles(
     @test CO.inv_hess_prod!(prod, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
     CO.reset_data(cone)
+    CO.is_feas(cone)
+    grad = CO.grad(cone)
     cone.use_scaling = true # TODO update when it's an option, run these tests optionally
     cone.dual_point = cone.point + T(noise) * (rand(T, dim) .- inv(T(2))) / scale
     # not the same hessian and inverse hessians as above
@@ -84,7 +86,7 @@ function test_barrier_oracles(
     @test CO.inv_hess_prod!(prod, Matrix(hess), cone) ≈ I atol=tol rtol=tol
     λ = similar(cone.point)
     CO.scalmat_prod!(λ, cone.dual_point, cone)
-    W = similar(hess)
+    W = similar(point, dim, dim)
     CO.scalmat_prod!(W, Matrix{T}(I, cone.dim, cone.dim), cone)
     @test W * λ ≈ cone.point atol=tol rtol=tol
     prod = similar(point)
@@ -126,7 +128,7 @@ end
 function test_epinormeucl_barrier(T::Type{<:Real})
     function barrier(s)
         (u, w) = (s[1], s[2:end])
-        return -log(abs2(u) - sum(abs2, w))
+        return -log(abs2(u) - sum(abs2, w)) / 2
     end
     for dim in [2, 4]
         test_barrier_oracles(CO.EpiNormEucl{T}(dim), barrier)
