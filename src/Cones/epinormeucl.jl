@@ -40,7 +40,6 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     ww::T
     b::T
     c::T
-
     mehrotra_correction::Vector{T}
 
     function EpiNormEucl{T}(dim::Int, is_dual::Bool) where {T <: Real}
@@ -281,6 +280,44 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     # prod .= W * arr
 
     return prod
+end
+
+function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    w = cone.w
+
+    # prod[1, :] .= arr' * w
+    @views begin
+        prod[1, :] .= arr[1, :] * w[1] .- arr[2:end, :]' * w[2:end]
+        for j in 1:size(prod, 2)
+            pa = dot(w[2:end], arr[2:end, j])
+            @. prod[2:end, j] = w[2:end] * pa
+        end
+        @. prod[2:end, :] /= (w[1] + 1)
+        @. prod[2:end, :] += arr[2:end, :]
+        @. prod[2:end, :] -= arr[1, :]' * w[2:end]
+    end
+    prod .*= (cone.dual_dist / cone.dist) ^ (1 / 4)
+    return prod
+end
+
+# returns -lambda_inv * W_inv * mehrotra_correction = grad * mehrotra_correction
+function modified_mehrotra_correction(cone::EpiNormEucl, s_sol, z_sol)
+    tmp_s = similar(s_sol)
+    tmp_z = similar(z_sol)
+    tmp = similar(tmp_s)
+    scalmat_ldiv!(tmp_s, s_sol, cone)
+    scalmat_prod!(tmp_z, z_sol, cone)
+
+    tmp[1] = dot(tmp_s, tmp_z)
+    tmp[2:end] = tmp_s[1] * tmp_z[2:end] + tmp_z[1] * tmp_s[2:end]
+
+    cone.mehrotra_correction[1] = dot(cone.grad, tmp)
+    cone.mehrotra_correction[2:end] = cone.grad[1] * tmp[2:end] + tmp[1] * cone.grad[2:end]
+
+    return cone.mehrotra_correction
 end
 
 # divides arr by lambda, the scaled point

@@ -194,8 +194,9 @@ function step_max_dist(cone::Nonnegative{T}, s_sol, z_sol) where {T}
     return max_step
 end
 
-function mehrotra_correction(cone::Nonnegative, s_sol, z_sol)
-    @. cone.mehrotra_correction = -s_sol * z_sol
+# returns -lambda_inv * W_inv * mehrotra_correction = grad * mehrotra_correction
+function modified_mehrotra_correction(cone::Nonnegative, s_sol, z_sol)
+    @. cone.mehrotra_correction = -s_sol * z_sol / cone.point
     return cone.mehrotra_correction
 end
 
