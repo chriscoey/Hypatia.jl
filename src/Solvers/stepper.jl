@@ -4,26 +4,6 @@ Copyright 2019, Chris Coey and contributors
 interior point stepping routines for algorithms based on homogeneous self dual embedding
 =#
 
-function find_max_alpha_in_nbhd2(
-    z_dir::AbstractVector{T},
-    s_dir::AbstractVector{T},
-    tau_dir::T,
-    kap_dir::T,
-    solver,
-    ) where {T <: Real}
-
-    alpha = minimum(Cones.step_max_dist(cone_k, s_dir[idxs_k], z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
-
-    if kap_dir < zero(T)
-        alpha = min(alpha, -solver.kap / kap_dir)
-    end
-    if tau_dir < zero(T)
-        alpha = min(alpha, -solver.tau / tau_dir)
-    end
-
-    return min(alpha, one(T))
-end
-
 # backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
 function find_max_alpha_in_nbhd(
     z_dir::AbstractVector{T},
