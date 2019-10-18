@@ -7,9 +7,11 @@ epigraph of Euclidean (2-)norm (AKA second-order cone)
 barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Programming" by Nesterov & Todd, halved
 -log(u^2 - norm_2(w)^2) / 2
 
+contains some adapted code from https://github.com/embotech/ecos
 TODO tidy up modifications due to halving barrier
-TODO contains some adapted code from https://github.com/embotech/ecos, maybe reference
 TODO all oracles assumed we are using dense version of the Nesterov Todd scaling
+TODO factor out repetitions in products, hessians, inverse hessians
+TODO factor out eta
 =#
 
 mutable struct EpiNormEucl{T <: Real} <: Cone{T}
@@ -35,6 +37,9 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     dist::T
     dual_dist::T
     gamma::T
+    ww::T
+    b::T
+    c::T
 
     mehrotra_correction::Vector{T}
 
@@ -109,10 +114,16 @@ function update_scaling(cone::EpiNormEucl)
     scaled_dual_point = cone.scaled_dual_point = cone.dual_point ./ sqrt(dual_dist)
     cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
 
-    cone.w[1] = scaled_point[1] + scaled_dual_point[1]
-    @. @views cone.w[2:end] = scaled_point[2:end] - scaled_dual_point[2:end]
-    cone.w ./= 2 # NOTE probably not /2 for unhalved barrier
-    cone.w ./= cone.gamma
+    w = cone.w
+    w[1] = scaled_point[1] + scaled_dual_point[1]
+    @. @views w[2:end] = scaled_point[2:end] - scaled_dual_point[2:end]
+    w ./= 2 # NOTE probably not /2 for unhalved barrier
+    w ./= cone.gamma
+
+    w2nw2n = sum(abs2, w[2:end])
+    cone.ww = abs2(w[1]) + w2nw2n
+    cone.b = 1 + 2 / (1 + w[1]) + w2nw2n / abs2(1 + w[1])
+    cone.c = 1 + w[1] + w2nw2n / (1 + w[1])
 
     cone.scaling_updated = true
 end
@@ -135,12 +146,10 @@ function update_hess(cone::EpiNormEucl)
         # Wbar.data[2:end, 2:end] += I
         # cone.hess.data .= Wbar * Wbar * (cone.dual_dist / cone.dist) ^ (1 / 2)
 
-        w2nw2n = sum(abs2, w[2:end])
-        hess[1, 1] = abs2(w[1]) + w2nw2n
-        b = 1 + 2 / (1 + w[1]) + w2nw2n / abs2(1 + w[1])
-        c = 1 + w[1] + w2nw2n / (1 + w[1])
-        @. hess[1, 2:end] = -c * w[2:end]
-        @views mul!(hess[2:end, 2:end], w[2:end], w[2:end]', b, false)
+        # pattern matched from inverse Hessian
+        hess[1, 1] = cone.ww
+        @. hess[1, 2:end] = -cone.c * w[2:end]
+        @views mul!(hess[2:end, 2:end], w[2:end], w[2:end]', cone.b, false)
         hess[2:end, 2:end] += I
         hess .*= sqrt(cone.dual_dist / cone.dist)
     else
@@ -169,12 +178,9 @@ function update_inv_hess(cone::EpiNormEucl)
         # cone.inv_hess.data .= Wbar * Wbar * (cone.dist / cone.dual_dist) ^ (1 / 2)
 
         # see https://github.com/embotech/ecos/blob/develop/src/kkt.c
-        w2nw2n = sum(abs2, w[2:end])
-        inv_hess[1, 1] = abs2(w[1]) + w2nw2n
-        b = 1 + 2 / (1 + w[1]) + w2nw2n / abs2(1 + w[1])
-        c = 1 + w[1] + w2nw2n / (1 + w[1])
-        @. inv_hess[1, 2:end] = c * w[2:end]
-        @views mul!(inv_hess[2:end, 2:end], w[2:end], w[2:end]', b, false)
+        inv_hess[1, 1] = cone.ww
+        @. inv_hess[1, 2:end] = cone.c * w[2:end]
+        @views mul!(inv_hess[2:end, 2:end], w[2:end], w[2:end]', cone.b, false)
         inv_hess[2:end, 2:end] += I
         inv_hess .*= sqrt(cone.dist / cone.dual_dist)
     else
@@ -192,9 +198,19 @@ update_inv_hess_prod(cone::EpiNormEucl) = nothing
 function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
     @assert cone.is_feas
     if cone.use_scaling
-        # TODO
-        hess = update_hess(cone)
-        prod = hess * arr
+        if !cone.scaling_updated
+            update_scaling(cone)
+        end
+        w = cone.w
+        prod[1, :] = cone.ww * arr[1, :] - cone.c * arr[2:end, :]' * w[2:end]
+        for j in 1:size(prod, 2)
+            @views pa = dot(cone.w[2:end], arr[2:end, j])
+            @. prod[2:end, j] = pa * cone.w[2:end] * cone.b
+        end
+        @. prod[2:end, :] += arr[2:end, :]
+        @. prod[2:end, :] -= cone.c * arr[1, :]' * w[2:end]
+        prod .*= sqrt(cone.dual_dist / cone.dist)
+
     else
         p1 = cone.point[1]
         p2 = @view cone.point[2:end]
@@ -214,9 +230,18 @@ end
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
     @assert cone.is_feas
     if cone.use_scaling
-        # TODO
-        inv_hess = update_inv_hess(cone)
-        prod = inv_hess * arr
+        if !cone.scaling_updated
+            update_scaling(cone)
+        end
+        w = cone.w
+        prod[1, :] = cone.ww * arr[1, :] + cone.c * arr[2:end, :]' * w[2:end]
+        for j in 1:size(prod, 2)
+            @views pa = dot(cone.w[2:end], arr[2:end, j])
+            @. prod[2:end, j] = pa * cone.w[2:end] * cone.b
+        end
+        @. prod[2:end, :] += arr[2:end, :]
+        @. prod[2:end, :] += cone.c * arr[1, :]' * w[2:end]
+        prod .*= sqrt(cone.dist / cone.dual_dist)
     else
         @inbounds for j in 1:size(prod, 2)
             @views pa = dot(cone.point, arr[:, j])
@@ -236,28 +261,25 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     end
     w = cone.w
 
-    # prod[1, :] .= arr' * w
-    # @views begin
-    #     for j in 1:size(prod, 2)
-    #         @show arr[2:end, j]
-    #         pa = dot(w[2:end], arr[2:end, j])
-    #         @. prod[2:end, j] = w[2:end] * pa
-    #     end
-    #     @. prod[2:end, :] /= (w[1] + 1)
-    #     @. prod[2:end, :] += arr[2:end, :]
-    #     @. prod[2:end, :] += w[2:end] * arr[1]
-    # end
-    # prod .*= (cone.dist / cone.dual_dist) ^ (1 / 4)
+    prod[1, :] .= arr' * w
+    @views begin
+        for j in 1:size(prod, 2)
+            pa = dot(w[2:end], arr[2:end, j])
+            @. prod[2:end, j] = w[2:end] * pa
+        end
+        @. prod[2:end, :] /= (w[1] + 1)
+        @. prod[2:end, :] += arr[2:end, :]
+        @. prod[2:end, :] += arr[1, :]' * w[2:end]
+    end
+    prod .*= (cone.dist / cone.dual_dist) ^ (1 / 4)
 
-    Wbar = similar(cone.inv_hess)
-    Wbar.data[1, :] .= w
-    Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
-    Wbar.data[2:end, 2:end] += I
-    W = Wbar * (cone.dist / cone.dual_dist) ^ (1 / 4)
+    # Wbar = similar(cone.inv_hess)
+    # Wbar.data[1, :] .= w
+    # Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
+    # Wbar.data[2:end, 2:end] += I
+    # W = Wbar * (cone.dist / cone.dual_dist) ^ (1 / 4)
+    # prod .= W * arr
 
-    # @show  W * arr ./ prod
-    #
-    prod .= W * arr
     return prod
 end
 
