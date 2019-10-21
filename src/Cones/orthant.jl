@@ -28,12 +28,12 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
 
     mehrotra_correction::Vector{T}
 
-    function Nonnegative{T}(dim::Int, is_dual::Bool) where {T <: Real}
+    function Nonnegative{T}(dim::Int, is_dual::Bool; use_scaling::Bool = false) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.use_dual = is_dual
         cone.dim = dim
-        cone.use_scaling = true # TODO make it an option? probably a kwarg
+        cone.use_scaling = use_scaling
         return cone
     end
 end

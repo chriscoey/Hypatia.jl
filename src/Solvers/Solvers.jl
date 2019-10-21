@@ -144,7 +144,7 @@ mutable struct Solver{T <: Real}
         init_use_fallback::Bool = true,
         max_nbhd::Real = 0.7,
         use_infty_nbhd::Bool = true,
-        stepper::Stepper{T} = ScalingStepper{T}(),
+        stepper::Stepper{T} = CombinedStepper{T}(),
         system_solver::SystemSolver{T} = QRCholDenseSystemSolver{T}(),
         ) where {T <: Real}
         if isa(system_solver, QRCholSystemSolver{T})

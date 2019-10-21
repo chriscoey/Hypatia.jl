@@ -177,7 +177,7 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
 end
 
 # return directions
-# TODO try to refactor the iterative refinement
+# TODO make this function the same for all system solvers, move to solver.jl
 function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     dirs = stepper.dirs
     system_solver = solver.system_solver
@@ -186,32 +186,31 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}) where {T
     @timeit solver.timer "update_fact" update_fact(system_solver, solver)
     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs, rhs) # NOTE dense solve with cache destroys RHS
 
+    # TODO don't do iterative refinement unless it's likely to be worthwhile based on the current worst residuals on the KKT conditions
     iter_ref_steps = 3 # TODO handle, maybe change dynamically
-    dirs_new = rhs
-    dirs_new .= dirs # TODO avoid?
+    dirs_new = rhs # TODO avoid by prealloc, reduce confusion
+    copyto!(dirs_new, dirs)
+    @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver) # modifies rhs
+    norm_inf = norm(res, Inf)
+    norm_2 = norm(res, 2)
     for i in 1:iter_ref_steps
-        # perform iterative refinement step
-        @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver) # modifies rhs
-        norm_inf = norm(res, Inf)
-        norm_2 = norm(res, 2)
-
-        if norm_inf > eps(T)
-            dirs_new .= zero(T)
-            @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs_new, res)
-            dirs_new .*= -1
-            dirs_new .+= dirs
-            @timeit solver.timer "calc_sys_res" res_new = calc_system_residual(stepper, solver)
-            norm_inf_new = norm(res_new, Inf)
-            norm_2_new = norm(res_new, 2)
-            if norm_inf_new < norm_inf && norm_2_new < norm_2
-                solver.verbose && @printf("used iter ref, norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", norm_inf, norm_inf_new, norm_2, norm_2_new)
-                copyto!(dirs, dirs_new)
-            else
-                break
-            end
-        else
+        if norm_inf < 100 * eps(T)
             break
         end
+        # dirs_new .= zero(T) # TODO maybe want for the indirect methods
+        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs_new, res)
+        @. dirs_new = dirs - dirs_new
+        @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver)
+        norm_inf_new = norm(res, Inf)
+        norm_2_new = norm(res, 2)
+        if norm_inf_new > norm_inf || norm_2_new > norm_2
+            break
+        end
+        # residual has improved, so use the iterative refinement
+        solver.verbose && @printf("used iter ref, norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", norm_inf, norm_inf_new, norm_2, norm_2_new)
+        copyto!(dirs, dirs_new)
+        norm_inf = norm_inf_new
+        norm_2 = norm_2_new
     end
 
     return dirs
@@ -250,21 +249,28 @@ function calc_system_residual(stepper::CombinedStepper{T}, solver::Solver{T}) wh
     model = solver.model
 
     # A'*y + G'*z + c*tau = [x_residual, 0]
-    @timeit solver.timer "resx" res_x = model.A' * stepper.y_rhs + model.G' * stepper.z_rhs + model.c * stepper.tau_rhs
+    res_x = model.G' * stepper.z_rhs + model.c * stepper.tau_rhs
     @. res_x[:, 1] -= solver.x_residual
-    # -A*x + b*tau = [y_residual, 0]
-    @timeit solver.timer "resy" res_y = -model.A * stepper.x_rhs + model.b * stepper.tau_rhs
-    @. res_y[:, 1] -= solver.y_residual
     # -G*x + h*tau - s = [z_residual, 0]
-    @timeit solver.timer "resz" res_z = -model.G * stepper.x_rhs + model.h * stepper.tau_rhs - stepper.s_rhs
+    res_z = -model.G * stepper.x_rhs + model.h * stepper.tau_rhs - stepper.s_rhs
     @. res_z[:, 1] -= solver.z_residual
     # -c'*x - b'*y - h'*z - kap = [kap + primal_obj_t - dual_obj_t, 0]
-    @timeit solver.timer "restau" res_tau = -model.c' * stepper.x_rhs - model.b' * stepper.y_rhs - model.h' * stepper.z_rhs - stepper.kap_rhs
+    res_tau = -model.c' * stepper.x_rhs - model.h' * stepper.z_rhs - stepper.kap_rhs
     res_tau[1] -= solver.kap + solver.primal_obj_t - solver.dual_obj_t
+
+    if !iszero(model.p)
+        res_x += model.A' * stepper.y_rhs
+        # -A*x + b*tau = [y_residual, 0]
+        res_y = -model.A * stepper.x_rhs + model.b * stepper.tau_rhs
+        @. res_y[:, 1] -= solver.y_residual
+        res_tau -= model.b' * stepper.y_rhs
+    else
+        res_y = stepper.y_rhs
+    end
 
     sqrtmu = sqrt(solver.mu)
     res_s = similar(res_z)
-    @timeit solver.timer "ress" for (k, cone_k) in enumerate(model.cones)
+    for (k, cone_k) in enumerate(model.cones)
         idxs_k = model.cone_idxs[k]
         if Cones.use_dual(cone_k)
             # (du bar) mu*H_k*z_k + s_k = srhs_k
