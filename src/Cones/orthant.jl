@@ -78,6 +78,7 @@ function setup_data(cone::OrthantCone{T}) where {T <: Real}
     cone.point = zeros(T, dim)
     cone.dual_point = zeros(T, dim)
     cone.grad = zeros(T, dim)
+    cone.mehrotra_correction = zeros(T, dim)
     cone.hess = Diagonal(zeros(T, dim))
     cone.inv_hess = Diagonal(zeros(T, dim))
     return
@@ -176,8 +177,7 @@ end
 # TODO optimize this
 function step_max_dist(cone::Nonnegative{T}, s_sol, z_sol) where {T}
     @assert cone.is_feas
-    any(cone.dual_point .< 0) && error("dual pt infeasible")
-
+    any(cone.dual_point .< 0) && error("dual pt infeasible") # TODO something else
     max_step = one(T)
     @inbounds for i in eachindex(cone.point)
         if s_sol[i] < 0
@@ -187,10 +187,6 @@ function step_max_dist(cone::Nonnegative{T}, s_sol, z_sol) where {T}
             max_step = min(max_step, -cone.dual_point[i] / z_sol[i])
         end
     end
-    if isequal(max_step, 1)
-        @warn("not sure if this should happen")
-    end
-
     return max_step
 end
 
