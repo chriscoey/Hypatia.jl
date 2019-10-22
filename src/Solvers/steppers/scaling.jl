@@ -103,9 +103,21 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
     solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    # @timeit solver.timer "aff_alpha" solver.prev_aff_alpha = aff_alpha = find_max_alpha_in_nbhd(
+    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+    #     nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(2e-2)), min_alpha = T(2e-2))
+    # @show aff_alpha
+
     @assert 0 <= aff_alpha <= 1
     gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic)
     solver.prev_gamma = stepper.gamma = gamma
+    @show gamma
+
+    Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(solver.model.cones, point.dual_views)
+    Cones.reset_data.(solver.model.cones)
+    Cones.is_feas.(solver.model.cones)
+    Cones.grad.(solver.model.cones)
 
     # calculate combined directions
     stepper.in_affine_phase = false
@@ -113,6 +125,11 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # find distance alpha for stepping in combined direction
     alpha = 0.99999 * find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    # @timeit solver.timer "alpha" solver.prev_alpha = alpha = find_max_alpha_in_nbhd(
+    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+    #     nbhd = solver.max_nbhd, prev_alpha = solver.prev_alpha, min_alpha = T(1e-2))
+    # @show alpha
+
     @assert 0 < alpha <= 1
 
     # step distance alpha in combined direction
@@ -147,14 +164,26 @@ function find_max_alpha(
     kap_dir::T,
     solver::Solver{T},
     ) where {T <: Real}
-    alpha = minimum(Cones.step_max_dist(cone_k, s_dir[idxs_k], z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
+    alpha = one(T)
+
     if kap_dir < zero(T)
         alpha = min(alpha, -solver.kap / kap_dir)
     end
     if tau_dir < zero(T)
         alpha = min(alpha, -solver.tau / tau_dir)
     end
-    return min(alpha, one(T))
+
+    for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs)
+        if Cones.use_scaling(cone_k)
+            @views dist_k = Cones.step_max_dist(cone_k, s_dir[idxs_k], z_dir[idxs_k])
+        else
+            # TODO
+        end
+        alpha = min(alpha, dist_k)
+    end
+    # alpha = minimum(Cones.step_max_dist(cone_k, s_dir[idxs_k], z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
+
+    return alpha
 end
 
 # return affine or combined directions, depending on stepper.in_affine_phase
@@ -256,14 +285,14 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
         if Cones.use_dual(cone_k)
             # (du bar) mu*H_k*z_k + s_k
             @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.z_dir_k[k], cone_k)
-            if Cones.use_scaling(cone_k)
+            if !Cones.use_scaling(cone_k)
                 @views lmul!(solver.mu, stepper.s_res[idxs_k])
             end
             @. stepper.s_res[idxs_k] += stepper.s_dir_k[k]
         else
             # (pr bar) z_k + mu*H_k*s_k
             @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.s_dir_k[k], cone_k)
-            if Cones.use_scaling(cone_k)
+            if !Cones.use_scaling(cone_k)
                 @views lmul!(solver.mu, stepper.s_res[idxs_k])
             end
             @. stepper.s_res[idxs_k] += stepper.z_dir_k[k]

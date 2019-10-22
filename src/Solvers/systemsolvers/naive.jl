@@ -271,7 +271,9 @@ function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
     for (k, cone_k) in enumerate(solver.model.cones)
         lhs_k = system_solver.lhs6_H_k[k]
         copyto!(lhs_k, Cones.hess(cone_k))
-        lmul!(solver.mu, lhs_k)
+        if !Cones.use_scaling(cone_k)
+            lmul!(solver.mu, lhs_k)
+        end
     end
 
     update_fact(system_solver.fact_cache, system_solver.lhs6)
