@@ -33,6 +33,7 @@ mutable struct ScalingStepper{T <: Real} <: Stepper{T}
     z_res
     tau_res
     s_res
+    s_res_k
     kap_res
 
     tau_row::Int
@@ -83,6 +84,7 @@ function load(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     stepper.s_dir = view(dir, rows)
     stepper.s_dir_k = [view(dir, tau_row .+ idxs_k) for idxs_k in cone_idxs]
     stepper.s_res = view(res, rows)
+    stepper.s_res_k = [view(res, tau_row .+ idxs_k) for idxs_k in cone_idxs]
 
     stepper.kap_rhs = view(rhs, dim:dim)
     stepper.kap_dir = view(dir, dim:dim)
@@ -102,11 +104,11 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "aff_dir" dir = get_directions(stepper, solver)
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
-    # solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
-    @timeit solver.timer "aff_alpha" solver.prev_aff_alpha = aff_alpha = find_max_alpha_in_nbhd(
-        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-        nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(2e-2)), min_alpha = T(2e-2))
-    @show aff_alpha
+    solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    # @timeit solver.timer "aff_alpha" solver.prev_aff_alpha = aff_alpha = find_max_alpha_in_nbhd(
+    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+    #     nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(2e-2)), min_alpha = T(2e-2))
+    # @show aff_alpha
 
     @assert 0 <= aff_alpha <= 1
     gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic) # TODO rename gamma to sigma maybe, if get rid of combined stepper
@@ -124,11 +126,11 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dir" dir = get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    # alpha = 0.99999 * find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
-    @timeit solver.timer "alpha" solver.prev_alpha = alpha = find_max_alpha_in_nbhd(
-        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-        nbhd = solver.max_nbhd, prev_alpha = solver.prev_alpha, min_alpha = T(1e-2))
-    @show alpha
+    alpha = 0.99999 * find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    # @timeit solver.timer "alpha" solver.prev_alpha = alpha = find_max_alpha_in_nbhd(
+    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+    #     nbhd = solver.max_nbhd, prev_alpha = solver.prev_alpha, min_alpha = T(1e-2))
+    # @show alpha
 
     @assert 0 < alpha <= 1
 
@@ -229,7 +231,7 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         rhs[stepper.tau_row] = solver.kap + solver.primal_obj_t - solver.dual_obj_t
 
         # s rhs
-        for (k, cone_k) in enumerate(solver.model.cones)
+        for k in eachindex(solver.model.cones)
             duals_k = solver.point.dual_views[k]
             @. stepper.s_rhs_k[k] = -duals_k
         end
@@ -247,12 +249,13 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         gamma_mu = stepper.gamma * solver.mu
 
         # s rhs (with Mehrotra correction for symmetric cones)
-        for (k, cone_k) in enumerate(solver.model.cones) # TODO maybe don't need cone_k
+        for (k, cone_k) in enumerate(solver.model.cones)
             # TODO store this if doing line search so don't need to reload the point right before combined phase
             grad_k = Cones.grad(cone_k)
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
             if Cones.use_scaling(cone_k)
-                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
+                corr = Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
+                @. stepper.s_rhs_k[k] -= corr
             end
         end
 
@@ -271,6 +274,7 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
     tau_dir = stepper.tau_dir[1]
     kap_dir = stepper.kap_dir[1]
 
+    # TODO ignore A, b, y if p = 0
     # A'*y + G'*z + c*tau
     stepper.x_res .= model.A' * stepper.y_dir + model.G' * stepper.z_dir + model.c * tau_dir
     # -A*x + b*tau
@@ -279,25 +283,26 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
     stepper.z_res .= -model.G * stepper.x_dir + model.h * tau_dir - stepper.s_dir
     # -c'*x - b'*y - h'*z - kap
     stepper.tau_res .= -model.c' * stepper.x_dir - model.b' * stepper.y_dir - model.h' * stepper.z_dir - kap_dir
+
     # s
     for (k, cone_k) in enumerate(model.cones)
-        idxs_k = model.cone_idxs[k]
         if Cones.use_dual(cone_k)
             # (du bar) mu*H_k*z_k + s_k
-            @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.z_dir_k[k], cone_k)
-            if !Cones.use_scaling(cone_k)
-                @views lmul!(solver.mu, stepper.s_res[idxs_k])
-            end
-            @. stepper.s_res[idxs_k] += stepper.s_dir_k[k]
+            Hzs_k = stepper.z_dir_k[k]
+            zs_k = stepper.s_dir_k[k]
         else
             # (pr bar) z_k + mu*H_k*s_k
-            @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.s_dir_k[k], cone_k)
-            if !Cones.use_scaling(cone_k)
-                @views lmul!(solver.mu, stepper.s_res[idxs_k])
-            end
-            @. stepper.s_res[idxs_k] += stepper.z_dir_k[k]
+            Hzs_k = stepper.s_dir_k[k]
+            zs_k = stepper.z_dir_k[k]
         end
+        s_res_k = stepper.s_res_k[k]
+        Cones.hess_prod!(s_res_k, Hzs_k, cone_k)
+        if !Cones.use_scaling(cone_k)
+            lmul!(solver.mu, s_res_k)
+        end
+        @. s_res_k += zs_k
     end
+
     # tau + taubar / kapbar * kap
     @. stepper.kap_res = tau_dir + solver.tau / solver.kap * kap_dir
 

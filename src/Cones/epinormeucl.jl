@@ -41,7 +41,7 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     c::T
     correction::Vector{T}
 
-    function EpiNormEucl{T}(dim::Int; use_scaling::Bool = false) where {T <: Real}
+    function EpiNormEucl{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
         @assert dim >= 2
         cone = new{T}()
         cone.dim = dim
