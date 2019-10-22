@@ -104,7 +104,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "aff_dir" dir = get_directions(stepper, solver)
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
-    solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper, solver)
     # @timeit solver.timer "aff_alpha" solver.prev_aff_alpha = aff_alpha = find_max_alpha_in_nbhd(
     #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
     #     nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(2e-2)), min_alpha = T(2e-2))
@@ -126,7 +126,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dir" dir = get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    alpha = 0.99999 * find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    alpha = 0.99999 * find_max_alpha(stepper, solver)
     # @timeit solver.timer "alpha" solver.prev_alpha = alpha = find_max_alpha_in_nbhd(
     #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
     #     nbhd = solver.max_nbhd, prev_alpha = solver.prev_alpha, min_alpha = T(1e-2))
@@ -159,33 +159,135 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     return point
 end
 
-function find_max_alpha(
-    z_dir::AbstractVector{T},
-    s_dir::AbstractVector{T},
-    tau_dir::T,
-    kap_dir::T,
-    solver::Solver{T},
-    ) where {T <: Real}
-    alpha = one(T)
+function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
+    tau_dir = stepper.tau_dir[1]
+    kap_dir = stepper.kap_dir[1]
+    alpha = one(T) # alpha at most 1
 
-    if kap_dir < zero(T)
-        alpha = min(alpha, -solver.kap / kap_dir)
-    end
+    # tau and kappa
     if tau_dir < zero(T)
         alpha = min(alpha, -solver.tau / tau_dir)
     end
-
-    for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs)
-        if Cones.use_scaling(cone_k)
-            @views dist_k = Cones.step_max_dist(cone_k, s_dir[idxs_k], z_dir[idxs_k])
-        else
-            # TODO
-        end
-        alpha = min(alpha, dist_k)
+    if kap_dir < zero(T)
+        alpha = min(alpha, -solver.kap / kap_dir)
     end
-    # alpha = minimum(Cones.step_max_dist(cone_k, s_dir[idxs_k], z_dir[idxs_k]) for (cone_k, idxs_k) in zip(solver.model.cones, solver.model.cone_idxs))
+
+    # cones using scaling and max distance functions
+    for (k, cone_k) in enumerate(solver.model.cones)
+        if Cones.use_scaling(cone_k)
+            dist_k = Cones.step_max_dist(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
+            alpha = min(alpha, dist_k)
+        end
+    end
+
+    # cones requiring line search and neighborhood
+    # TODO refac from find_max_alpha_in_nbhd in stepper.jl
+    # TODO only do nbhd checks for cones not using scaling
+    nbhd = (stepper.in_affine_phase ? one(T) : solver.max_nbhd)
+    point = solver.point
+    model = solver.model
+    z_temp = solver.z_temp
+    s_temp = solver.s_temp
+    solver.cones_infeas .= true
+    tau_temp = kap_temp = taukap_temp = mu_temp = zero(T)
+    while true
+        # TODO only do nbhd checks for cones not using scaling
+        @. z_temp = point.z + alpha * stepper.z_dir
+        @. s_temp = point.s + alpha * stepper.s_dir
+        tau_temp = solver.tau + alpha * tau_dir
+        kap_temp = solver.kap + alpha * kap_dir
+        taukap_temp = tau_temp * kap_temp
+        mu_temp = (dot(s_temp, z_temp) + taukap_temp) / (one(T) + model.nu)
+
+        if mu_temp > zero(T)
+            @timeit solver.timer "nbhd_check" in_nbhd = check_nbhd(mu_temp, taukap_temp, nbhd, solver)
+            if in_nbhd
+                break
+            end
+        end
+
+        if alpha < 1e-3 # TODO arg
+            # alpha is very small so finish
+            alpha = zero(T)
+            break
+        end
+
+        # iterate is outside the neighborhood: decrease alpha
+        alpha *= T(0.8) # TODO option for parameter
+    end
 
     return alpha
+end
+
+function check_nbhd(
+    mu_temp::T,
+    taukap_temp::T,
+    nbhd::T,
+    solver::Solver{T},
+    ) where {T <: Real}
+    cones = solver.model.cones
+    sqrtmu = sqrt(mu_temp)
+
+    rhs_nbhd = mu_temp * abs2(nbhd)
+    lhs_nbhd = abs2(taukap_temp / sqrtmu - sqrtmu)
+    if lhs_nbhd >= rhs_nbhd
+        return false
+    end
+
+    Cones.load_point.(cones, solver.primal_views, sqrtmu)
+    Cones.load_dual_point.(cones, solver.dual_views, sqrtmu) # TODO needed?
+
+    # accept primal iterate if it is inside the cone and neighborhood
+    # first check inside cone for whichever cones were violated last line search iteration
+    for (k, cone_k) in enumerate(cones)
+        if solver.cones_infeas[k]
+            Cones.reset_data(cone_k)
+            if Cones.is_feas(cone_k)
+                solver.cones_infeas[k] = false
+                solver.cones_loaded[k] = true
+            else
+                return false
+            end
+        else
+            solver.cones_loaded[k] = false
+        end
+    end
+
+    for (k, cone_k) in enumerate(cones)
+        if !solver.cones_loaded[k]
+            Cones.reset_data(cone_k)
+            if !Cones.is_feas(cone_k)
+                return false
+            end
+        end
+
+        # modifies dual_views
+        duals_k = solver.dual_views[k]
+        g_k = Cones.grad(cone_k)
+        @. duals_k += g_k * sqrtmu
+
+        if solver.use_infty_nbhd
+            k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
+            # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
+            lhs_nbhd = max(lhs_nbhd, k_nbhd)
+        else
+            nbhd_temp_k = solver.nbhd_temp[k]
+            Cones.inv_hess_prod!(nbhd_temp_k, duals_k, cone_k)
+            k_nbhd = dot(duals_k, nbhd_temp_k)
+            if k_nbhd <= -cbrt(eps(T))
+                @warn("numerical failure: cone neighborhood is $k_nbhd")
+                return false
+            elseif k_nbhd > zero(T)
+                lhs_nbhd += k_nbhd
+            end
+        end
+
+        if lhs_nbhd > rhs_nbhd
+            return false
+        end
+    end
+
+    return true
 end
 
 # return affine or combined directions, depending on stepper.in_affine_phase
