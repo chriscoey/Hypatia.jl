@@ -371,13 +371,13 @@ function dist_to_bndry(lambda, dir)
     fact = (lambda_dir_dist + dir[1]) / (lambda[1] + 1)
 
     dist2n = 0 # TODO T
-    for i in 2:cone.dim
+    for i in 2:length(lambda)
         dist2n += dir[1] - fact * lambda[i]
     end
     return lambda_dir_dist - dist2n
 end
 
-function correction(cone::EpiNormEucl, s_sol, z_sol)
+function step_max_dist(cone::EpiNormEucl, s_sol, z_sol)
     lambda = similar(cone.point)
     point = cone.point
     dual_point = cone.dual_point
@@ -385,10 +385,10 @@ function correction(cone::EpiNormEucl, s_sol, z_sol)
     # get lambda
     # TODO there is a shortcut
     scalmat_prod!(lambda, cone.dual_point, cone)
-    lambda_dist = abs2(lambda) - sum(abs2, lambda[2:end])
-    lambda_dist_sqrt = sqrt(lamba_dist)
+    lambda_dist = abs2(lambda[1]) - sum(abs2, lambda[2:end])
+    lambda_dist_sqrt = sqrt(lambda_dist)
     # TODO delay this?
-    lamda ./= lambda_dist_sqrt
+    lambda ./= lambda_dist_sqrt
     primal_dist = lambda_dist_sqrt / dist_to_bndry(lambda, s_sol)
     dual_dist = lambda_dist_sqrt / dist_to_bndry(lambda, z_sol)
 

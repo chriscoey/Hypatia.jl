@@ -229,7 +229,7 @@ function epinormeucl1(T; options...)
     h = zeros(T, 3)
 
     for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.EpiNormEucl{T}(3, is_dual)]
+        cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
 
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal
@@ -248,7 +248,7 @@ function epinormeucl2(T; options...)
     h = zeros(T, 3)
 
     for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.EpiNormEucl{T}(3, is_dual)]
+        cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
 
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal
