@@ -102,11 +102,11 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "aff_dir" dir = get_directions(stepper, solver)
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
-    solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
-    # @timeit solver.timer "aff_alpha" solver.prev_aff_alpha = aff_alpha = find_max_alpha_in_nbhd(
-    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-    #     nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(2e-2)), min_alpha = T(2e-2))
-    # @show aff_alpha
+    # solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    @timeit solver.timer "aff_alpha" solver.prev_aff_alpha = aff_alpha = find_max_alpha_in_nbhd(
+        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+        nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(2e-2)), min_alpha = T(2e-2))
+    @show aff_alpha
 
     @assert 0 <= aff_alpha <= 1
     gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic)
@@ -124,11 +124,11 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dir" dir = get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    alpha = 0.99999 * find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
-    # @timeit solver.timer "alpha" solver.prev_alpha = alpha = find_max_alpha_in_nbhd(
-    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-    #     nbhd = solver.max_nbhd, prev_alpha = solver.prev_alpha, min_alpha = T(1e-2))
-    # @show alpha
+    # alpha = 0.99999 * find_max_alpha(stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver)
+    @timeit solver.timer "alpha" solver.prev_alpha = alpha = find_max_alpha_in_nbhd(
+        stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
+        nbhd = solver.max_nbhd, prev_alpha = solver.prev_alpha, min_alpha = T(1e-2))
+    @show alpha
 
     @assert 0 < alpha <= 1
 
