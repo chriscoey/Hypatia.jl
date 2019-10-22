@@ -18,7 +18,7 @@ function dimension1(T; options...)
     b = T[]
     G = T[1 0]
     h = T[1]
-    cones = CO.Cone{T}[CO.Nonnegative{T}(1, false)]
+    cones = CO.Cone{T}[CO.Nonnegative{T}(1)]
 
     for use_sparse in (false, true)
         if use_sparse
@@ -51,7 +51,7 @@ function consistent1(T; options...)
     G[:, 11:15] = rnd1 * G[:, 1:5] - rnd2 * G[:, 6:10]
     c[11:15] = rnd1 * c[1:5] - rnd2 * c[6:10]
     h = zeros(T, q)
-    cones = CO.Cone{T}[CO.Nonpositive{T}(q)]
+    cones = CO.Cone{T}[CO.Nonnegative{T}(q)]
 
     r = build_solve_check(c, A, b, G, h, cones; options...)
     @test r.status == :Optimal
@@ -90,78 +90,23 @@ function inconsistent2(T; options...)
     @test_throws ErrorException options.linear_model{T}(c, A, b, G, h, CO.Cone{T}[CO.Nonnegative{T}(q)])
 end
 
-function orthant1(T; options...)
+function nonnegative1(T; options...)
     tol = sqrt(sqrt(eps(T)))
     Random.seed!(1)
     (n, p, q) = (6, 3, 6)
     c = rand(T(0):T(9), n)
     A = rand(T(-9):T(9), p, n)
     b = vec(sum(A, dims = 2))
-    h = zeros(T, q)
-
-    # nonnegative cone
     G = SparseMatrixCSC(-one(T) * I, q, n)
-    cones = CO.Cone{T}[CO.Nonnegative{T}(q)]
-    rnn = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = one(T), options...)
-    @test rnn.status == :Optimal
-
-    # nonpositive cone
-    G = SparseMatrixCSC(one(T) * I, q, n)
-    cones = CO.Cone{T}[CO.Nonpositive{T}(q)]
-    rnp = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = one(T), options...)
-    @test rnp.status == :Optimal
-
-    @test rnp.primal_obj ≈ rnn.primal_obj atol=tol rtol=tol
-end
-
-function orthant2(T; options...)
-    tol = 2 * sqrt(sqrt(eps(T)))
-    Random.seed!(1)
-    (n, p, q) = (5, 2, 10)
-    c = rand(T(0):T(9), n)
-    A = rand(T(-9):T(9), p, n)
-    b = vec(sum(A, dims = 2))
-    G = rand(T, q, n) - Matrix(T(2) * I, q, n)
-    h = G * ones(T, n)
-
-    # # use dual barrier
-    # cones = CO.Cone{T}[CO.Nonnegative{T}(q, true)]
-    # r1 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    # @test r1.status == :Optimal
-
-    # use primal barrier
-    cones = CO.Cone{T}[CO.Nonnegative{T}(q, false)]
-    r2 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r2.status == :Optimal
-
-    # @test r1.primal_obj ≈ r2.primal_obj atol=tol rtol=tol
-end
-
-function orthant3(T; options...)
-    tol = 2 * sqrt(sqrt(eps(T)))
-    Random.seed!(1)
-    (n, p, q) = (15, 6, 15)
-    c = rand(T(0):T(9), n)
-    A = rand(T(-9):T(9), p, n)
-    b = vec(sum(A, dims = 2))
-    G = Diagonal(one(T) * I, n)
     h = zeros(T, q)
+    cones = CO.Cone{T}[CO.Nonnegative{T}(q)]
 
-    # use dual barrier
-    cones = CO.Cone{T}[CO.Nonpositive{T}(q, true)]
-    r1 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r1.status == :Optimal
-
-    # use primal barrier
-    cones = CO.Cone{T}[CO.Nonpositive{T}(q, false)]
-    r2 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r2.status == :Optimal
-
-    @test r1.primal_obj ≈ r2.primal_obj atol=tol rtol=tol
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = one(T), options...)
+    @test r.status == :Optimal
 end
 
-function orthant4(T; options...)
-    tol = 4 * sqrt(sqrt(eps(T)))
+function nonnegative2(T; options...)
+    tol = 2 * sqrt(sqrt(eps(T)))
     Random.seed!(1)
     (n, p, q) = (5, 2, 10)
     c = rand(T(0):T(9), n)
@@ -169,18 +114,25 @@ function orthant4(T; options...)
     b = vec(sum(A, dims = 2))
     G = rand(T, q, n) - Matrix(T(2) * I, q, n)
     h = vec(sum(G, dims = 2))
+    cones = CO.Cone{T}[CO.Nonnegative{T}(q)]
 
-    # # mixture of nonnegative and nonpositive cones
-    # cones = CO.Cone{T}[CO.Nonnegative{T}(4, false), CO.Nonnegative{T}(6, true)]
-    # r1 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    # @test r1.status == :Optimal
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+end
 
-    # only nonnegative cone
-    cones = CO.Cone{T}[CO.Nonnegative{T}(10, false)]
-    r2 = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r2.status == :Optimal
+function nonnegative3(T; options...)
+    tol = 2 * sqrt(sqrt(eps(T)))
+    Random.seed!(1)
+    (n, p, q) = (15, 6, 15)
+    c = rand(T(0):T(9), n)
+    A = rand(T(-9):T(9), p, n)
+    b = vec(sum(A, dims = 2))
+    G = Diagonal(-one(T) * I, n)
+    h = zeros(T, q)
+    cones = CO.Cone{T}[CO.Nonnegative{T}(q)]
 
-    # @test r1.primal_obj ≈ r2.primal_obj atol=tol rtol=tol
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
 end
 
 function epinorminf1(T; options...)

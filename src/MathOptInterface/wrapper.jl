@@ -324,6 +324,7 @@ function MOI.copy_to(
 
     if q > nonpos_start
         # exists at least one nonpositive constraint
+        error("TODO fix now that Nonpositive cone is gone")
         push!(cones, Cones.Nonpositive{T}(q - nonpos_start))
     end
 

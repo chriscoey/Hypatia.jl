@@ -10,7 +10,6 @@ barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Program
 =#
 
 mutable struct EpiPerSquare{T <: Real} <: Cone{T}
-    use_dual::Bool
     dim::Int
     point::Vector{T}
 
@@ -25,16 +24,15 @@ mutable struct EpiPerSquare{T <: Real} <: Cone{T}
 
     dist::T
 
-    function EpiPerSquare{T}(dim::Int, is_dual::Bool) where {T <: Real}
+    function EpiPerSquare{T}(dim::Int) where {T <: Real}
         @assert dim >= 3
         cone = new{T}()
-        cone.use_dual = is_dual
         cone.dim = dim
         return cone
     end
 end
 
-EpiPerSquare{T}(dim::Int) where {T <: Real} = EpiPerSquare{T}(dim, false)
+use_dual(cone::EpiPerSquare) = false # self-dual
 
 reset_data(cone::EpiPerSquare) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 

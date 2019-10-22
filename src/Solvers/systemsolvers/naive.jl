@@ -266,21 +266,10 @@ function load(system_solver::NaiveDenseSystemSolver{T}, solver::Solver{T}) where
 end
 
 function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
-    system_solver.lhs6[end, system_solver.tau_row] = solver.kap
-    system_solver.lhs6[end, end] = solver.tau
+    system_solver.lhs6[end, end] = solver.tau / solver.kap
 
-    # for (k, cone_k) in enumerate(solver.model.cones)
-    #     copyto!(system_solver.lhs6_H_k[k], Cones.hess(cone_k))
-    # end
-
-    model = solver.model
     for (k, cone_k) in enumerate(solver.model.cones)
-        idxs_k = model.cone_idxs[k]
-        rows = system_solver.tau_row .+ idxs_k
-        z_cols = (model.n + model.p) .+ idxs_k
-        s_cols = rows
-        system_solver.lhs6[rows, z_cols] .= Diagonal(cone_k.point)
-        system_solver.lhs6[rows, s_cols] .= Diagonal(cone_k.dual_point)
+        copyto!(system_solver.lhs6_H_k[k], Cones.hess(cone_k))
     end
 
     update_fact(system_solver.fact_cache, system_solver.lhs6)

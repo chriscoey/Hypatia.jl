@@ -12,10 +12,9 @@ include(joinpath(@__DIR__, "native.jl"))
 const SO = Hypatia.Solvers
 
 testfuns = [
-    orthant1,
-    orthant2,
-    orthant3,
-    orthant4,
+    nonnegative1,
+    nonnegative2,
+    nonnegative3,
     epinorminf1,
     epinorminf2,
     epinorminf3,

@@ -7,7 +7,7 @@ include(joinpath(@__DIR__, "native.jl"))
 const SO = Hypatia.Solvers
 
 testfuns_no_preproc = [
-    orthant1,
+    nonnegative1,
     epinorminf1,
     epinormeucl1,
     epipersquare1,
@@ -33,10 +33,9 @@ testfuns_preproc = [
 testfuns_reduce = vcat(testfuns_no_preproc, testfuns_preproc)
 
 testfuns = [
-    # orthant1,
-    orthant2,
-    # orthant3,
-    orthant4,
+    nonnegative1,
+    nonnegative2,
+    nonnegative3,
     # epinorminf1,
     # epinorminf2,
     # epinorminf3,
@@ -79,8 +78,8 @@ testfuns = [
 
 generic_reals = [
     Float64,
-    # Float32,
-    # BigFloat,
+    Float32,
+    BigFloat,
     ]
 
 blas_reals = [

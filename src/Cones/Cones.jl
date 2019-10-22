@@ -21,7 +21,7 @@ hessian_cache(T::Type{<:Real}) = DensePosDefCache{T}() # use Cholesky for generi
 
 abstract type Cone{T <: Real} end
 
-include("orthant.jl")
+include("nonnegative.jl")
 include("epinorminf.jl")
 include("epinormeucl.jl")
 include("epipersquare.jl")

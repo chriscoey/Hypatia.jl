@@ -15,14 +15,10 @@ TODO factor out eta
 =#
 
 mutable struct EpiNormEucl{T <: Real} <: Cone{T}
-    use_dual::Bool
     use_scaling::Bool
     dim::Int
     point::Vector{T}
     dual_point::Vector{T}
-    scaled_point::Vector{T}
-    scaled_dual_point::Vector{T}
-    w::Vector{T} #think about naming, it's w_bar in cvxopt paper
 
     feas_updated::Bool
     grad_updated::Bool
@@ -34,25 +30,27 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
 
+    scaled_point::Vector{T}
+    scaled_dual_point::Vector{T}
+    w::Vector{T} #think about naming, it's w_bar in cvxopt paper
     dist::T
     dual_dist::T
     gamma::T
     ww::T
     b::T
     c::T
-    mehrotra_correction::Vector{T}
+    correction::Vector{T}
 
-    function EpiNormEucl{T}(dim::Int, is_dual::Bool) where {T <: Real}
+    function EpiNormEucl{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
         @assert dim >= 2
         cone = new{T}()
-        cone.use_dual = is_dual
         cone.dim = dim
-        use_scaling = true # TODO make an option
+        cone.use_scaling = use_scaling
         return cone
     end
 end
 
-EpiNormEucl{T}(dim::Int) where {T <: Real} = EpiNormEucl{T}(dim, false)
+use_dual(cone::EpiNormEucl) = false # self-dual
 
 reset_data(cone::EpiNormEucl) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
 
@@ -61,16 +59,14 @@ function setup_data(cone::EpiNormEucl{T}) where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
+    cone.dual_point = zeros(T, dim)
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
-
-    cone.dual_point = zeros(T, dim)
-    cone.dual_point = zeros(T, dim)
     cone.scaled_point = zeros(T, dim)
     cone.scaled_dual_point = zeros(T, dim)
     cone.w = zeros(T, dim)
-
+    cone.correction = zeros(T, dim)
     return
 end
 
@@ -303,8 +299,8 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     return prod
 end
 
-# returns -lambda_inv * W_inv * mehrotra_correction = grad * mehrotra_correction
-function modified_mehrotra_correction(cone::EpiNormEucl, s_sol, z_sol)
+# returns -lambda_inv * W_inv * correction = grad * correction
+function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
     tmp_s = similar(s_sol)
     tmp_z = similar(z_sol)
     tmp = similar(tmp_s)
@@ -314,15 +310,15 @@ function modified_mehrotra_correction(cone::EpiNormEucl, s_sol, z_sol)
     tmp[1] = dot(tmp_s, tmp_z)
     tmp[2:end] = tmp_s[1] * tmp_z[2:end] + tmp_z[1] * tmp_s[2:end]
 
-    cone.mehrotra_correction[1] = dot(cone.grad, tmp)
-    cone.mehrotra_correction[2:end] = cone.grad[1] * tmp[2:end] + tmp[1] * cone.grad[2:end]
+    cone.correction[1] = dot(cone.grad, tmp)
+    cone.correction[2:end] = cone.grad[1] * tmp[2:end] + tmp[1] * cone.grad[2:end]
 
-    return cone.mehrotra_correction
+    return cone.correction
 end
 
 # divides arr by lambda, the scaled point
 # TODO there is a faster way
-function scalvec_ldiv!(div, cone::EpiNormEucl, arr)
+function scalvec_ldiv!(div::AbstractVecOrMat, cone::EpiNormEucl, arr::AbstractVecOrMat)
     if !cone.scaling_updated
         update_scaling(cone)
     end

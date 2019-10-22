@@ -1,4 +1,4 @@
-#=
+nonnegative#=
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 =#
 
@@ -110,12 +110,10 @@ function test_barrier_oracles(
     return
 end
 
-function test_orthant_barrier(T::Type{<:Real})
-    nonneg_barrier = (s -> -sum(log, s))
-    nonpos_barrier = (s -> -sum(log, -s))
+function test_nonnegative_barrier(T::Type{<:Real})
+    barrier = (s -> -sum(log, s))
     for dim in [1, 3, 6]
-        test_barrier_oracles(CO.Nonnegative{T}(dim), nonneg_barrier)
-        # test_barrier_oracles(CO.Nonpositive{T}(dim), nonpos_barrier)
+        test_barrier_oracles(CO.Nonnegative{T}(dim), barrier)
     end
     return
 end
