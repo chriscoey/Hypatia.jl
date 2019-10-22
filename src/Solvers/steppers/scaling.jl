@@ -215,8 +215,9 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         lmul!(rhs_factor, stepper.z_rhs)
         rhs[stepper.tau_row] *= rhs_factor
 
-        # s rhs (with Mehrotra correction for symmetric cones)
         gamma_mu = stepper.gamma * solver.mu
+
+        # s rhs (with Mehrotra correction for symmetric cones)
         for (k, cone_k) in enumerate(solver.model.cones) # TODO maybe don't need cone_k
             # TODO store this if doing line search so don't need to reload the point right before combined phase
             grad_k = Cones.grad(cone_k)
@@ -253,12 +254,18 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
     for (k, cone_k) in enumerate(model.cones)
         idxs_k = model.cone_idxs[k]
         if Cones.use_dual(cone_k)
-            # (du bar) H_k*z_k + s_k
+            # (du bar) mu*H_k*z_k + s_k
             @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.z_dir_k[k], cone_k)
+            if Cones.use_scaling(cone_k)
+                @views lmul!(solver.mu, stepper.s_res[idxs_k])
+            end
             @. stepper.s_res[idxs_k] += stepper.s_dir_k[k]
         else
-            # (pr bar) z_k + H_k*s_k
+            # (pr bar) z_k + mu*H_k*s_k
             @views Cones.hess_prod!(stepper.s_res[idxs_k], stepper.s_dir_k[k], cone_k)
+            if Cones.use_scaling(cone_k)
+                @views lmul!(solver.mu, stepper.s_res[idxs_k])
+            end
             @. stepper.s_res[idxs_k] += stepper.z_dir_k[k]
         end
     end

@@ -269,7 +269,9 @@ function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
     system_solver.lhs6[end, end] = solver.tau / solver.kap
 
     for (k, cone_k) in enumerate(solver.model.cones)
-        copyto!(system_solver.lhs6_H_k[k], Cones.hess(cone_k))
+        lhs_k = system_solver.lhs6_H_k[k]
+        copyto!(lhs_k, Cones.hess(cone_k))
+        lmul!(solver.mu, lhs_k)
     end
 
     update_fact(system_solver.fact_cache, system_solver.lhs6)

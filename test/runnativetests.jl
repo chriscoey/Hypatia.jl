@@ -78,8 +78,8 @@ testfuns = [
 
 generic_reals = [
     Float64,
-    Float32,
-    BigFloat,
+    # Float32,
+    # BigFloat,
     ]
 
 blas_reals = [
