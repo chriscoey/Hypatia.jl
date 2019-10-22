@@ -318,6 +318,7 @@ end
 
 # divides arr by lambda, the scaled point
 # TODO there is a faster way
+# TODO remove this oracle if not used in the near future
 function scalvec_ldiv!(div::AbstractVecOrMat, cone::EpiNormEucl, arr::AbstractVecOrMat)
     if !cone.scaling_updated
         update_scaling(cone)
@@ -363,4 +364,42 @@ function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
         @. C[2:end, :] += B[2:end, :] / A1
     end
     return C
+end
+
+function dist_to_bndry(lambda, dir)
+    lambda_dir_dist = lambda[1] * dir[1] - sum(lambda[i] * dir[i] for i in 2:length(lambda))
+    fact = (lambda_dir_dist + dir[1]) / (lambda[1] + 1)
+
+    dist2n = 0 # TODO T
+    for i in 2:cone.dim
+        dist2n += dir[1] - fact * lambda[i]
+    end
+    return lambda_dir_dist - dist2n
+end
+
+function correction(cone::EpiNormEucl, s_sol, z_sol)
+    lambda = similar(cone.point)
+    point = cone.point
+    dual_point = cone.dual_point
+
+    # get lambda
+    # TODO there is a shortcut
+    scalmat_prod!(lambda, cone.dual_point, cone)
+    lambda_dist = abs2(lambda) - sum(abs2, lambda[2:end])
+    lambda_dist_sqrt = sqrt(lamba_dist)
+    # TODO delay this?
+    lamda ./= lambda_dist_sqrt
+    primal_dist = lambda_dist_sqrt / dist_to_bndry(lambda, s_sol)
+    dual_dist = lambda_dist_sqrt / dist_to_bndry(lambda, z_sol)
+
+    step_dist = 1
+    if primal_dist < 0
+        step_dist = min(1, -primal_dist)
+    end
+    if dual_dist < 0
+        step_dist = min(1, -dual_dist)
+    end
+
+    return step_dist
+
 end
