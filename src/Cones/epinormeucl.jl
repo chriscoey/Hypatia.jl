@@ -72,9 +72,9 @@ end
 
 get_nu(cone::EpiNormEucl) = 1
 
-function set_initial_point(arr::AbstractVector, cone::EpiNormEucl{T}) where {T <: Real}
+function set_initial_point(arr::AbstractVector, cone::EpiNormEucl)
     arr .= 0
-    arr[1] = sqrt(T(get_nu(cone)))
+    arr[1] = 1
     return arr
 end
 
@@ -83,7 +83,7 @@ function update_feas(cone::EpiNormEucl)
     u = cone.point[1]
     if u > 0
         w = view(cone.point, 2:cone.dim)
-        cone.dist = (abs2(u) - sum(abs2, w))
+        cone.dist = abs2(u) - sum(abs2, w)
         cone.is_feas = (cone.dist > 0)
     else
         cone.is_feas = false

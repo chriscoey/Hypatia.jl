@@ -109,7 +109,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @show aff_alpha
 
     @assert 0 <= aff_alpha <= 1
-    gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic)
+    gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic) # TODO rename gamma to sigma maybe, if get rid of combined stepper
     solver.prev_gamma = stepper.gamma = gamma
     @show gamma
 
