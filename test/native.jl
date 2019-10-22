@@ -227,16 +227,13 @@ function epinormeucl1(T; options...)
     b = T[1, Tirt2]
     G = Matrix{T}(-I, 3, 3)
     h = zeros(T, 3)
+    cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
 
-    for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
-
-        r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-        @test r.status == :Optimal
-        @test r.primal_obj ≈ -Trt2 atol=tol rtol=tol
-        @test r.x ≈ [1, Tirt2, Tirt2] atol=tol rtol=tol
-        @test r.y ≈ [Trt2, 0] atol=tol rtol=tol
-    end
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ -Trt2 atol=tol rtol=tol
+    @test r.x ≈ [1, Tirt2, Tirt2] atol=tol rtol=tol
+    @test r.y ≈ [Trt2, 0] atol=tol rtol=tol
 end
 
 function epinormeucl2(T; options...)
@@ -246,15 +243,12 @@ function epinormeucl2(T; options...)
     b = T[0]
     G = Diagonal(-one(T) * I, 3)
     h = zeros(T, 3)
+    cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
 
-    for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
-
-        r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-        @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol=tol rtol=tol
-        @test norm(r.x) ≈ 0 atol=tol rtol=tol
-    end
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 0 atol=tol rtol=tol
+    @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
 function epipersquare1(T; options...)
@@ -264,15 +258,12 @@ function epipersquare1(T; options...)
     b = T[0.5, 1]
     G = Matrix{T}(-I, 4, 4)
     h = zeros(T, 4)
+    cones = CO.Cone{T}[CO.EpiPerSquare{T}(4)]
 
-    for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.EpiPerSquare{T}(4, is_dual)]
-
-        r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-        @test r.status == :Optimal
-        @test r.primal_obj ≈ -sqrt(T(2)) atol=tol rtol=tol
-        @test r.x[3:4] ≈ [1, 1] / sqrt(T(2)) atol=tol rtol=tol
-    end
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ -sqrt(T(2)) atol=tol rtol=tol
+    @test r.x[3:4] ≈ [1, 1] / sqrt(T(2)) atol=tol rtol=tol
 end
 
 function epipersquare2(T; options...)
@@ -283,15 +274,12 @@ function epipersquare2(T; options...)
     b = T[Tirt2 / 2, Tirt2]
     G = Matrix{T}(-I, 3, 3)
     h = zeros(T, 3)
+    cones = CO.Cone{T}[CO.EpiPerSquare{T}(3)]
 
-    for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.EpiPerSquare{T}(3, is_dual)]
-
-        r = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = -one(T), options...)
-        @test r.status == :Optimal
-        @test r.primal_obj ≈ -Tirt2 - 1 atol=tol rtol=tol
-        @test r.x[2] ≈ Tirt2 atol=tol rtol=tol
-    end
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = -one(T), options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ -Tirt2 - 1 atol=tol rtol=tol
+    @test r.x[2] ≈ Tirt2 atol=tol rtol=tol
 end
 
 function epipersquare3(T; options...)
@@ -301,15 +289,12 @@ function epipersquare3(T; options...)
     b = T[0]
     G = SparseMatrixCSC(-one(T) * I, 4, 4)
     h = zeros(T, 4)
+    cones = CO.Cone{T}[CO.EpiPerSquare{T}(4)]
 
-    for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.EpiPerSquare{T}(4, is_dual)]
-
-        r = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = zero(T), options...)
-        @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol=tol rtol=tol
-        @test norm(r.x) ≈ 0 atol=tol rtol=tol
-    end
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = zero(T), options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 0 atol=tol rtol=tol
+    @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
 function possemideftri1(T; options...)
