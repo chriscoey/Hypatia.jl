@@ -19,11 +19,10 @@ function test_barrier_oracles(
     init_tol::Real = tol,
     init_only::Bool = false,
     ) where {T <: Real}
+    @test !CO.use_scaling(cone)
     CO.setup_data(cone)
     dim = CO.dimension(cone)
     point = Vector{T}(undef, dim)
-
-    cone.use_scaling = false # TODO update when it's an option
 
     if isfinite(init_tol)
         # tests for centrality of initial point
@@ -73,8 +72,26 @@ function test_barrier_oracles(
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
-    CO.reset_data(cone)
-    CO.is_feas(cone)
+    return
+end
+
+# TODO cleanup, cover all scaling oracles, comment in some places
+function test_barrier_scaling_oracles(
+    cone::CO.Cone{T};
+    noise::Real = 0.2,
+    scale::Real = 10000,
+    tol::Real = 100eps(T),
+    ) where {T <: Real}
+    @test CO.use_scaling(cone)
+    CO.setup_data(cone)
+    dim = CO.dimension(cone)
+    point = Vector{T}(undef, dim)
+
+    CO.set_initial_point(point, cone)
+    CO.load_point(cone, point)
+    @test cone.point == point
+    @test CO.is_feas(cone)
+
     grad = CO.grad(cone)
     cone.use_scaling = true # TODO update when it's an option, run these tests optionally
     cone.dual_point = cone.point + T(noise) * (rand(T, dim) .- inv(T(2))) / scale
@@ -86,6 +103,7 @@ function test_barrier_oracles(
     @test hess * inv_hess ≈ I atol=tol rtol=tol
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
+    
     λ = similar(cone.point)
     CO.scalmat_prod!(λ, cone.dual_point, cone)
     W = similar(point, dim, dim)
@@ -126,7 +144,8 @@ end
 function test_nonnegative_barrier(T::Type{<:Real})
     barrier = (s -> -sum(log, s))
     for dim in [1, 3, 6]
-        test_barrier_oracles(CO.Nonnegative{T}(dim), barrier)
+        test_barrier_oracles(CO.Nonnegative{T}(dim, use_scaling = false), barrier)
+        test_barrier_scaling_oracles(CO.Nonnegative{T}(dim, use_scaling = true))
     end
     return
 end
@@ -148,7 +167,8 @@ function test_epinormeucl_barrier(T::Type{<:Real})
         return -log(abs2(u) - sum(abs2, w)) / 2
     end
     for dim in [2, 4]
-        test_barrier_oracles(CO.EpiNormEucl{T}(dim), barrier)
+        test_barrier_oracles(CO.EpiNormEucl{T}(dim, use_scaling = false), barrier)
+        test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true))
     end
     return
 end
