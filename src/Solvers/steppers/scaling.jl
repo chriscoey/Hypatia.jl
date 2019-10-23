@@ -105,16 +105,12 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
     solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper, solver)
-    # @timeit solver.timer "aff_alpha" solver.prev_aff_alpha = aff_alpha = find_max_alpha_in_nbhd(
-    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-    #     nbhd = one(T), prev_alpha = max(solver.prev_aff_alpha, T(2e-2)), min_alpha = T(2e-2))
-    # @show aff_alpha
-
     @assert 0 <= aff_alpha <= 1
     gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic) # TODO rename gamma to sigma maybe, if get rid of combined stepper
     solver.prev_gamma = stepper.gamma = gamma
     @show gamma
 
+    # TODO needed?
     Cones.load_point.(solver.model.cones, point.primal_views)
     Cones.load_dual_point.(solver.model.cones, point.dual_views)
     Cones.reset_data.(solver.model.cones)
@@ -126,16 +122,16 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dir" dir = get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    alpha = 0.99999 * find_max_alpha(stepper, solver)
-    # @timeit solver.timer "alpha" solver.prev_alpha = alpha = find_max_alpha_in_nbhd(
-    #     stepper.z_dir, stepper.s_dir, stepper.tau_dir[1], stepper.kap_dir[1], solver,
-    #     nbhd = solver.max_nbhd, prev_alpha = solver.prev_alpha, min_alpha = T(1e-2))
-    # @show alpha
+    solver.prev_alpha = alpha = 0.99999 * find_max_alpha(stepper, solver)
+    if iszero(alpha)
+        @warn("numerical failure: could not step in combined direction; terminating")
+        solver.status = :NumericalFailure
+        solver.keep_iterating = false
+        return point
+    end
 
-    @assert 0 < alpha <= 1
-
-    # step distance alpha in combined direction
-    solver.prev_alpha = alpha
+    # step distance alpha in combined directions
+    # TODO allow stepping different alphas in primal and dual cone directions? some solvers do
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
     @. point.z += alpha * stepper.z_dir
@@ -150,6 +146,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
         solver.keep_iterating = false
     end
 
+    # TODO not needed for cones with last point already loaded
     Cones.load_point.(solver.model.cones, point.primal_views)
     Cones.load_dual_point.(solver.model.cones, point.dual_views)
     Cones.reset_data.(solver.model.cones)
@@ -178,6 +175,10 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
             dist_k = Cones.step_max_dist(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
             alpha = min(alpha, dist_k)
         end
+    end
+
+    if all(Cones.use_scaling, solver.model.cones)
+        return alpha
     end
 
     # cones requiring line search and neighborhood
@@ -226,16 +227,9 @@ function check_nbhd(
     solver::Solver{T},
     ) where {T <: Real}
     cones = solver.model.cones
-    sqrtmu = sqrt(mu_temp)
 
-    rhs_nbhd = mu_temp * abs2(nbhd)
-    lhs_nbhd = abs2(taukap_temp / sqrtmu - sqrtmu)
-    if lhs_nbhd >= rhs_nbhd
-        return false
-    end
-
-    Cones.load_point.(cones, solver.primal_views, sqrtmu)
-    Cones.load_dual_point.(cones, solver.dual_views, sqrtmu) # TODO needed?
+    Cones.load_point.(cones, solver.primal_views)
+    # Cones.load_dual_point.(cones, solver.dual_views) # TODO needed?
 
     # accept primal iterate if it is inside the cone and neighborhood
     # first check inside cone for whichever cones were violated last line search iteration
@@ -253,7 +247,12 @@ function check_nbhd(
         end
     end
 
+    rhs_nbhd = mu_temp * abs2(nbhd)
     for (k, cone_k) in enumerate(cones)
+        if Cones.use_scaling(cone_k)
+            continue
+        end
+
         if !solver.cones_loaded[k]
             Cones.reset_data(cone_k)
             if !Cones.is_feas(cone_k)
@@ -261,28 +260,14 @@ function check_nbhd(
             end
         end
 
-        # modifies dual_views
-        duals_k = solver.dual_views[k]
+        duals_k = copy(solver.dual_views[k]) # TODO prealloc or modify dual_views
         g_k = Cones.grad(cone_k)
-        @. duals_k += g_k * sqrtmu
+        @. duals_k += g_k * solver.mu
 
-        if solver.use_infty_nbhd
-            k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
-            # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
-            lhs_nbhd = max(lhs_nbhd, k_nbhd)
-        else
-            nbhd_temp_k = solver.nbhd_temp[k]
-            Cones.inv_hess_prod!(nbhd_temp_k, duals_k, cone_k)
-            k_nbhd = dot(duals_k, nbhd_temp_k)
-            if k_nbhd <= -cbrt(eps(T))
-                @warn("numerical failure: cone neighborhood is $k_nbhd")
-                return false
-            elseif k_nbhd > zero(T)
-                lhs_nbhd += k_nbhd
-            end
-        end
-
-        if lhs_nbhd > rhs_nbhd
+        @assert solver.use_infty_nbhd # TODO hess nbhd?
+        k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
+        # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
+        if k_nbhd > rhs_nbhd
             return false
         end
     end
