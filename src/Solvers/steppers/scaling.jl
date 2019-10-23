@@ -27,6 +27,8 @@ mutable struct ScalingStepper{T <: Real} <: Stepper{T}
     s_dir_k
     kap_dir
 
+    dir_temp::Vector{T}
+
     res::Vector{T}
     x_res
     y_res
@@ -54,6 +56,7 @@ function load(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     res = zeros(T, dim)
     stepper.rhs = rhs
     stepper.dir = dir
+    stepper.dir_temp = zeros(T, dim)
     stepper.res = res
 
     rows = 1:n
@@ -97,18 +100,24 @@ end
 function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
 
+    # TODO not needed for cones with last point already loaded
+    Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(solver.model.cones, point.dual_views)
+    Cones.reset_data.(solver.model.cones)
+    Cones.is_feas.(solver.model.cones)
+    Cones.grad.(solver.model.cones)
+
     @timeit solver.timer "update_fact" update_fact(solver.system_solver, solver)
 
     # calculate affine/prediction directions
     stepper.in_affine_phase = true
-    @timeit solver.timer "aff_dir" dir = get_directions(stepper, solver)
+    @timeit solver.timer "aff_dir" get_directions(stepper, solver)
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
     solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper, solver)
     @assert 0 <= aff_alpha <= 1
     gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic) # TODO rename gamma to sigma maybe, if get rid of combined stepper
     solver.prev_gamma = stepper.gamma = gamma
-    @show gamma
 
     # TODO needed?
     Cones.load_point.(solver.model.cones, point.primal_views)
@@ -119,7 +128,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # calculate combined directions
     stepper.in_affine_phase = false
-    @timeit solver.timer "comb_dir" dir = get_directions(stepper, solver)
+    @timeit solver.timer "comb_dir" get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
     solver.prev_alpha = alpha = 0.99999 * find_max_alpha(stepper, solver)
@@ -145,13 +154,6 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
         solver.status = :NumericalFailure
         solver.keep_iterating = false
     end
-
-    # TODO not needed for cones with last point already loaded
-    Cones.load_point.(solver.model.cones, point.primal_views)
-    Cones.load_dual_point.(solver.model.cones, point.dual_views)
-    Cones.reset_data.(solver.model.cones)
-    Cones.is_feas.(solver.model.cones)
-    Cones.grad.(solver.model.cones)
 
     return point
 end
@@ -281,6 +283,7 @@ end
 function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     rhs = stepper.rhs
     dir = stepper.dir
+    dir_temp = stepper.dir_temp
     res = stepper.res
     system_solver = solver.system_solver
 
@@ -288,20 +291,34 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, rhs)
 
     # use iterative refinement - note apply_LHS is different for affine vs combined phases
-    dir_new = similar(res) # TODO avoid alloc
     iter_ref_steps = 3 # TODO handle, maybe change dynamically
+    copyto!(dir_temp, dir)
+    res = apply_LHS(stepper, solver) # modifies res
+    res .-= rhs
+    norm_inf = norm(res, Inf)
+    norm_2 = norm(res, 2)
     for i in 1:iter_ref_steps
+        if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
+            break
+        end
+        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, res)
+        axpby!(true, dir_temp, -1, dir)
         res = apply_LHS(stepper, solver) # modifies res
         res .-= rhs
 
-        norm_inf = norm(res, Inf)
-        @show i, norm_inf
-        if norm_inf < 1000 * eps(T) # TODO also stop if residual not getting better
+        norm_inf_new = norm(res, Inf)
+        norm_2_new = norm(res, 2)
+        if norm_inf_new > norm_inf || norm_2_new > norm_2
+            # residual has not improved
+            copyto!(dir, dir_temp)
             break
         end
 
-        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir_new, res)
-        dir .-= dir_new
+        # residual has improved, so use the iterative refinement
+        solver.verbose && @printf("iter ref round %d norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", i, norm_inf, norm_inf_new, norm_2, norm_2_new)
+        copyto!(dir_temp, dir)
+        norm_inf = norm_inf_new
+        norm_2 = norm_2_new
     end
 
     return dir
@@ -355,8 +372,6 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
 end
 
 # calculate residual on 6x6 linear system
-# TODO make efficient / in-place
-# TODO this is very similar to the CombinedStepper version - combine into one
 function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     model = solver.model
     tau_dir = stepper.tau_dir[1]
@@ -401,7 +416,7 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
     end
 
     # tau + taubar / kapbar * kap
-    @. stepper.kap_res = tau_dir + solver.tau / solver.kap * kap_dir
+    stepper.kap_res[1] = tau_dir + solver.tau / solver.kap * kap_dir
 
     return stepper.res
 end

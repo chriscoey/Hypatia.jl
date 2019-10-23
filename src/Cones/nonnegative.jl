@@ -25,7 +25,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
 
     correction::Vector{T}
 
-    function Nonnegative{T}(dim::Int; use_scaling::Bool = false) where {T <: Real}
+    function Nonnegative{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.dim = dim
