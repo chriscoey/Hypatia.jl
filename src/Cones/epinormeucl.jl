@@ -52,6 +52,10 @@ end
 
 use_dual(cone::EpiNormEucl) = false # self-dual
 
+use_scaling(cone::EpiNormEucl) = cone.use_scaling
+
+load_dual_point(cone::EpiNormEucl, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
+
 reset_data(cone::EpiNormEucl) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
 
 # TODO only allocate the fields we use
