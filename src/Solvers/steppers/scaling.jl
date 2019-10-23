@@ -247,6 +247,7 @@ function check_nbhd(
         end
     end
 
+    @assert solver.use_infty_nbhd # TODO hess nbhd?
     rhs_nbhd = mu_temp * abs2(nbhd)
     for (k, cone_k) in enumerate(cones)
         if Cones.use_scaling(cone_k)
@@ -260,11 +261,11 @@ function check_nbhd(
             end
         end
 
-        duals_k = copy(solver.dual_views[k]) # TODO prealloc or modify dual_views
+        duals_k = solver.dual_views[k]
+        # duals_k = copy(solver.dual_views[k]) # TODO prealloc or modify dual_views
         g_k = Cones.grad(cone_k)
         @. duals_k += g_k * solver.mu
 
-        @assert solver.use_infty_nbhd # TODO hess nbhd?
         k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
         # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
         if k_nbhd > rhs_nbhd
@@ -286,22 +287,22 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     @timeit solver.timer "update_rhs" update_rhs(stepper, solver) # different for affine vs combined phases
     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, rhs)
 
-    # use iterative refinement - note apply_LHS is different for affine vs combined phases
-    dir_new = similar(res) # TODO avoid alloc
-    iter_ref_steps = 3 # TODO handle, maybe change dynamically
-    for i in 1:iter_ref_steps
-        res = apply_LHS(stepper, solver) # modifies res
-        res .-= rhs
-
-        norm_inf = norm(res, Inf)
-        @show i, norm_inf
-        if norm_inf < 1000 * eps(T) # TODO also stop if residual not getting better
-            break
-        end
-
-        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir_new, res)
-        dir .-= dir_new
-    end
+    # # use iterative refinement - note apply_LHS is different for affine vs combined phases
+    # dir_new = similar(res) # TODO avoid alloc
+    # iter_ref_steps = 3 # TODO handle, maybe change dynamically
+    # for i in 1:iter_ref_steps
+    #     res = apply_LHS(stepper, solver) # modifies res
+    #     res .-= rhs
+    #
+    #     norm_inf = norm(res, Inf)
+    #     @show i, norm_inf
+    #     if norm_inf < 1000 * eps(T) # TODO also stop if residual not getting better
+    #         break
+    #     end
+    #
+    #     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir_new, res)
+    #     dir .-= dir_new
+    # end
 
     return dir
 end

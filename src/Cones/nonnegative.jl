@@ -25,7 +25,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
 
     correction::Vector{T}
 
-    function Nonnegative{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
+    function Nonnegative{T}(dim::Int; use_scaling::Bool = false) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.dim = dim
@@ -35,6 +35,10 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
 end
 
 use_dual(cone::Nonnegative) = false # self-dual
+
+use_scaling(cone::Nonnegative) = cone.use_scaling
+
+load_dual_point(cone::Nonnegative, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
 reset_data(cone::Nonnegative) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 

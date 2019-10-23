@@ -36,12 +36,12 @@ include("wsospolyinterp.jl")
 # include("wsospolyinterpmat.jl")
 # include("wsospolyinterpsoc.jl")
 
-use_scaling(cone::Cone) = cone.use_scaling
+use_scaling(cone::Cone) = false
 use_dual(cone::Cone) = cone.use_dual
-load_point(cone::Cone, point::AbstractVector{T}, scal::T) where {T} = (@. cone.point = point / scal)
+# load_point(cone::Cone, point::AbstractVector{T}, scal::T) where {T} = (@. cone.point = point / scal)
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
-load_dual_point(cone::Cone, dual_point::AbstractVector{T}, scal::T) where {T} = (@. cone.dual_point = dual_point / scal)
-load_dual_point(cone::Cone, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
+# load_dual_point(cone::Cone, dual_point::AbstractVector{T}, scal::T) where {T} = (@. cone.dual_point = dual_point / scal)
+load_dual_point(cone::Cone, dual_point::AbstractVector) = nothing
 dimension(cone::Cone) = cone.dim
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))

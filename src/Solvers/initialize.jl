@@ -9,17 +9,20 @@ function initialize_cone_point(cones::Vector{Cones.Cone{T}}, cone_idxs::Vector{U
     q = isempty(cones) ? 0 : sum(Cones.dimension, cones)
     point = Models.Point(T[], T[], Vector{T}(undef, q), Vector{T}(undef, q), cones, cone_idxs)
 
-    for k in eachindex(cones)
-        cone_k = cones[k]
+    for (k, cone_k) in enumerate(cones)
         Cones.setup_data(cone_k)
         primal_k = point.primal_views[k]
         Cones.set_initial_point(primal_k, cone_k)
         Cones.load_point(cone_k, primal_k)
-        @assert Cones.is_feas(cone_k)
-        g = Cones.grad(cone_k)
         dual_k = point.dual_views[k]
-        @. dual_k = -g
-        Cones.load_dual_point(cone_k, dual_k)
+        if Cones.use_scaling(cone_k)
+            copyto!(dual_k, primal_k) # initial point same for primal and dual
+            Cones.load_dual_point(cone_k, dual_k)
+        else
+            @assert Cones.is_feas(cone_k)
+            g = Cones.grad(cone_k)
+            @. dual_k = -g
+        end
     end
 
     return point
