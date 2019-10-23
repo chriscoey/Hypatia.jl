@@ -63,7 +63,7 @@ function update_fact(cache::PardisoSparseCache, A::SparseMatrixCSC{Float64, Int3
     return
 end
 
-function solve_system(cache::PardisoSparseCache, x::Matrix{Float64}, A::SparseMatrixCSC{Float64, Int32}, b::Matrix{Float64})
+function solve_system(cache::PardisoSparseCache, x::VecOrMat{Float64}, A::SparseMatrixCSC{Float64, Int32}, b::VecOrMat{Float64})
     pardiso = cache.pardiso
 
     Pardiso.set_phase!(pardiso, Pardiso.SOLVE_ITERATIVE_REFINE)

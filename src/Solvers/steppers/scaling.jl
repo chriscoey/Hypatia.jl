@@ -104,9 +104,10 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "aff_dir" get_directions(stepper, solver)
 
     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
+    # TODO rename gamma to sigma maybe, if get rid of combined stepper
     solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper, solver)
     @assert 0 <= aff_alpha <= 1
-    gamma = (1 - aff_alpha)^3 # TODO allow different function (heuristic) # TODO rename gamma to sigma maybe, if get rid of combined stepper
+    gamma = (1 - aff_alpha) ^ 3 # TODO allow different function (heuristic)
     solver.prev_gamma = stepper.gamma = gamma
 
     # TODO needed?
@@ -408,3 +409,23 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
 
     return stepper.res
 end
+
+# # TODO experimental for BlockMatrix LHS: if block is a Cone then define mul as hessian product, if block is solver then define mul by mu/tau/tau
+# # TODO optimize... maybe need for each cone a 5-arg hess prod
+# import LinearAlgebra.mul!
+#
+# TODO not working because hessian needs to be multiplied by mu
+# function mul!(y::AbstractVecOrMat{T}, A::Cones.Cone{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
+#     # TODO in-place
+#     ytemp = y * beta
+#     Cones.hess_prod!(y, x, A)
+#     rmul!(y, alpha)
+#     y .+= ytemp
+#     return y
+# end
+#
+# function mul!(y::AbstractVecOrMat{T}, solver::Solvers.Solver{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
+#     rmul!(y, beta)
+#     @. y += alpha * x * solver.tau / solver.kap
+#     return y
+# end

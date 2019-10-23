@@ -4,6 +4,8 @@ Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 naive+elimination linear system solver
 solves linear system in naive.jl via the following procedure
 
+TODO update math for NT
+
 eliminate s
 -G*x + h*tau - s = zrhs
 so if using primal barrier
@@ -34,50 +36,54 @@ A'*y + G'*z + c*tau = xrhs
 
 abstract type NaiveElimSystemSolver{T <: Real} <: SystemSolver{T} end
 
-function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}, sol::Matrix{T}, rhs::Matrix{T}) where {T <: Real}
+function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}, sol::Vector{T}, rhs::Vector{T}) where {T <: Real}
     model = solver.model
     (n, p, q) = (model.n, model.p, model.q)
     tau_row = system_solver.tau_row
 
     sol4 = system_solver.sol4
     rhs4 = system_solver.rhs4
-    @views copyto!(rhs4, rhs[1:tau_row, :])
+    @views copyto!(rhs4, rhs[1:tau_row])
 
     for (k, cone_k) in enumerate(model.cones)
         z_rows_k = (n + p) .+ model.cone_idxs[k]
         s_rows_k = (q + 1) .+ z_rows_k
-        if Cones.use_dual(cone_k)
+        if Cones.use_dual(cone_k) # no scaling
             # -G_k*x + mu*H_k*z_k + h_k*tau = zrhs_k + srhs_k
-            @. @views rhs4[z_rows_k, :] += rhs[s_rows_k, :]
+            @. @views rhs4[z_rows_k] += rhs[s_rows_k]
         elseif system_solver.use_inv_hess
             # -G_k*x + (mu*H_k)\z_k + h_k*tau = zrhs_k + (mu*H_k)\srhs_k
-            @views Cones.inv_hess_prod!(rhs4[z_rows_k, :], rhs[s_rows_k, :], cone_k)
-            @. @views rhs4[z_rows_k, :] += rhs[z_rows_k, :]
+            @views Cones.inv_hess_prod!(rhs4[z_rows_k], rhs[s_rows_k], cone_k)
+            if !Cones.use_scaling(cone_k)
+                rhs4[z_rows_k] ./= solver.mu
+            end
+            @. @views rhs4[z_rows_k] += rhs[z_rows_k]
         else
             # -mu*H_k*G_k*x + z_k + mu*H_k*h_k*tau = mu*H_k*zrhs_k + srhs_k
-            @views Cones.hess_prod!(rhs4[z_rows_k, :], rhs[z_rows_k, :], cone_k)
-            @. @views rhs4[z_rows_k, :] += rhs[s_rows_k, :]
+            @views Cones.hess_prod!(rhs4[z_rows_k], rhs[z_rows_k], cone_k)
+            if !Cones.use_scaling(cone_k)
+                rhs4[z_rows_k] .*= solver.mu
+            end
+            @. @views rhs4[z_rows_k] += rhs[s_rows_k]
         end
     end
-    # -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs
-    @. @views rhs4[end, :] += rhs[end, :]
+    # -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs # TODO update for NT
+    rhs4[end] += rhs[end]
 
     @timeit solver.timer "solve_system" solve_subsystem(system_solver, sol4, rhs4)
-    @views copyto!(sol[1:tau_row, :], sol4)
+    sol[1:tau_row] .= sol4
 
     # lift to get s and kap
-    tau = sol4[end:end, :]
-
     # TODO refactor below for use with symindef and qrchol methods
     # s = -G*x + h*tau - zrhs
-    s = @view sol[(tau_row + 1):(end - 1), :]
-    mul!(s, model.h, tau)
-    x = @view sol[1:n, :]
-    mul!(s, model.G, x, -one(T), true)
-    @. @views s -= rhs[(n + p) .+ (1:q), :]
+    s = @view sol[(tau_row + 1):(end - 1)]
+    @. s = model.h * sol4[end]
+    x = @view sol[1:n]
+    mul!(s, model.G, x, -1, true)
+    @. @views s -= rhs[(n + p) .+ (1:q)]
 
-    # kap = -mu/(taubar^2)*tau + kaprhs
-    @. @views sol[end:end, :] = -solver.mu / solver.tau * tau / solver.tau + rhs[end:end, :]
+    # kap = -mu/(taubar^2)*tau + kaprhs # TODO update for NT
+    sol[end] = -sol4[end] * solver.kap / solver.tau + rhs[end]
 
     return sol
 end
@@ -90,8 +96,8 @@ mutable struct NaiveElimSparseSystemSolver{T <: Real} <: NaiveElimSystemSolver{T
     use_inv_hess::Bool
     tau_row::Int
     lhs4::SparseMatrixCSC # TODO CSC type will depend on factor cache Int type
-    rhs4::Matrix{T}
-    sol4::Matrix{T}
+    rhs4::Vector{T}
+    sol4::Vector{T}
     hess_idxs::Vector
     fact_cache::SparseNonSymCache{T}
     function NaiveElimSparseSystemSolver{T}(;
@@ -116,7 +122,7 @@ function load(system_solver::NaiveElimSparseSystemSolver{T}, solver::Solver{T}) 
     cones = model.cones
     cone_idxs = model.cone_idxs
 
-    system_solver.sol4 = zeros(system_solver.tau_row, 2)
+    system_solver.sol4 = zeros(system_solver.tau_row)
     system_solver.rhs4 = similar(system_solver.sol4)
 
     # form sparse LHS without Hessians and inverse Hessians in z/z block
@@ -188,20 +194,35 @@ end
 
 function update_fact(system_solver::NaiveElimSparseSystemSolver, solver::Solver)
     for (k, cone_k) in enumerate(solver.model.cones)
-        H = (Cones.use_dual(cone_k) ? Cones.hess(cone_k) : Cones.inv_hess(cone_k))
-        for j in 1:Cones.dimension(cone_k)
-            nz_rows = (Cones.use_dual(cone_k) ? Cones.hess_nz_idxs_col(cone_k, j, false) : Cones.inv_hess_nz_idxs_col(cone_k, j, false))
-            @views copyto!(system_solver.lhs4.nzval[system_solver.hess_idxs[k][j]], H[nz_rows, j])
+        if Cones.use_dual(cone_k) # no scaling
+            H = Cones.hess(cone_k)
+            for j in 1:Cones.dimension(cone_k)
+                nz_rows = Cones.hess_nz_idxs_col(cone_k, j, false)
+                @. @views system_solver.lhs4.nzval[system_solver.hess_idxs[k][j]] = H[nz_rows, j] * solver.mu
+            end
+        else
+            Hinv = Cones.inv_hess(cone_k)
+            if Cones.use_scaling(cone_k)
+                for j in 1:Cones.dimension(cone_k)
+                    nz_rows = Cones.inv_hess_nz_idxs_col(cone_k, j, false)
+                    @. @views system_solver.lhs4.nzval[system_solver.hess_idxs[k][j]] = Hinv[nz_rows, j]
+                end
+            else
+                for j in 1:Cones.dimension(cone_k)
+                    nz_rows = Cones.inv_hess_nz_idxs_col(cone_k, j, false)
+                    @. @views system_solver.lhs4.nzval[system_solver.hess_idxs[k][j]] = Hinv[nz_rows, j] / solver.mu
+                end
+            end
         end
     end
-    system_solver.lhs4.nzval[end] = solver.mu / solver.tau / solver.tau
+    system_solver.lhs4.nzval[end] = solver.kap / solver.tau
 
     update_fact(system_solver.fact_cache, system_solver.lhs4)
 
     return system_solver
 end
 
-function solve_subsystem(system_solver::NaiveElimSparseSystemSolver, sol4::Matrix, rhs4::Matrix)
+function solve_subsystem(system_solver::NaiveElimSparseSystemSolver, sol4::Vector, rhs4::Vector)
     solve_system(system_solver.fact_cache, sol4, system_solver.lhs4, rhs4)
     return sol4
 end
@@ -214,8 +235,8 @@ mutable struct NaiveElimDenseSystemSolver{T <: Real} <: NaiveElimSystemSolver{T}
     use_inv_hess::Bool
     tau_row::Int
     lhs4::Matrix{T}
-    rhs4::Matrix{T}
-    sol4::Matrix{T}
+    rhs4::Vector{T}
+    sol4::Vector{T}
     fact_cache::DenseNonSymCache{T}
     function NaiveElimDenseSystemSolver{T}(;
         use_inv_hess::Bool = true,
@@ -232,7 +253,7 @@ function load(system_solver::NaiveElimDenseSystemSolver{T}, solver::Solver{T}) w
     model = solver.model
     (n, p, q) = (model.n, model.p, model.q)
     system_solver.tau_row = n + p + q + 1
-    system_solver.sol4 = zeros(T, system_solver.tau_row, 2)
+    system_solver.sol4 = zeros(T, system_solver.tau_row)
     system_solver.rhs4 = similar(system_solver.sol4)
 
     system_solver.lhs4 = T[
@@ -252,31 +273,39 @@ function update_fact(system_solver::NaiveElimDenseSystemSolver{T}, solver::Solve
     (n, p) = (model.n, model.p)
     lhs4 = system_solver.lhs4
 
-    lhs4[end, end] = solver.mu / solver.tau / solver.tau
-
     for (k, cone_k) in enumerate(model.cones)
         idxs_k = model.cone_idxs[k]
         z_rows_k = (n + p) .+ idxs_k
-        if Cones.use_dual(cone_k)
+        if Cones.use_dual(cone_k) # no scaling
             # -G_k*x + mu*H_k*z_k + h_k*tau = zrhs_k + srhs_k
-            lhs4[z_rows_k, z_rows_k] .= Cones.hess(cone_k)
+            H = Cones.hess(cone_k)
+            @. lhs4[z_rows_k, z_rows_k] = H * solver.mu
         elseif system_solver.use_inv_hess
             # -G_k*x + (mu*H_k)\z_k + h_k*tau = zrhs_k + (mu*H_k)\srhs_k
-            lhs4[z_rows_k, z_rows_k] .= Cones.inv_hess(cone_k)
+            Hinv = Cones.inv_hess(cone_k)
+            if Cones.use_scaling(cone_k)
+                @. lhs4[z_rows_k, z_rows_k] = Hinv
+            else
+                @. lhs4[z_rows_k, z_rows_k] = Hinv / solver.mu
+            end
         else
             # -mu*H_k*G_k*x + z_k + mu*H_k*h_k*tau = mu*H_k*zrhs_k + srhs_k
             @views Cones.hess_prod!(lhs4[z_rows_k, 1:n], model.G[idxs_k, :], cone_k)
-            @. lhs4[z_rows_k, 1:n] *= -1
+            lhs4[z_rows_k, 1:n] .*= (Cones.use_scaling(cone_k) ? -1 : -solver.mu)
             @views Cones.hess_prod!(lhs4[z_rows_k, end], model.h[idxs_k], cone_k)
+            if !Cones.use_scaling(cone_k)
+                lhs4[z_rows_k, end] .*= solver.mu
+            end
         end
     end
+    lhs4[end, end] = solver.kap / solver.tau
 
     update_fact(system_solver.fact_cache, system_solver.lhs4)
 
     return system_solver
 end
 
-function solve_subsystem(system_solver::NaiveElimDenseSystemSolver, sol4::Matrix, rhs4::Matrix)
+function solve_subsystem(system_solver::NaiveElimDenseSystemSolver, sol4::Vector, rhs4::Vector)
     copyto!(sol4, rhs4)
     solve_system(system_solver.fact_cache, sol4)
     # TODO recover if fails - check issuccess

@@ -4,62 +4,62 @@ Copyright 2019, Chris Coey and contributors
 interior point stepping routines for algorithms based on homogeneous self dual embedding
 =#
 
-# backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
-function find_max_alpha_in_nbhd(
-    z_dir::AbstractVector{T},
-    s_dir::AbstractVector{T},
-    tau_dir::T,
-    kap_dir::T,
-    solver::Solver{T};
-    nbhd::T,
-    prev_alpha::T,
-    min_alpha::T,
-    ) where {T <: Real}
-    point = solver.point
-    model = solver.model
-    z_temp = solver.z_temp
-    s_temp = solver.s_temp
-
-    alpha = min(prev_alpha * T(1.4), one(T)) # TODO option for parameter
-    if kap_dir < zero(T)
-        alpha = min(alpha, -solver.kap / kap_dir)
-    end
-    if tau_dir < zero(T)
-        alpha = min(alpha, -solver.tau / tau_dir)
-    end
-    alpha *= T(0.9999)
-
-    solver.cones_infeas .= true
-    tau_temp = kap_temp = taukap_temp = mu_temp = zero(T)
-    while true
-        @timeit solver.timer "ls_update" begin
-        @. z_temp = point.z + alpha * z_dir
-        @. s_temp = point.s + alpha * s_dir
-        tau_temp = solver.tau + alpha * tau_dir
-        kap_temp = solver.kap + alpha * kap_dir
-        taukap_temp = tau_temp * kap_temp
-        mu_temp = (dot(s_temp, z_temp) + taukap_temp) / (one(T) + model.nu)
-        end
-
-        if mu_temp > zero(T)
-            @timeit solver.timer "nbhd_check" in_nbhd = check_nbhd(mu_temp, taukap_temp, nbhd, solver)
-            if in_nbhd
-                break
-            end
-        end
-
-        if alpha < min_alpha
-            # alpha is very small so finish
-            alpha = zero(T)
-            break
-        end
-
-        # iterate is outside the neighborhood: decrease alpha
-        alpha *= T(0.8) # TODO option for parameter
-    end
-
-    return alpha
-end
+# # backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
+# function find_max_alpha_in_nbhd(
+#     z_dir::AbstractVector{T},
+#     s_dir::AbstractVector{T},
+#     tau_dir::T,
+#     kap_dir::T,
+#     solver::Solver{T};
+#     nbhd::T,
+#     prev_alpha::T,
+#     min_alpha::T,
+#     ) where {T <: Real}
+#     point = solver.point
+#     model = solver.model
+#     z_temp = solver.z_temp
+#     s_temp = solver.s_temp
+#
+#     alpha = min(prev_alpha * T(1.4), one(T)) # TODO option for parameter
+#     if kap_dir < zero(T)
+#         alpha = min(alpha, -solver.kap / kap_dir)
+#     end
+#     if tau_dir < zero(T)
+#         alpha = min(alpha, -solver.tau / tau_dir)
+#     end
+#     alpha *= T(0.9999)
+#
+#     solver.cones_infeas .= true
+#     tau_temp = kap_temp = taukap_temp = mu_temp = zero(T)
+#     while true
+#         @timeit solver.timer "ls_update" begin
+#         @. z_temp = point.z + alpha * z_dir
+#         @. s_temp = point.s + alpha * s_dir
+#         tau_temp = solver.tau + alpha * tau_dir
+#         kap_temp = solver.kap + alpha * kap_dir
+#         taukap_temp = tau_temp * kap_temp
+#         mu_temp = (dot(s_temp, z_temp) + taukap_temp) / (one(T) + model.nu)
+#         end
+#
+#         if mu_temp > zero(T)
+#             @timeit solver.timer "nbhd_check" in_nbhd = check_nbhd(mu_temp, taukap_temp, nbhd, solver)
+#             if in_nbhd
+#                 break
+#             end
+#         end
+#
+#         if alpha < min_alpha
+#             # alpha is very small so finish
+#             alpha = zero(T)
+#             break
+#         end
+#
+#         # iterate is outside the neighborhood: decrease alpha
+#         alpha *= T(0.8) # TODO option for parameter
+#     end
+#
+#     return alpha
+# end
 
 # function check_nbhd(
 #     mu_temp::T,
@@ -131,22 +131,3 @@ end
 #
 #     return true
 # end
-
-# TODO experimental for BlockMatrix LHS: if block is a Cone then define mul as hessian product, if block is solver then define mul by mu/tau/tau
-# TODO optimize... maybe need for each cone a 5-arg hess prod
-import LinearAlgebra.mul!
-
-function mul!(y::AbstractVecOrMat{T}, A::Cones.Cone{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-    # TODO in-place
-    ytemp = y * beta
-    Cones.hess_prod!(y, x, A)
-    rmul!(y, alpha)
-    y .+= ytemp
-    return y
-end
-
-function mul!(y::AbstractVecOrMat{T}, solver::Solvers.Solver{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-    rmul!(y, beta)
-    @. y += alpha * x / solver.tau * solver.mu / solver.tau
-    return y
-end

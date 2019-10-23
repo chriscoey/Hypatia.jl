@@ -36,19 +36,19 @@ testfuns = [
     nonnegative1,
     nonnegative2,
     nonnegative3,
-    # epinorminf1,
-    # epinorminf2,
-    # epinorminf3,
-    # epinorminf4,
-    # epinorminf5,
+    epinorminf1,
+    epinorminf2,
+    epinorminf3,
+    epinorminf4,
+    epinorminf5,
     epinormeucl1,
     epinormeucl2,
     # epipersquare1,
     # epipersquare2,
     # epipersquare3,
-    # hypoperlog1,
-    # hypoperlog2,
-    # hypoperlog3,
+    hypoperlog1,
+    hypoperlog2,
+    hypoperlog3,
     # hypoperlog4,
     # hypoperlog5,
     # hypoperlog6,
@@ -118,22 +118,21 @@ options = (verbose = true,)
     # end
 
     # test each system solver
-    @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
-        stepper = SO.ScalingStepper{T}()
-        t(T, solver = SO.Solver{T}(reduce = true, max_nbhd = 0.3, stepper = stepper, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-        # t(T, solver = SO.Solver{T}(reduce = false, max_nbhd = 0.3, stepper = stepper, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-    end
+    # @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
+    #     t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+    #     # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+    # end
     # @testset "NaiveSparse tests: $t" for t in testfuns
     #     T = Float64
     #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
     # end
-    # @testset "NaiveIndirect tests: $t" for t in testfuns
+    # @testset "NaiveIndirect tests: $t" for t in testfuns # TODO need to use linearmaps here with the apply_LHS function, not blockmatrix
     #     T = Float64
     #     t(T, solver = SO.Solver{T}(preprocess = false, init_use_indirect = true, reduce = false, system_solver = SO.NaiveIndirectSystemSolver{T}(); options...))
     # end
-    # @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
-    # end
+    @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
+    end
     # @testset "NaiveElimSparse tests: $t" for t in testfuns
     #     T = Float64
     #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
