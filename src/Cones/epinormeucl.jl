@@ -309,8 +309,9 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     return prod
 end
 
-# returns  W_inv \circ lambda_inv \circ correction = -grad \circ correction
+# returns W_inv \circ lambda_inv \circ correction = -grad \circ correction
 function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
+    @assert cone.grad_updated
     tmp_s = similar(s_sol)
     tmp_z = similar(z_sol)
     tmp = similar(tmp_s)
@@ -320,8 +321,37 @@ function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVec
     tmp[1] = dot(tmp_s, tmp_z)
     @. @views tmp[2:end] = tmp_s[1] * tmp_z[2:end] + tmp_z[1] * tmp_s[2:end]
 
-    cone.correction[1] = -dot(cone.grad, tmp)
-    @. @views cone.correction[2:end] = -cone.grad[1] * tmp[2:end] - tmp[1] * cone.grad[2:end]
+    # cone.correction[1] = -dot(cone.grad, tmp)
+    # @. @views cone.correction[2:end] = -cone.grad[1] * tmp[2:end] - tmp[1] * cone.grad[2:end]
+
+    # tmp[1] = dot(cone.grad, tmp_s)
+    # @. @views tmp[2:end] = cone.grad[1] * tmp_s[2:end] + tmp_s[1] * cone.grad[2:end]
+    #
+    # cone.correction[1] = -dot(tmp_z, tmp)
+    # @. @views cone.correction[2:end] = -tmp_z[1] * tmp[2:end] - tmp[1] * tmp_z[2:end]
+
+    C = similar(cone.point)
+    # lambda
+    A = similar(cone.point)
+    scalmat_prod!(A, cone.dual_point, cone)
+    B = tmp
+
+    m = length(A)
+    @assert m == size(B, 1)
+    @assert size(B) == size(C)
+    A1 = A[1]
+    A2m = view(A, 2:m)
+    schur = abs2(A1) - sum(abs2, A2m)
+    @views begin
+        mul!(C[1, :], B[2:end, :]', A2m, true, true)
+        @. C[2:end, :] = A2m * C[1, :]' / A1
+        axpby!(A1, B[1, :], -1.0, C[1, :])
+        @. C[2:end, :] -= A2m * B[1, :]'
+        C ./= schur
+        @. C[2:end, :] += B[2:end, :] / A1
+    end
+
+    scalmat_ldiv!(cone.correction, C, cone)
 
     return cone.correction
 end
