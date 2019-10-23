@@ -382,7 +382,7 @@ function dist_to_bndry(::EpiNormEucl{T}, lambda::Vector{T}, dir::AbstractVector{
 
     dist2n = zero(T)
     for i in 2:length(lambda)
-        dist2n += abs2(dir[1] - fact * lambda[i])
+        dist2n += abs2(dir[i] - fact * lambda[i])
     end
     return -lambda_dir_dist + sqrt(dist2n)
 end
