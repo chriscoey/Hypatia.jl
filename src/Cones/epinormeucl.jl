@@ -309,7 +309,7 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     return prod
 end
 
-# returns -lambda_inv * W_inv * correction = grad * correction
+# returns  W_inv \circ lambda_inv \circ correction = -grad \circ correction
 function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
     tmp_s = similar(s_sol)
     tmp_z = similar(z_sol)
@@ -318,10 +318,10 @@ function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVec
     scalmat_prod!(tmp_z, z_sol, cone)
 
     tmp[1] = dot(tmp_s, tmp_z)
-    tmp[2:end] = tmp_s[1] * tmp_z[2:end] + tmp_z[1] * tmp_s[2:end]
+    @. @views tmp[2:end] = tmp_s[1] * tmp_z[2:end] + tmp_z[1] * tmp_s[2:end]
 
-    cone.correction[1] = dot(cone.grad, tmp)
-    cone.correction[2:end] = cone.grad[1] * tmp[2:end] + tmp[1] * cone.grad[2:end]
+    cone.correction[1] = -dot(cone.grad, tmp)
+    @. @views cone.correction[2:end] = -cone.grad[1] * tmp[2:end] - tmp[1] * cone.grad[2:end]
 
     return cone.correction
 end
@@ -404,20 +404,17 @@ function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::Ab
     lambda_dist = abs2(lambda[1]) - sum(abs2, lambda[2:end])
     lambda_dist_sqrt = sqrt(lambda_dist)
     lambda ./= lambda_dist_sqrt
-    primal_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, s_sol_scaled)
-    dual_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, z_sol_scaled)
-    @show primal_dist, dual_dist
+    primal_step_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, s_sol_scaled)
+    dual_step_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, z_sol_scaled)
 
     # TODO refactor
     step_dist = one(T)
-    if primal_dist > 0
-        step_dist = min(step_dist, primal_dist)
+    if primal_step_dist > 0
+        step_dist = min(step_dist, primal_step_dist)
     end
-    if dual_dist > 0
-        step_dist = min(step_dist, dual_dist)
+    if dual_step_dist > 0
+        step_dist = min(step_dist, dual_step_dist)
     end
-    # step_dist = min(one(T), primal_dist, dual_dist)
-    @show step_dist
 
     return step_dist
 
