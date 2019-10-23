@@ -287,22 +287,22 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     @timeit solver.timer "update_rhs" update_rhs(stepper, solver) # different for affine vs combined phases
     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, rhs)
 
-    # # use iterative refinement - note apply_LHS is different for affine vs combined phases
-    # dir_new = similar(res) # TODO avoid alloc
-    # iter_ref_steps = 3 # TODO handle, maybe change dynamically
-    # for i in 1:iter_ref_steps
-    #     res = apply_LHS(stepper, solver) # modifies res
-    #     res .-= rhs
-    #
-    #     norm_inf = norm(res, Inf)
-    #     @show i, norm_inf
-    #     if norm_inf < 1000 * eps(T) # TODO also stop if residual not getting better
-    #         break
-    #     end
-    #
-    #     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir_new, res)
-    #     dir .-= dir_new
-    # end
+    # use iterative refinement - note apply_LHS is different for affine vs combined phases
+    dir_new = similar(res) # TODO avoid alloc
+    iter_ref_steps = 3 # TODO handle, maybe change dynamically
+    for i in 1:iter_ref_steps
+        res = apply_LHS(stepper, solver) # modifies res
+        res .-= rhs
+
+        norm_inf = norm(res, Inf)
+        @show i, norm_inf
+        if norm_inf < 1000 * eps(T) # TODO also stop if residual not getting better
+            break
+        end
+
+        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir_new, res)
+        dir .-= dir_new
+    end
 
     return dir
 end
@@ -362,15 +362,24 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
     tau_dir = stepper.tau_dir[1]
     kap_dir = stepper.kap_dir[1]
 
-    # TODO ignore A, b, y if p = 0
     # A'*y + G'*z + c*tau
-    stepper.x_res .= model.A' * stepper.y_dir + model.G' * stepper.z_dir + model.c * tau_dir
-    # -A*x + b*tau
-    stepper.y_res .= -model.A * stepper.x_dir + model.b * tau_dir
+    copyto!(stepper.x_res, model.c)
+    mul!(stepper.x_res, model.G', stepper.z_dir, true, tau_dir)
     # -G*x + h*tau - s
-    stepper.z_res .= -model.G * stepper.x_dir + model.h * tau_dir - stepper.s_dir
+    @. stepper.z_res = model.h * tau_dir - stepper.s_dir
+    mul!(stepper.z_res, model.G, stepper.x_dir, -1, true)
     # -c'*x - b'*y - h'*z - kap
-    stepper.tau_res .= -model.c' * stepper.x_dir - model.b' * stepper.y_dir - model.h' * stepper.z_dir - kap_dir
+    stepper.tau_res[1] = -dot(model.c, stepper.x_dir) - dot(model.h, stepper.z_dir) - kap_dir
+    # if p = 0, ignore A, b, y
+    if !iszero(model.p)
+        # A'*y + G'*z + c*tau
+        mul!(stepper.x_res, model.A', stepper.y_dir, true, true)
+        # -A*x + b*tau
+        copyto!(stepper.y_res, model.b)
+        mul!(stepper.y_res, model.A, stepper.x_dir, -1, tau_dir)
+        # -c'*x - b'*y - h'*z - kap
+        stepper.tau_res[1] -= dot(model.b, stepper.y_dir)
+    end
 
     # s
     for (k, cone_k) in enumerate(model.cones)
