@@ -120,8 +120,8 @@ options = (verbose = true,)
     # test each system solver
     @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
         stepper = SO.ScalingStepper{T}()
-        t(T, solver = SO.Solver{T}(reduce = true, stepper = stepper, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-        t(T, solver = SO.Solver{T}(reduce = false, stepper = stepper, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        t(T, solver = SO.Solver{T}(reduce = true, max_nbhd = 0.3, stepper = stepper, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        # t(T, solver = SO.Solver{T}(reduce = false, max_nbhd = 0.3, stepper = stepper, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
     end
     # @testset "NaiveSparse tests: $t" for t in testfuns
     #     T = Float64

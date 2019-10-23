@@ -291,7 +291,8 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, rhs)
 
     # use iterative refinement - note apply_LHS is different for affine vs combined phases
-    iter_ref_steps = 3 # TODO handle, maybe change dynamically
+    iter_ref_steps = (stepper.in_affine_phase ? 1 : 3) # TODO handle, maybe change dynamically, try fewer for affine phase
+
     copyto!(dir_temp, dir)
     res = apply_LHS(stepper, solver) # modifies res
     res .-= rhs
