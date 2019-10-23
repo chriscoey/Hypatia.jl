@@ -25,7 +25,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
 
     correction::Vector{T}
 
-    function Nonnegative{T}(dim::Int; use_scaling::Bool = false) where {T <: Real}
+    function Nonnegative{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.dim = dim
@@ -55,9 +55,15 @@ get_nu(cone::Nonnegative) = cone.dim
 
 set_initial_point(arr::AbstractVector, cone::Nonnegative) = (arr .= 1)
 
-function update_feas(cone::Nonnegative)
+check_feas(cone::Nonnegative, point::Vector) = all(u -> (u > 0), point)
+
+# TODO decide what input should be once we know when checking dual feas is helpful
+function update_feas(cone::Nonnegative; check_dual::Bool = false)
     @assert !cone.feas_updated
-    cone.is_feas = all(u -> (u > 0), cone.point)
+    cone.is_feas = check_feas(cone, cone.point)
+    if check_dual
+        cone.is_feas = cone.is_feas && check_point(cone, cone.dual_point)
+    end
     cone.feas_updated = true
     return cone.is_feas
 end
@@ -134,20 +140,27 @@ end
 #     return inv.(cone.point) # TODO this is minus gradient - remove the oracle if it is always the same
 # end
 
+function dist_to_bndry(::Nonnegative{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
+    dist = one(T)
+    @inbounds for i in eachindex(point)
+        if dir[i] < 0
+            dist = min(dist, -point[i] / dir[i])
+        end
+    end
+    return dist
+end
+
 # TODO optimize this
 function step_max_dist(cone::Nonnegative{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
     @assert cone.is_feas
     any(cone.dual_point .< 0) && error("dual pt infeasible") # TODO something else
-    max_step = one(T)
-    @inbounds for i in eachindex(cone.point)
-        if s_sol[i] < 0
-            max_step = min(max_step, -cone.point[i] / s_sol[i])
-        end
-        if z_sol[i] < 0
-            max_step = min(max_step, -cone.dual_point[i] / z_sol[i])
-        end
-    end
-    return max_step
+
+    # TODO this could go in Cones.jl
+    primal_dist = dist_to_bndry(cone, cone.point, s_sol)
+    dual_dist = dist_to_bndry(cone, cone.dual_point, z_sol)
+    step_dist = min(one(T), primal_dist, dual_dist)
+
+    return step_dist
 end
 
 # returns lambda_inv * W_inv * correction = grad * correction

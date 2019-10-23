@@ -1,4 +1,4 @@
-nonnegative#=
+#=
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 =#
 
@@ -99,13 +99,26 @@ function test_barrier_oracles(
     Wλ = CO.scalmat_prod!(prod, λ, cone)
     @test WWz ≈ Wλ atol=tol rtol=tol
 
-    @test CO.scalmat_ldiv!(prod, cone.point, cone) ≈ λ atol=tol rtol=tol
-    @test CO.scalmat_ldiv!(prod_mat, W, cone) ≈ I atol=tol rtol=tol
+    # TODO this is probably an internal function only needed for SOC
+    # @test CO.scalmat_ldiv!(prod, cone.point, cone) ≈ λ atol=tol rtol=tol
+    # @test CO.scalmat_ldiv!(prod_mat, W, cone) ≈ I atol=tol rtol=tol
 
     # NOTE this may be testing an oracle that will be deprecated
-    e = CO.set_initial_point(zeros(T, cone.dim), cone)
-    λinv = CO.scalvec_ldiv!(prod, cone, e)
+    # e = CO.set_initial_point(zeros(T, cone.dim), cone)
+    # λinv = CO.scalvec_ldiv!(prod, cone, e)
     # @test W \ λinv ≈ -grad atol=tol rtol=tol
+
+    primal_dir = randn(cone.dim) ./ norm(cone.point) ./ 2
+    dual_dir = randn(cone.dim) ./ norm(cone.dual_point) ./ 2
+    max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
+
+    @show cone.point + 0.99 * max_step * primal_dir
+    @show cone.dual_point + 0.99 * max_step * dual_dir
+    @show cone.point + 1.01 * max_step * primal_dir
+    @show cone.dual_point + 1.01 * max_step * dual_dir
+
+    @test CO.check_feas(cone, cone.point + 0.99 * max_step * primal_dir, true) && CO.check_feas(cone, cone.dual_point + 0.99 * max_step * dual_dir, false)
+    @test !CO.check_feas(cone, cone.point + 1.01 * max_step * primal_dir, true) || !CO.check_feas(cone, cone.dual_point + 1.01 * max_step * dual_dir, false)
 
     return
 end

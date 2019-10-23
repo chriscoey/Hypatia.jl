@@ -41,7 +41,7 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     c::T
     correction::Vector{T}
 
-    function EpiNormEucl{T}(dim::Int; use_scaling::Bool = false) where {T <: Real}
+    function EpiNormEucl{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
         @assert dim >= 2
         cone = new{T}()
         cone.dim = dim
@@ -78,16 +78,22 @@ function set_initial_point(arr::AbstractVector, cone::EpiNormEucl)
     return arr
 end
 
+function check_feas(cone::EpiNormEucl, point::Vector, primal::Bool)
+    u = point[1]
+    if u > 0
+        w = view(point, 2:cone.dim)
+        dist = abs2(u) - sum(abs2, w)
+        # TODO record dual_dist here and make sure operations trickle through correctly
+        primal ? (cone.dist = dist) : nothing
+        return dist > 0
+    else
+        return false
+    end
+end
+
 function update_feas(cone::EpiNormEucl)
     @assert !cone.feas_updated
-    u = cone.point[1]
-    if u > 0
-        w = view(cone.point, 2:cone.dim)
-        cone.dist = abs2(u) - sum(abs2, w)
-        cone.is_feas = (cone.dist > 0)
-    else
-        cone.is_feas = false
-    end
+    cone.is_feas = check_feas(cone, cone.point, true)
     cone.feas_updated = true
     return cone.is_feas
 end
@@ -366,18 +372,18 @@ function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     return C
 end
 
-function dist_to_bndry(lambda, dir)
+function dist_to_bndry(::EpiNormEucl{T}, lambda::Vector{T}, dir::AbstractVector{T}) where {T}
     lambda_dir_dist = lambda[1] * dir[1] - sum(lambda[i] * dir[i] for i in 2:length(lambda))
     fact = (lambda_dir_dist + dir[1]) / (lambda[1] + 1)
 
-    dist2n = 0 # TODO T
+    dist2n = zero(T)
     for i in 2:length(lambda)
-        dist2n += dir[1] - fact * lambda[i]
+        dist2n += abs2(dir[1] - fact * lambda[i])
     end
-    return lambda_dir_dist - dist2n
+    return -lambda_dir_dist + sqrt(dist2n)
 end
 
-function step_max_dist(cone::EpiNormEucl, s_sol, z_sol)
+function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
     lambda = similar(cone.point)
     point = cone.point
     dual_point = cone.dual_point
@@ -387,18 +393,21 @@ function step_max_dist(cone::EpiNormEucl, s_sol, z_sol)
     scalmat_prod!(lambda, cone.dual_point, cone)
     lambda_dist = abs2(lambda[1]) - sum(abs2, lambda[2:end])
     lambda_dist_sqrt = sqrt(lambda_dist)
-    # TODO delay this?
     lambda ./= lambda_dist_sqrt
-    primal_dist = lambda_dist_sqrt / dist_to_bndry(lambda, s_sol)
-    dual_dist = lambda_dist_sqrt / dist_to_bndry(lambda, z_sol)
+    primal_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, s_sol)
+    dual_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, z_sol)
+    @show primal_dist, dual_dist
 
-    step_dist = 1
-    if primal_dist < 0
-        step_dist = min(1, -primal_dist)
+    # TODO refactor
+    step_dist = one(T)
+    if primal_dist > 0
+        step_dist = min(step_dist, primal_dist)
     end
-    if dual_dist < 0
-        step_dist = min(1, -dual_dist)
+    if dual_dist > 0
+        step_dist = min(step_dist, dual_dist)
     end
+    # step_dist = min(one(T), primal_dist, dual_dist)
+    @show step_dist
 
     return step_dist
 
