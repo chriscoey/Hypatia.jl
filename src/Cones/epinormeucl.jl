@@ -389,17 +389,23 @@ end
 
 function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
     lambda = similar(cone.point)
+    s_sol_scaled = similar(cone.point)
+    z_sol_scaled = similar(cone.point)
+
     point = cone.point
     dual_point = cone.dual_point
 
     # get lambda
-    # TODO there is a shortcut
+    # TODO there is a shortcut for getting lambda
     scalmat_prod!(lambda, cone.dual_point, cone)
+    scalmat_ldiv!(s_sol_scaled, s_sol, cone)
+    scalmat_prod!(z_sol_scaled, z_sol, cone)
+
     lambda_dist = abs2(lambda[1]) - sum(abs2, lambda[2:end])
     lambda_dist_sqrt = sqrt(lambda_dist)
     lambda ./= lambda_dist_sqrt
-    primal_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, s_sol)
-    dual_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, z_sol)
+    primal_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, s_sol_scaled)
+    dual_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, z_sol_scaled)
     @show primal_dist, dual_dist
 
     # TODO refactor
