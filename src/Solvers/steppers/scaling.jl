@@ -12,20 +12,16 @@ mutable struct ScalingStepper{T <: Real} <: Stepper{T}
     x_rhs
     y_rhs
     z_rhs
-    tau_rhs
     s_rhs
     s_rhs_k
-    kap_rhs
 
     dir::Vector{T}
     x_dir
     y_dir
     z_dir
     z_dir_k
-    tau_dir
     s_dir
     s_dir_k
-    kap_dir
 
     dir_temp::Vector{T}
 
@@ -33,12 +29,11 @@ mutable struct ScalingStepper{T <: Real} <: Stepper{T}
     x_res
     y_res
     z_res
-    tau_res
     s_res
     s_res_k
-    kap_res
 
     tau_row::Int
+    kap_row::Int
 
     ScalingStepper{T}() where {T <: Real} = new{T}()
 end
@@ -77,9 +72,6 @@ function load(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     tau_row = n + p + q + 1
     stepper.tau_row = tau_row
-    stepper.tau_rhs = view(rhs, tau_row:tau_row)
-    stepper.tau_dir = view(dir, tau_row:tau_row)
-    stepper.tau_res = view(res, tau_row:tau_row)
 
     rows = tau_row .+ (1:q)
     stepper.s_rhs = view(rhs, rows)
@@ -89,9 +81,7 @@ function load(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     stepper.s_res = view(res, rows)
     stepper.s_res_k = [view(res, tau_row .+ idxs_k) for idxs_k in cone_idxs]
 
-    stepper.kap_rhs = view(rhs, dim:dim)
-    stepper.kap_dir = view(dir, dim:dim)
-    stepper.kap_res = view(res, dim:dim)
+    stepper.kap_row = dim
 
     return stepper
 end
@@ -131,7 +121,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dir" get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    solver.prev_alpha = alpha = 0.99999 * find_max_alpha(stepper, solver)
+    solver.prev_alpha = alpha = 0.99999 * find_max_alpha(stepper, solver) # TODO make the constant an option, depends on eps(T)?
     if iszero(alpha)
         @warn("numerical failure: could not step in combined direction; terminating")
         solver.status = :NumericalFailure
@@ -145,8 +135,8 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.y += alpha * stepper.y_dir
     @. point.z += alpha * stepper.z_dir
     @. point.s += alpha * stepper.s_dir
-    solver.tau += alpha * stepper.tau_dir[1]
-    solver.kap += alpha * stepper.kap_dir[1]
+    solver.tau += alpha * stepper.dir[stepper.tau_row]
+    solver.kap += alpha * stepper.dir[stepper.kap_row]
     calc_mu(solver)
 
     if solver.tau <= zero(T) || solver.kap <= zero(T) || solver.mu <= zero(T)
@@ -159,8 +149,8 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 end
 
 function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
-    tau_dir = stepper.tau_dir[1]
-    kap_dir = stepper.kap_dir[1]
+    tau_dir = stepper.dir[stepper.tau_row]
+    kap_dir = stepper.dir[stepper.kap_row]
     alpha = one(T) # alpha at most 1
 
     # tau and kappa
@@ -363,7 +353,7 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         end
 
         # kap rhs (with Mehrotra correction)
-        rhs[end] += (gamma_mu - stepper.tau_dir[1] * stepper.kap_dir[1]) / solver.kap
+        rhs[end] += (gamma_mu - stepper.dir[stepper.tau_row] * stepper.dir[stepper.kap_row]) / solver.kap
     end
 
     return rhs
@@ -372,8 +362,8 @@ end
 # calculate residual on 6x6 linear system
 function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     model = solver.model
-    tau_dir = stepper.tau_dir[1]
-    kap_dir = stepper.kap_dir[1]
+    tau_dir = stepper.dir[stepper.tau_row]
+    kap_dir = stepper.dir[stepper.kap_row]
 
     # A'*y + G'*z + c*tau
     copyto!(stepper.x_res, model.c)
@@ -382,7 +372,7 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
     @. stepper.z_res = model.h * tau_dir - stepper.s_dir
     mul!(stepper.z_res, model.G, stepper.x_dir, -1, true)
     # -c'*x - b'*y - h'*z - kap
-    stepper.tau_res[1] = -dot(model.c, stepper.x_dir) - dot(model.h, stepper.z_dir) - kap_dir
+    stepper.res[stepper.tau_row] = -dot(model.c, stepper.x_dir) - dot(model.h, stepper.z_dir) - kap_dir
     # if p = 0, ignore A, b, y
     if !iszero(model.p)
         # A'*y + G'*z + c*tau
@@ -391,7 +381,7 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
         copyto!(stepper.y_res, model.b)
         mul!(stepper.y_res, model.A, stepper.x_dir, -1, tau_dir)
         # -c'*x - b'*y - h'*z - kap
-        stepper.tau_res[1] -= dot(model.b, stepper.y_dir)
+        stepper.res[stepper.tau_row] -= dot(model.b, stepper.y_dir)
     end
 
     # s
@@ -414,7 +404,7 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
     end
 
     # tau + taubar / kapbar * kap
-    stepper.kap_res[1] = tau_dir + solver.tau / solver.kap * kap_dir
+    stepper.res[stepper.kap_row] = tau_dir + solver.tau / solver.kap * kap_dir
 
     return stepper.res
 end
