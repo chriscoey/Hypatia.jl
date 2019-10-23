@@ -184,8 +184,6 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     end
 
     # cones requiring line search and neighborhood
-    # TODO refac from find_max_alpha_in_nbhd in stepper.jl
-    # TODO only do nbhd checks for cones not using scaling
     nbhd = (stepper.in_affine_phase ? one(T) : solver.max_nbhd)
     point = solver.point
     model = solver.model
@@ -231,7 +229,6 @@ function check_nbhd(
     cones = solver.model.cones
 
     Cones.load_point.(cones, solver.primal_views)
-    # Cones.load_dual_point.(cones, solver.dual_views) # TODO needed?
 
     # accept primal iterate if it is inside the cone and neighborhood
     # first check inside cone for whichever cones were violated last line search iteration
