@@ -131,6 +131,12 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonn
     return prod
 end
 
+# potentially unnedeed, currently only used in tests
+function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+    @. prod = arr * sqrt(cone.dual_point / cone.point)
+    return prod
+end
+
 # divides arr by lambda, the scaled point
 # TODO change order of args
 # TODO think better about whether this oracle is needed
@@ -171,6 +177,10 @@ end
 function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector)
     @. cone.correction = s_sol * z_sol / cone.point
     return cone.correction
+end
+
+function conic_prod!(w::AbstractVector, cone::Nonnegative, u::AbstractVector, v::AbstractVector)
+    @. w = u * v
 end
 
 hess_nz_count(cone::Nonnegative, ::Bool) = cone.dim

@@ -378,13 +378,35 @@ function scalvec_ldiv!(div::AbstractVecOrMat, cone::EpiNormEucl, arr::AbstractVe
     scalmat_prod!(lambda_scaled, cone.scaled_dual_point, cone)
 
     lambda = (dist * dual_dist) ^ (1 / 4) * lambda_scaled
-    # @show lambda
-    #
-    # @show jordan_ldiv!(div, lambda, arr)
-    # @show arr
+    @show lambda
+
+    @show jordan_ldiv!(div, lambda, arr)
+
+    C = copy(div)
+    A = copy(lambda)
+    B = copy(arr)
+    m = length(A)
+    @assert m == size(B, 1)
+    @assert size(B) == size(C)
+    A1 = A[1]
+    A2m = view(A, 2:m)
+    schur = abs2(A1) - sum(abs2, A2m)
+    @views begin
+        mul!(C[1, :], B[2:end, :]', A2m, true, true)
+        @. C[2:end, :] = A2m * C[1, :]' / A1
+        axpby!(A1, B[1, :], -1.0, C[1, :])
+        @. C[2:end, :] -= A2m * B[1, :]'
+        C ./= schur
+        @. C[2:end, :] += B[2:end, :] / A1
+    end
+    @show C
+    @show div
+
+
+    @show arr
     # @show Symmetric([lambda[1] lambda[2]; lambda[2] lambda[1]]) \ arr
 
-    return jordan_ldiv!(div, lambda, arr)
+    return C # jordan_ldiv!(div, lambda, arr)
 
 end
 
@@ -448,4 +470,10 @@ function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::Ab
 
     return step_dist
 
+end
+
+function conic_prod!(w::AbstractVector, cone::EpiNormEucl, u::AbstractVector, v::AbstractVector)
+    w[1] = dot(u, v)
+    @. @views w[2:end] = u[1] * v[2:end] + v[1] * u[2:end]
+    return w
 end
