@@ -40,6 +40,20 @@ function jordan_ldiv(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     return C
 end
 
+tol = 1e-14
+
+n = 50
+A = randn(n)
+B = randn(n)
+C = zeros(n)
+jordan_ldiv(C, A, B)
+
+B2 = copy(B)
+B2[1] = dot(A, C)
+@. @views B2[2:end] = A[1] * C[2:end] + C[1] * A[2:end]
+
+@test B ≈ B2 atol=tol rtol=tol
+
 m = 5
 n = 10
 A = randn(m)
@@ -47,4 +61,4 @@ A_arr = zeros(m, m)
 A_arr[diagind(A_arr)] .= A[1]
 A_arr[1, 2:end] .= A[2:end]
 B = randn(m, n)
-@test jordan_ldiv(zeros(m, n), A, B) ≈ Symmetric(A_arr, :U) \ B
+@test jordan_ldiv(zeros(m, n), A, B) ≈ Symmetric(A_arr, :U) \ B atol=tol rtol=tol
