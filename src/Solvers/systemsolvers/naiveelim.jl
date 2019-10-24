@@ -22,16 +22,19 @@ mu*H_k*z_k + s_k = srhs_k --> s_k = srhs_k - mu*H_k*z_k
 eliminate kap
 -c'x - b'y - h'z - kap = taurhs
 so
-mu/(taubar^2)*tau + kap = kaprhs --> kap = kaprhs - mu/(taubar^2)*tau
+    mu/(taubar^2)*tau + kap = kaprhs --> kap = kaprhs - mu/(taubar^2)*tau
+kapbar*tau + taubar*kap = kaprhs --> kap = kaprhs/taubar - kapbar/taubar*tau
 -->
--c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs
+    -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs
+-c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kaprhs/taubar
 
 4x4 nonsymmetric system in (x, y, z, tau):
 A'*y + G'*z + c*tau = xrhs
 -A*x + b*tau = yrhs
 (pr bar) -mu*H_k*G_k*x + z_k + mu*H_k*h_k*tau = mu*H_k*zrhs_k + srhs_k
 (du bar) -G_k*x + mu*H_k*z_k + h_k*tau = zrhs_k + srhs_k
--c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs
+    -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs
+-c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kaprhs/taubar
 =#
 
 abstract type NaiveElimSystemSolver{T <: Real} <: SystemSolver{T} end
@@ -67,8 +70,9 @@ function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}
             @. @views rhs4[z_rows_k] += rhs[s_rows_k]
         end
     end
-    # -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs # TODO update for NT
-    rhs4[end] += rhs[end]
+        # -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs # TODO update for NT
+    # -c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kaprhs/taubar
+    rhs4[end] += rhs[end] / solver.tau
 
     @timeit solver.timer "solve_system" solve_subsystem(system_solver, sol4, rhs4)
     sol[1:tau_row] .= sol4
@@ -77,13 +81,13 @@ function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}
     # TODO refactor below for use with symindef and qrchol methods
     # s = -G*x + h*tau - zrhs
     s = @view sol[(tau_row + 1):(end - 1)]
-    @. s = model.h * sol4[end]
-    x = @view sol[1:n]
-    mul!(s, model.G, x, -1, true)
-    @. @views s -= rhs[(n + p) .+ (1:q)]
+    @. @views s = model.h * sol4[end] - rhs[(n + p) .+ (1:q)]
+    mul!(s, model.G, view(sol, 1:n), -1, true)
 
-    # kap = -mu/(taubar^2)*tau + kaprhs # TODO update for NT
-    sol[end] = -sol4[end] * solver.kap / solver.tau + rhs[end]
+        # kap = -mu/(taubar^2)*tau + kaprhs # TODO update for NT
+        # sol[end] = -sol4[end] * solver.kap / solver.tau + rhs[end]
+    # kap = kaprhs/taubar - kapbar/taubar*tau
+    sol[end] = (rhs[end] - solver.kap * sol4[end]) / solver.tau
 
     return sol
 end
