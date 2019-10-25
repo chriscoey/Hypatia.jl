@@ -357,29 +357,11 @@ function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVec
     # cone.correction[1] = -dot(tmp_z, tmp)
     # @. @views cone.correction[2:end] = -tmp_z[1] * tmp[2:end] - tmp[1] * tmp_z[2:end]
 
-    C = similar(cone.point)
+    # C = similar(cone.point)
     # lambda
-    A = similar(cone.point)
-    scalmat_prod!(A, cone.dual_point, cone)
-    B = tmp
-
-    # m = length(A)
-    # @assert m == size(B, 1)
-    # @assert size(B) == size(C)
-    # A1 = A[1]
-    # A2m = view(A, 2:m)
-    # schur = abs2(A1) - sum(abs2, A2m)
-    # @views begin
-    #     mul!(C[1, :], B[2:end, :]', A2m, true, true)
-    #     @. C[2:end, :] = A2m * C[1, :]' / A1
-    #     axpby!(A1, B[1, :], -1.0, C[1, :])
-    #     @. C[2:end, :] -= A2m * B[1, :]'
-    #     C ./= schur
-    #     @. C[2:end, :] += B[2:end, :] / A1
-    # end
-
-    scalvec_ldiv!(C, cone, tmp)
-
+    lambda = similar(cone.point)
+    scalmat_prod!(lambda, cone.dual_point, cone)
+    C = scalvec_ldiv!(similar(cone.point), cone, tmp)
     scalmat_ldiv!(cone.correction, C, cone)
 
     return cone.correction
@@ -388,82 +370,21 @@ end
 # divides arr by lambda, the scaled point
 # TODO there is a faster way
 # TODO remove this oracle if not used in the near future
-# function scalvec_ldiv!(div::AbstractVecOrMat, cone::EpiNormEucl, arr::AbstractVecOrMat)
-#     if !cone.scaling_updated
-#         update_scaling(cone)
-#     end
-#
-#     gamma = cone.gamma
-#     scaled_point = cone.scaled_point
-#     scaled_dual_point = cone.scaled_dual_point
-#     dist = cone.dist
-#     dual_dist = cone.dual_dist
-#
-#     # lambda_scaled = similar(cone.point)
-#     # lambda_scaled[1] = gamma
-#     # lambda_scaled[2:end] = (gamma + scaled_dual_point[1]) * scaled_point[2:end] + (gamma + scaled_point[1]) * scaled_dual_point[2:end]
-#     # lambda_scaled[2:end] /= (scaled_point[1] + scaled_dual_point[1] + 2 * gamma)
-#     # scalmat_prod!(lambda_scaled, cone.scaled_dual_point, cone)
-#
-#     # lambda = (dist * dual_dist) ^ (1 / 4) * lambda_scaled
-#     lambda = similar(cone.point)
-#     scalmat_prod!(lambda, cone.dual_point, cone)
-#     @show lambda
-#
-#     @show jordan_ldiv!(div, lambda, arr)
-#
-#     C = copy(div)
-#     A = copy(lambda)
-#     B = copy(arr)
-#     m = length(A)
-#     @assert m == size(B, 1)
-#     @assert size(B) == size(C)
-#     A1 = A[1]
-#     A2m = view(A, 2:m)
-#     schur = abs2(A1) - sum(abs2, A2m)
-#     @views begin
-#         mul!(C[1, :], B[2:end, :]', A2m, true, true)
-#         @. C[2:end, :] = A2m * C[1, :]' / A1
-#         axpby!(A1, B[1, :], -1.0, C[1, :])
-#         @. C[2:end, :] -= A2m * B[1, :]'
-#         C ./= schur
-#         @. C[2:end, :] += B[2:end, :] / A1
-#     end
-#     @show div
-#
-#
-#     @show arr
-#     # @show Symmetric([lambda[1] lambda[2]; lambda[2] lambda[1]]) \ arr
-#
-#     @show conic_prod!(zeros(size(B)), cone, C, A)
-#     @show B
-#
-#     div .= C
-#
-#     return div # jordan_ldiv!(div, lambda, arr)
-#
-# end
-
-function scalvec_ldiv!(div::AbstractVecOrMat{T}, cone::EpiNormEucl{T}, arr::AbstractVecOrMat{T}) where {T}
+# TODO find out why this doesn't work in-place
+function scalvec_ldiv!(div::AbstractVecOrMat, cone::EpiNormEucl, arr::AbstractVecOrMat)
     if !cone.scaling_updated
         update_scaling(cone)
     end
     lambda = similar(cone.point)
-    @show cone.dual_point
     scalmat_prod!(lambda, cone.dual_point, cone)
-    n = length(lambda)
-    @show lambda
-    mat = zeros(T, n, n)
-    mat[1, 2:end] .= lambda[2:end]
-    for i in 1:n
-        mat[i, i] = lambda[1]
-    end
-    @show Symmetric(mat, :U)
-    div .= Symmetric(mat, :U) \ arr
-    return div
+    d = jordan_ldiv!(div, lambda, arr)
+
+    return jordan_ldiv!(div, lambda, arr)
+
 end
 
 function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
+    D = similar(B)
     m = length(A)
     @assert m == size(B, 1)
     @assert size(B) == size(C)
@@ -471,14 +392,14 @@ function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     A2m = view(A, 2:m)
     schur = abs2(A1) - sum(abs2, A2m)
     @views begin
-        mul!(C[1, :], B[2:end, :]', A2m, true, true)
-        @. C[2:end, :] = A2m * C[1, :]' / A1
-        axpby!(A1, B[1, :], -1.0, C[1, :])
-        @. C[2:end, :] -= A2m * B[1, :]'
-        C ./= schur
-        @. C[2:end, :] += B[2:end, :] / A1
+        mul!(D[1, :], B[2:end, :]', A2m, true, true)
+        @. D[2:end, :] = A2m * D[1, :]' / A1
+        axpby!(A1, B[1, :], -1.0, D[1, :])
+        @. D[2:end, :] -= A2m * B[1, :]'
+        D ./= schur
+        @. D[2:end, :] += B[2:end, :] / A1
     end
-    return C
+    return D
 end
 
 function dist_to_bndry(::EpiNormEucl{T}, lambda::Vector{T}, dir::AbstractVector{T}) where {T}
@@ -525,8 +446,11 @@ function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::Ab
 
 end
 
+# TODO figure out why things don't work in-place
 function conic_prod!(w::AbstractVector, cone::EpiNormEucl, u::AbstractVector, v::AbstractVector)
-    w[1] = dot(u, v)
-    @. @views w[2:end] = u[1] * v[2:end] + v[1] * u[2:end]
-    return w
+    @assert length(u) == length(v)
+    z = similar(u)
+    z[1] = dot(u, v)
+    @. @views z[2:end] = u[1] * v[2:end] + v[1] * u[2:end]
+    return z
 end

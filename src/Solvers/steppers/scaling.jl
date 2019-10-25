@@ -354,7 +354,7 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
             Cones.set_initial_point(e1, cone_k)
             Cones.scalvec_ldiv!(tmp1, cone_k, e1)
             Cones.scalmat_ldiv!(tmp2, tmp1, cone_k)
-            @show -tmp2 ./ grad_k, inv(solver.mu)
+            @show -tmp2 ./ grad_k, grad_k
             @. stepper.s_rhs_k[k] += gamma_mu * tmp2
 
             # @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
