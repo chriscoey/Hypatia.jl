@@ -270,14 +270,6 @@ function load(system_solver::NaiveDenseSystemSolver{T}, solver::Solver{T}) where
 
     load_matrix(system_solver.fact_cache, system_solver.lhs6)
 
-    # idx = 1
-    # for cone_k in model.cones
-    #     dim = Cones.dimension(cone_k)
-    #     rows = (n + p + q + 1 + idx):(n + p + q + idx + dim)
-    #     system_solver.lhs6[rows, (n + p + idx):(n + p + idx + dim - 1)] = Cones.get_W(cone_k)
-    #     system_solver.lhs6[rows, rows] = Cones.get_Winv(cone_k)
-    # end
-
     return system_solver
 end
 

@@ -288,33 +288,6 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     return prod
 end
 
-function get_W(cone::EpiNormEucl)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    w = cone.w
-    Wbar = similar(cone.inv_hess)
-    Wbar.data[1, :] .= w
-    Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
-    Wbar.data[2:end, 2:end] += I
-    W = Wbar * (cone.dist / cone.dual_dist) ^ (1 / 4)
-    return W
-end
-
-function get_Winv(cone::EpiNormEucl)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    w = cone.w
-    Wbar = similar(cone.hess)
-    Wbar.data[1, 1] = w[1]
-    Wbar.data[1, 2:end] .= -w[2:end]
-    Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
-    Wbar.data[2:end, 2:end] += I
-    Winv = Wbar * (cone.dual_dist / cone.dist) ^ (1 / 4)
-    return Winv
-end
-
 function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
     if !cone.scaling_updated
         update_scaling(cone)
