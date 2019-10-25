@@ -349,14 +349,13 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
             # @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
 
             e1 = zeros(size(stepper.s_rhs_k[k]))
-            tmp1 = zeros(size(stepper.s_rhs_k[k]))
-            tmp2 = zeros(size(stepper.s_rhs_k[k]))
             Cones.set_initial_point(e1, cone_k)
-            Cones.scalvec_ldiv!(tmp1, cone_k, e1)
+            tmp1 = Cones.scalvec_ldiv!(zeros(size(e1)), cone_k, e1)
+            tmp2 = zeros(size(stepper.s_rhs_k[k]))
             Cones.scalmat_ldiv!(tmp2, tmp1, cone_k)
-            @. stepper.s_rhs_k[k] += gamma_mu * tmp2
+            # @. stepper.s_rhs_k[k] += gamma_mu * tmp2
 
-            # @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
+            @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
 
             if Cones.use_scaling(cone_k)
                 corr = Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])

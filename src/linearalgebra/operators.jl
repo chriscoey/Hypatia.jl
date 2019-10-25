@@ -30,7 +30,7 @@ function jordan_ldiv(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     A2m = view(A, 2:m)
     schur = abs2(A1) - sum(abs2, A2m)
     @views begin
-        mul!(C[1, :], B[2:end, :]', A2m, true, true)
+        mul!(C[1, :], B[2:end, :]', A2m)
         @. C[2:end, :] = A2m * C[1, :]' / A1
         axpby!(A1, B[1, :], -1.0, C[1, :])
         @. C[2:end, :] -= A2m * B[1, :]'

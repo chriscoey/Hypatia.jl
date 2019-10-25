@@ -95,7 +95,6 @@ function test_barrier_scaling_oracles(
     CO.set_initial_point(dual_point, cone)
     point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
     dual_point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
-    @show point, dual_point
 
     CO.load_point(cone, point)
     # TODO why isn't load_dual_point implemented?
@@ -135,11 +134,11 @@ function test_barrier_scaling_oracles(
 
     e1 = CO.set_initial_point(zeros(T, cone.dim), cone)
     # # e1 = W * λ \circ -grad
-    @test e1 ≈ W * CO.conic_prod!(prod, cone, λ, -grad) atol=tol rtol=tol # WRONG WAY AROUND, strange that this passes
+    # @test e1 ≈ W * CO.conic_prod!(prod, cone, λ, -grad) atol=tol rtol=tol # WRONG WAY AROUND, yay fails in bigfloat
     @test e1 ≈ CO.conic_prod!(prod, cone, λ, -W * grad) atol=tol rtol=tol
+    @test -grad ≈ W \ CO.scalvec_ldiv!(prod, cone, e1) atol=tol rtol=tol
     λinv = CO.scalvec_ldiv!(prod, cone, e1)
     @test CO.conic_prod!(prod, cone, λinv, λ) ≈ e1 atol=tol rtol=tol
-
 
     primal_dir = randn(cone.dim) ./ norm(cone.point) ./ 2
     dual_dir = randn(cone.dim) ./ norm(cone.dual_point) ./ 2
@@ -151,11 +150,16 @@ function test_barrier_scaling_oracles(
     @test CO.conic_prod!(prod2, cone, λ, W * correction) ≈ CO.conic_prod!(prod, cone, W \ primal_dir, W * dual_dir) atol=tol rtol=tol
     # correction = -grad * actual Mehrotra term => -grad = Winv * λinv
     # assuming this fact is false, test failing
-    # @test cone.correction ≈ CO.conic_prod!(prod2, cone, -cone.grad, CO.conic_prod!(prod, cone, W \ primal_dir, W * dual_dir)) atol=tol rtol=tol
+    randvec = CO.conic_prod!(similar(prod), cone, W \ primal_dir, W * dual_dir)
+    @test CO.conic_prod!(prod, cone, -grad, randvec) ≈ CO.conic_prod!(prod2, cone, W \ CO.scalvec_ldiv!(prod, cone, e1), randvec) atol=tol rtol=tol
+    @test cone.correction ≈ CO.conic_prod!(prod2, cone, -cone.grad, randvec) atol=tol rtol=tol
+    # @test cone.correction ≈ CO.conic_prod!(prod2, cone, CO.conic_prod!(prod, cone, -grad, W \ primal_dir), W * dual_dir) atol=tol rtol=tol
+    # @test cone.correction ≈ CO.conic_prod!(prod2, cone, CO.conic_prod!(prod, cone, -grad, W * dual_dir), W \ primal_dir) atol=tol rtol=tol
 
-    @test CO.check_feas(cone, cone.point + 0.99 * max_step * primal_dir, true) && CO.check_feas(cone, cone.dual_point + 0.99 * max_step * dual_dir, false)
+
+    @test CO.check_feas(cone, cone.point + 0.9999 * max_step * primal_dir, true) && CO.check_feas(cone, cone.dual_point + 0.9999 * max_step * dual_dir, false)
     if max_step < one(T)
-        @test !CO.check_feas(cone, cone.point + 1.01 * max_step * primal_dir, true) || !CO.check_feas(cone, cone.dual_point + 1.01 * max_step * dual_dir, false)
+        @test !CO.check_feas(cone, cone.point + 1.0001 * max_step * primal_dir, true) || !CO.check_feas(cone, cone.dual_point + 1.0001 * max_step * dual_dir, false)
     end
 
     return
