@@ -85,7 +85,7 @@ function check_feas(cone::EpiNormEucl, point::Vector, primal::Bool)
     u = point[1]
     if u > 0
         w = view(point, 2:cone.dim)
-        dist = abs2(u) - sum(abs2, w)
+        dist = (u - norm(w)) * (u + norm(w))
         # TODO record dual_dist here and make sure operations trickle through correctly
         primal ? (cone.dist = dist) : (cone.dual_dist = dist)
         return dist > 0
@@ -115,7 +115,7 @@ end
 function update_scaling(cone::EpiNormEucl)
     @assert !cone.scaling_updated
     @assert cone.feas_updated
-    dual_dist = cone.dual_dist = abs2(cone.dual_point[1]) - sum(abs2, cone.dual_point[2:end])
+    dual_dist = cone.dual_dist = (cone.dual_point[1] - norm(cone.dual_point[2:end])) * (cone.dual_point[1] + norm(cone.dual_point[2:end]))
     @assert dual_dist >= 0
     scaled_point = cone.scaled_point .= cone.point ./ sqrt(cone.dist)
     scaled_dual_point = cone.scaled_dual_point .= cone.dual_point ./ sqrt(dual_dist)
@@ -345,7 +345,7 @@ function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     @assert size(B) == size(C)
     A1 = A[1]
     A2m = view(A, 2:m)
-    schur = abs2(A1) - sum(abs2, A2m)
+    schur = (A1 + norm(A2m)) * (A1 - norm(A2m))
     @views begin
         mul!(C[1, :], B[2:end, :]', A2m)
         @. C[2:end, :] = A2m * C[1, :]' / A1
