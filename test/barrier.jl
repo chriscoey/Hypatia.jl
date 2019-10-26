@@ -79,7 +79,7 @@ end
 function test_barrier_scaling_oracles(
     cone::CO.Cone{T};
     noise::Real = 0.2,
-    scale::Real = 10000,
+    scale::Real = 100,
     tol::Real = 100eps(T),
     ) where {T <: Real}
     @test CO.use_scaling(cone)
@@ -95,8 +95,6 @@ function test_barrier_scaling_oracles(
     CO.set_initial_point(dual_point, cone)
     point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
     dual_point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
-
-    @show point
 
     CO.load_point(cone, point)
     # TODO why isn't load_dual_point implemented?
@@ -116,10 +114,6 @@ function test_barrier_scaling_oracles(
     prod_mat = similar(point, dim, dim)
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
-
-    # e1 = similar(cone.point)
-    # CO.set_initial_point(e1, cone)
-    # @show CO.scalmat_ldiv!(similar(e1), CO.scalmat_prod!(similar(e1), e1, cone), cone) .- e1
 
     λ = similar(cone.point)
     CO.scalmat_prod!(λ, cone.dual_point, cone)
@@ -142,11 +136,11 @@ function test_barrier_scaling_oracles(
     # # e1 = W * λ \circ -grad
     # @test e1 ≈ W * CO.conic_prod!(prod, cone, λ, -grad) atol=tol rtol=tol # WRONG WAY AROUND, yay fails in bigfloat
     @test e1 ≈ CO.conic_prod!(prod, cone, λ, -W * grad) atol=tol rtol=tol
-    @test -grad ≈ W \ CO.scalvec_ldiv!(prod, cone, e1) atol=tol rtol=tol
-    @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, cone, e1), cone) atol=tol rtol=tol
+    @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
+    @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone) atol=tol rtol=tol
 
-    λinv = CO.scalvec_ldiv!(prod, cone, e1)
-    @test CO.conic_prod!(prod, cone, λinv, λ) ≈ e1 atol=tol rtol=tol
+    λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
+    @test CO.conic_prod!(similar(e1), cone, λinv, λ) ≈ e1 atol=tol rtol=tol
 
     primal_dir = randn(cone.dim) ./ norm(cone.point) ./ 2
     dual_dir = randn(cone.dim) ./ norm(cone.dual_point) ./ 2
@@ -160,7 +154,7 @@ function test_barrier_scaling_oracles(
     randvec = CO.conic_prod!(similar(prod), cone, W \ primal_dir, W * dual_dir)
     # @test correction ≈ CO.conic_prod!(prod2, cone, -cone.grad, randvec) atol=tol rtol=tol # don't think this fact is true
 
-    @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), cone, randvec)
+    @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), randvec, cone)
 
     # @test cone.correction ≈ CO.conic_prod!(prod2, cone, CO.conic_prod!(prod, cone, -grad, W \ primal_dir), W * dual_dir) atol=tol rtol=tol
     # @test cone.correction ≈ CO.conic_prod!(prod2, cone, CO.conic_prod!(prod, cone, -grad, W * dual_dir), W \ primal_dir) atol=tol rtol=tol

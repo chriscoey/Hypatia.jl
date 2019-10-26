@@ -347,26 +347,24 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         for (k, cone_k) in enumerate(solver.model.cones)
             # TODO store this if doing line search so don't need to reload the point right before combined phase
             grad_k = Cones.grad(cone_k)
-            # @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
 
-            e1 = zeros(size(stepper.s_rhs_k[k]))
-            Cones.set_initial_point(e1, cone_k)
-            tmp1 = Cones.scalvec_ldiv!(zeros(size(e1)), cone_k, e1)
-            tmp2 = zeros(size(stepper.s_rhs_k[k]))
-            Cones.scalmat_ldiv!(tmp2, tmp1, cone_k)
-
-            # lambda = Cones.scalmat_prod!(similar(e1), cone_k.dual_point, cone_k)
-            # @assert lambda ≈ Cones.scalmat_ldiv!(similar(e1), cone_k.point, cone_k) atol=1e-8 rtol=1e-8
-            # @show Cones.scalmat_ldiv!(similar(e1), Cones.scalmat_prod!(similar(e1), e1, cone_k), cone_k) .- e1
-            # @show Cones.get_Winv(cone_k) * Cones.get_W(cone_k)
-            # @show Cones.conic_prod!(similar(cone_k.point), cone_k, Cones.scalmat_prod!(similar(cone_k.point), tmp2, cone_k), lambda) .- e1
+            # e1 = zeros(size(stepper.s_rhs_k[k]))
+            # Cones.set_initial_point(e1, cone_k)
+            # tmp1 = Cones.scalvec_ldiv!(zeros(size(e1)), cone_k, e1)
+            # tmp2 = zeros(size(stepper.s_rhs_k[k]))
+            # Cones.scalmat_ldiv!(tmp2, tmp1, cone_k)
 
 
+            # @show cone_k.dist, cone_k.dual_dist
+            # these should be identical for any primal/dual pair, but they are not
+            lambda1 = Cones.scalmat_prod!(similar(cone_k.point), cone_k.dual_point, cone_k)
+            lambda2 = Cones.scalmat_ldiv!(similar(cone_k.point), cone_k.point, cone_k)
+            @show lambda1 ./ lambda2
+            @show lambda1 .- lambda2
+
+            # these updates should be identical
             # @. stepper.s_rhs_k[k] += gamma_mu * tmp2
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
-            @show -tmp2 ./ grad_k
-            @show -tmp2 .- grad_k
-
 
             if Cones.use_scaling(cone_k)
                 corr = Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
