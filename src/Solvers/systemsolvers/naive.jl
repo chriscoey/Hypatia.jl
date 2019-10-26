@@ -3,16 +3,14 @@ Copyright 2019, Chris Coey, Lea Kapelevich and contributors
 
 naive linear system solver
 
-TODO update math for NT
-
 6x6 nonsymmetric system in (x, y, z, tau, s, kap):
 A'*y + G'*z + c*tau = xrhs
 -A*x + b*tau = yrhs
 -G*x + h*tau - s = zrhs
 -c'*x - b'*y - h'*z - kap = taurhs
-(pr bar) z_k + mu*H_k*s_k = srhs_k
+(pr bar) z_k + mu*H_k*s_k = srhs_k # TODO add Nesterov-Todd case
 (du bar) mu*H_k*z_k + s_k = srhs_k
-mu/(taubar^2)*tau + kap = kaprhs
+tau + taubar/kapbar*kap = kaprhs # Nesterov-Todd
 =#
 
 abstract type NaiveSystemSolver{T <: Real} <: SystemSolver{T} end
@@ -131,12 +129,12 @@ function load(system_solver::NaiveSparseSystemSolver{T}, solver::Solver{T}) wher
 
     # form sparse LHS without Hessians in s row
     lhs6 = T[
-        spzeros(T,n,n)  model.A'        model.G'              model.c       spzeros(T,n,q)         spzeros(T,n);
-        -model.A        spzeros(T,p,p)  spzeros(T,p,q)        model.b       spzeros(T,p,q)         spzeros(T,p);
-        -model.G        spzeros(T,q,p)  spzeros(T,q,q)        model.h       sparse(-one(T)*I,q,q)  spzeros(T,q);
-        -model.c'       -model.b'       -model.h'             zero(T)       spzeros(T,1,q)         -one(T);
-        spzeros(T,q,n)  spzeros(T,q,p)  sparse(one(T)*I,q,q)  spzeros(T,q)  sparse(one(T)*I,q,q)   spzeros(T,q);
-        spzeros(T,1,n)  spzeros(T,1,p)  spzeros(T,1,q)        one(T)        spzeros(T,1,q)         one(T);
+        spzeros(T, n, n)  model.A'          model.G'                  model.c        spzeros(T, n, q)           spzeros(T, n);
+        -model.A          spzeros(T, p, p)  spzeros(T, p, q)          model.b        spzeros(T, p, q)           spzeros(T, p);
+        -model.G          spzeros(T, q, p)  spzeros(T, q, q)          model.h        sparse(-one(T) * I, q, q)  spzeros(T, q);
+        -model.c'         -model.b'         -model.h'                 zero(T)        spzeros(T, 1, q)           -one(T);
+        spzeros(T, q, n)  spzeros(T, q, p)  sparse(one(T) * I, q, q)  spzeros(T, q)  sparse(one(T) * I, q, q)   spzeros(T, q);
+        spzeros(T, 1, n)  spzeros(T, 1, p)  spzeros(T, 1, q)          one(T)         spzeros(T, 1, q)           one(T);
         ]
     @assert issparse(lhs6)
     dropzeros!(lhs6)
