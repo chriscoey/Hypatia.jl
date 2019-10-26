@@ -217,13 +217,13 @@ function update_fact(system_solver::NaiveSparseSystemSolver, solver::Solver)
     end
     system_solver.lhs6.nzval[end] = solver.tau / solver.kap
 
-    @timeit solver.timer "update_fact" update_fact(system_solver.fact_cache, system_solver.lhs6)
+    update_fact(system_solver.fact_cache, system_solver.lhs6)
 
     return system_solver
 end
 
 function solve_system(system_solver::NaiveSparseSystemSolver, solver::Solver, sol6::Vector, rhs6::Vector)
-    @timeit solver.timer "solve_system" solve_system(system_solver.fact_cache, sol6, system_solver.lhs6, rhs6)
+    solve_system(system_solver.fact_cache, sol6, system_solver.lhs6, rhs6)
     return sol6
 end
 
