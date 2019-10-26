@@ -4,8 +4,6 @@ Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 naive+elimination linear system solver
 solves linear system in naive.jl via the following procedure
 
-TODO update math for NT
-
 eliminate s
 -G*x + h*tau - s = zrhs
 so if using primal barrier
@@ -22,19 +20,16 @@ mu*H_k*z_k + s_k = srhs_k --> s_k = srhs_k - mu*H_k*z_k
 eliminate kap
 -c'x - b'y - h'z - kap = taurhs
 so
-    mu/(taubar^2)*tau + kap = kaprhs --> kap = kaprhs - mu/(taubar^2)*tau
-kapbar*tau + taubar*kap = kaprhs --> kap = kaprhs/taubar - kapbar/taubar*tau
+tau + taubar/kapbar*kap = kaprhs --> kap = kapbar/taubar*(kaprhs - tau) # Nesterov-Todd
 -->
-    -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs
--c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kaprhs/taubar
+-c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kapbar/taubar*kaprhs
 
 4x4 nonsymmetric system in (x, y, z, tau):
 A'*y + G'*z + c*tau = xrhs
 -A*x + b*tau = yrhs
 (pr bar) -mu*H_k*G_k*x + z_k + mu*H_k*h_k*tau = mu*H_k*zrhs_k + srhs_k
 (du bar) -G_k*x + mu*H_k*z_k + h_k*tau = zrhs_k + srhs_k
-    -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs
--c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kaprhs/taubar
+-c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kapbar/taubar*kaprhs
 =#
 
 abstract type NaiveElimSystemSolver{T <: Real} <: SystemSolver{T} end
@@ -42,11 +37,11 @@ abstract type NaiveElimSystemSolver{T <: Real} <: SystemSolver{T} end
 function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}, sol::Vector{T}, rhs::Vector{T}) where {T <: Real}
     model = solver.model
     (n, p, q) = (model.n, model.p, model.q)
-    tau_row = system_solver.tau_row
 
     sol4 = system_solver.sol4
     rhs4 = system_solver.rhs4
-    @views copyto!(rhs4, rhs[1:tau_row])
+    dim4 = size(sol4, 1)
+    @views copyto!(rhs4, rhs[1:dim4])
 
     for (k, cone_k) in enumerate(model.cones)
         z_rows_k = (n + p) .+ model.cone_idxs[k]
@@ -70,24 +65,22 @@ function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}
             @. @views rhs4[z_rows_k] += rhs[s_rows_k]
         end
     end
-        # -c'x - b'y - h'z + mu/(taubar^2)*tau = taurhs + kaprhs # TODO update for NT
-    # -c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kaprhs/taubar
-    rhs4[end] += rhs[end] / solver.tau
+    # -c'x - b'y - h'z + kapbar/taubar*tau = taurhs + kapbar/taubar*kaprhs
+    kapontau = solver.kap / solver.tau
+    rhs4[end] += kapontau * rhs[end]
 
     @timeit solver.timer "solve_system" solve_subsystem(system_solver, sol4, rhs4)
-    sol[1:tau_row] .= sol4
+    sol[1:dim4] .= sol4
 
     # lift to get s and kap
     # TODO refactor below for use with symindef and qrchol methods
     # s = -G*x + h*tau - zrhs
-    s = @view sol[(tau_row + 1):(end - 1)]
+    s = @view sol[(dim4 + 1):(end - 1)]
     @. @views s = model.h * sol4[end] - rhs[(n + p) .+ (1:q)]
     mul!(s, model.G, view(sol, 1:n), -1, true)
 
-        # kap = -mu/(taubar^2)*tau + kaprhs # TODO update for NT
-        # sol[end] = -sol4[end] * solver.kap / solver.tau + rhs[end]
-    # kap = kaprhs/taubar - kapbar/taubar*tau
-    sol[end] = (rhs[end] - solver.kap * sol4[end]) / solver.tau
+    # kap = kapbar/taubar*(kaprhs - tau)
+    sol[end] = kapontau * (rhs[end] - sol4[end])
 
     return sol
 end
@@ -98,7 +91,6 @@ direct sparse
 
 mutable struct NaiveElimSparseSystemSolver{T <: Real} <: NaiveElimSystemSolver{T}
     use_inv_hess::Bool
-    tau_row::Int
     lhs4::SparseMatrixCSC # TODO CSC type will depend on factor cache Int type
     rhs4::Vector{T}
     sol4::Vector{T}
@@ -122,11 +114,10 @@ function load(system_solver::NaiveElimSparseSystemSolver{T}, solver::Solver{T}) 
     system_solver.fact_cache.analyzed = false
     model = solver.model
     (n, p, q) = (model.n, model.p, model.q)
-    system_solver.tau_row = n + p + q + 1
     cones = model.cones
     cone_idxs = model.cone_idxs
 
-    system_solver.sol4 = zeros(system_solver.tau_row)
+    system_solver.sol4 = zeros(T, n + p + q + 1)
     system_solver.rhs4 = similar(system_solver.sol4)
 
     # form sparse LHS without Hessians and inverse Hessians in z/z block
@@ -237,7 +228,6 @@ direct dense
 
 mutable struct NaiveElimDenseSystemSolver{T <: Real} <: NaiveElimSystemSolver{T}
     use_inv_hess::Bool
-    tau_row::Int
     lhs4::Matrix{T}
     rhs4::Vector{T}
     sol4::Vector{T}
@@ -256,8 +246,8 @@ end
 function load(system_solver::NaiveElimDenseSystemSolver{T}, solver::Solver{T}) where {T <: Real}
     model = solver.model
     (n, p, q) = (model.n, model.p, model.q)
-    system_solver.tau_row = n + p + q + 1
-    system_solver.sol4 = zeros(T, system_solver.tau_row)
+
+    system_solver.sol4 = zeros(T, n + p + q + 1)
     system_solver.rhs4 = similar(system_solver.sol4)
 
     system_solver.lhs4 = T[
