@@ -43,6 +43,7 @@ testfuns = [
     # epinorminf5,
     epinormeucl1,
     epinormeucl2,
+    epinormeucl3,
     # epipersquare1,
     # epipersquare2,
     # epipersquare3,

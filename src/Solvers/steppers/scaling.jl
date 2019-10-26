@@ -220,6 +220,7 @@ function check_nbhd(
     cones = solver.model.cones
 
     Cones.load_point.(cones, solver.primal_views)
+    Cones.load_dual_point.(cones, solver.dual_views)
 
     # accept primal iterate if it is inside the cone and neighborhood
     # first check inside cone for whichever cones were violated last line search iteration
@@ -238,11 +239,11 @@ function check_nbhd(
     end
 
     @assert solver.use_infty_nbhd # TODO hess nbhd?
-    rhs_nbhd = mu_temp * abs2(nbhd)
+    # rhs_nbhd = mu_temp * abs2(nbhd)
     for (k, cone_k) in enumerate(cones)
-        if Cones.use_scaling(cone_k)
-            continue
-        end
+        # if Cones.use_scaling(cone_k)
+        #     continue
+        # end
 
         if !solver.cones_loaded[k]
             Cones.reset_data(cone_k)
@@ -251,16 +252,16 @@ function check_nbhd(
             end
         end
 
-        duals_k = solver.dual_views[k]
-        # duals_k = copy(solver.dual_views[k]) # TODO prealloc or modify dual_views
-        g_k = Cones.grad(cone_k)
-        @. duals_k += g_k * solver.mu
-
-        k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
-        # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
-        if k_nbhd > rhs_nbhd
-            return false
-        end
+        # duals_k = solver.dual_views[k]
+        # # duals_k = copy(solver.dual_views[k]) # TODO prealloc or modify dual_views
+        # g_k = Cones.grad(cone_k)
+        # @. duals_k += g_k * solver.mu
+        #
+        # k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
+        # # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
+        # if k_nbhd > rhs_nbhd
+        #     return false
+        # end
     end
 
     return true
@@ -350,12 +351,21 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
 
             e1 = zeros(size(stepper.s_rhs_k[k]))
             Cones.set_initial_point(e1, cone_k)
-            tmp1 = Cones.scalvec_ldiv!(zeros(size(e1)), cone_k, e1)
-            tmp2 = zeros(size(stepper.s_rhs_k[k]))
-            Cones.scalmat_ldiv!(tmp2, tmp1, cone_k)
-            # @. stepper.s_rhs_k[k] += gamma_mu * tmp2
+            tmp1 = Cones.scalvec_ldiv!(similar(e1), cone_k, e1)
+            tmp2 = Cones.scalmat_ldiv!(similar(e1), tmp1, cone_k)
 
+            # lambda = Cones.scalmat_prod!(similar(e1), cone_k.dual_point, cone_k)
+            # @assert lambda ≈ Cones.scalmat_ldiv!(similar(e1), cone_k.point, cone_k) atol=1e-8 rtol=1e-8
+            # @show Cones.scalmat_ldiv!(similar(e1), Cones.scalmat_prod!(similar(e1), e1, cone_k), cone_k) .- e1
+            # @show Cones.get_Winv(cone_k) * Cones.get_W(cone_k)
+            # @show Cones.conic_prod!(similar(cone_k.point), cone_k, Cones.scalmat_prod!(similar(cone_k.point), tmp2, cone_k), lambda) .- e1
+
+
+            # @. stepper.s_rhs_k[k] += gamma_mu * tmp2
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
+            @show -tmp2 ./ grad_k
+            @show -tmp2 .- grad_k
+
 
             if Cones.use_scaling(cone_k)
                 corr = Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])

@@ -96,6 +96,8 @@ function test_barrier_scaling_oracles(
     point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
     dual_point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
 
+    @show point
+
     CO.load_point(cone, point)
     # TODO why isn't load_dual_point implemented?
     cone.dual_point .= dual_point
@@ -114,6 +116,10 @@ function test_barrier_scaling_oracles(
     prod_mat = similar(point, dim, dim)
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
+
+    # e1 = similar(cone.point)
+    # CO.set_initial_point(e1, cone)
+    # @show CO.scalmat_ldiv!(similar(e1), CO.scalmat_prod!(similar(e1), e1, cone), cone) .- e1
 
     λ = similar(cone.point)
     CO.scalmat_prod!(λ, cone.dual_point, cone)
@@ -137,6 +143,8 @@ function test_barrier_scaling_oracles(
     # @test e1 ≈ W * CO.conic_prod!(prod, cone, λ, -grad) atol=tol rtol=tol # WRONG WAY AROUND, yay fails in bigfloat
     @test e1 ≈ CO.conic_prod!(prod, cone, λ, -W * grad) atol=tol rtol=tol
     @test -grad ≈ W \ CO.scalvec_ldiv!(prod, cone, e1) atol=tol rtol=tol
+    @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, cone, e1), cone) atol=tol rtol=tol
+
     λinv = CO.scalvec_ldiv!(prod, cone, e1)
     @test CO.conic_prod!(prod, cone, λinv, λ) ≈ e1 atol=tol rtol=tol
 
@@ -148,11 +156,12 @@ function test_barrier_scaling_oracles(
     prod2 = similar(prod)
     # λ \circ W * correction = actual Mehrotra term
     @test CO.conic_prod!(prod2, cone, λ, W * correction) ≈ CO.conic_prod!(prod, cone, W \ primal_dir, W * dual_dir) atol=tol rtol=tol
-    # correction = -grad * actual Mehrotra term => -grad = Winv * λinv
-    # assuming this fact is false, test failing
+
     randvec = CO.conic_prod!(similar(prod), cone, W \ primal_dir, W * dual_dir)
-    @test CO.conic_prod!(prod, cone, -grad, randvec) ≈ CO.conic_prod!(prod2, cone, W \ CO.scalvec_ldiv!(prod, cone, e1), randvec) atol=tol rtol=tol
-    @test cone.correction ≈ CO.conic_prod!(prod2, cone, -cone.grad, randvec) atol=tol rtol=tol
+    # @test correction ≈ CO.conic_prod!(prod2, cone, -cone.grad, randvec) atol=tol rtol=tol # don't think this fact is true
+
+    @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), cone, randvec)
+
     # @test cone.correction ≈ CO.conic_prod!(prod2, cone, CO.conic_prod!(prod, cone, -grad, W \ primal_dir), W * dual_dir) atol=tol rtol=tol
     # @test cone.correction ≈ CO.conic_prod!(prod2, cone, CO.conic_prod!(prod, cone, -grad, W * dual_dir), W \ primal_dir) atol=tol rtol=tol
 
@@ -190,7 +199,7 @@ function test_epinormeucl_barrier(T::Type{<:Real})
         (u, w) = (s[1], s[2:end])
         return -log(abs2(u) - sum(abs2, w)) / 2
     end
-    for dim in [2, 4]
+    for dim in [2, 4, 6]
         test_barrier_oracles(CO.EpiNormEucl{T}(dim, use_scaling = false), barrier)
         test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true))
     end
