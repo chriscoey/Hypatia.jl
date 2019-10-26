@@ -69,7 +69,7 @@ function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}
     kapontau = solver.kap / solver.tau
     rhs4[end] += kapontau * rhs[end]
 
-    @timeit solver.timer "solve_system" solve_subsystem(system_solver, sol4, rhs4)
+    solve_subsystem(system_solver, sol4, rhs4)
     sol[1:dim4] .= sol4
 
     # lift to get s and kap
