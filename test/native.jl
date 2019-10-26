@@ -251,6 +251,21 @@ function epinormeucl2(T; options...)
     @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
+function epinormeucl3(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    c = T[1, 0, 0]
+    A = T[0 1 0]
+    b = T[1]
+    G = Diagonal(-one(T) * I, 3)
+    h = zeros(T, 3)
+    cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 1 atol=tol rtol=tol
+    @test r.x ≈ [1, 1, 0] atol=tol rtol=tol
+end
+
 function epipersquare1(T; options...)
     tol = sqrt(sqrt(eps(T)))
     c = T[0, 0, -1, -1]

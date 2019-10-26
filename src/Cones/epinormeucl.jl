@@ -99,8 +99,9 @@ function update_feas(cone::EpiNormEucl)
     @assert !cone.feas_updated
     cone.is_feas = check_feas(cone, cone.point, true)
     if cone.use_scaling && cone.is_feas
-        check_feas(cone, cone.dual_point, false)
+        cone.is_feas = check_feas(cone, cone.dual_point, false)
     end
+    # @show cone.dist, cone.dual_dist
     cone.feas_updated = true
     return cone.is_feas
 end
@@ -269,8 +270,8 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     end
     w = cone.w
 
-    prod[1, :] .= arr' * w
     @views begin
+        mul!(prod[1, :], arr', w)
         for j in 1:size(prod, 2)
             pa = dot(w[2:end], arr[2:end, j])
             @. prod[2:end, j] = w[2:end] * pa
@@ -278,8 +279,10 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
         @. prod[2:end, :] /= (w[1] + 1)
         @. prod[2:end, :] += arr[2:end, :]
         @. prod[2:end, :] += arr[1, :]' * w[2:end]
+        # @. prod[2:end, :] += w[2:end] * arr[1, :]'
+
     end
-    prod .*= (cone.dist / cone.dual_dist) ^ (1 / 4)
+    prod .*= sqrt(sqrt(cone.dist / cone.dual_dist))
 
     # Wbar = similar(cone.inv_hess)
     # Wbar.data[1, :] .= w
@@ -299,7 +302,8 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
 
     # prod[1, :] .= arr' * w
     @views begin
-        prod[1, :] .= arr[1, :] * w[1] .- arr[2:end, :]' * w[2:end]
+        prod[1, :] .= arr[1, :] * w[1]
+        mul!(prod[1, :], arr[2:end, :]', w[2:end], -1, true)
         for j in 1:size(prod, 2)
             pa = dot(w[2:end], arr[2:end, j])
             @. prod[2:end, j] = w[2:end] * pa
@@ -308,37 +312,63 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
         @. prod[2:end, :] += arr[2:end, :]
         @. prod[2:end, :] -= arr[1, :]' * w[2:end]
     end
-    prod .*= (cone.dual_dist / cone.dist) ^ (1 / 4)
+    prod .*= sqrt(sqrt(cone.dual_dist / cone.dist))
+    @show cone.dual_dist / cone.dist
     return prod
 end
 
-# returns W_inv \circ lambda_inv \circ correction = -grad \circ correction
+# returns W_inv \circ lambda \diamond correction
 function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.grad_updated
-    tmp_s = similar(s_sol)
-    tmp_z = similar(z_sol)
-    tmp = similar(tmp_s)
-    scalmat_ldiv!(tmp_s, s_sol, cone)
-    scalmat_prod!(tmp_z, z_sol, cone)
+    tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
+    tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
 
-    tmp[1] = dot(tmp_s, tmp_z)
-    @. @views tmp[2:end] = tmp_s[1] * tmp_z[2:end] + tmp_z[1] * tmp_s[2:end]
+    mehrotra_term = conic_prod!(similar(cone.point), cone, tmp_s, tmp_z)
 
-    # cone.correction[1] = -dot(cone.grad, tmp)
-    # @. @views cone.correction[2:end] = -cone.grad[1] * tmp[2:end] - tmp[1] * cone.grad[2:end]
-
-    # tmp[1] = dot(cone.grad, tmp_s)
-    # @. @views tmp[2:end] = cone.grad[1] * tmp_s[2:end] + tmp_s[1] * cone.grad[2:end]
-    #
-    # cone.correction[1] = -dot(tmp_z, tmp)
-    # @. @views cone.correction[2:end] = -tmp_z[1] * tmp[2:end] - tmp[1] * tmp_z[2:end]
-
-    # C = similar(cone.point)
-    C = scalvec_ldiv!(similar(cone.point), cone, tmp)
+    C = scalvec_ldiv!(similar(cone.point), cone, mehrotra_term)
     scalmat_ldiv!(cone.correction, C, cone)
 
     return cone.correction
 end
+
+function get_W(cone::EpiNormEucl)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    w = cone.w
+    Wbar = similar(cone.inv_hess)
+    Wbar.data[1, :] .= w
+    Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
+    Wbar.data[2:end, 2:end] += I
+    cone.dist
+    cone.dual_dist
+    W = Wbar .* (cone.dist / cone.dual_dist) ^ (1 / 4)
+    return W
+end
+
+function get_Winv(cone::EpiNormEucl)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    w = cone.w
+    Wbar = similar(cone.hess)
+    Wbar.data[1, 1] = w[1]
+    Wbar.data[1, 2:end] .= -w[2:end]
+    Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
+    Wbar.data[2:end, 2:end] += I
+    Winv = Wbar * (cone.dual_dist / cone.dist) ^ (1 / 4)
+    return Winv
+end
+
+# function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
+#     W = get_W(cone)
+#     mehrotra_term = conic_prod!(similar(cone.point), cone, W * z_sol, W \ s_sol)
+#     # tmp1 = scalvec_ldiv!(similar(cone.point), cone, mehrotra_term)
+#     # tmp2 = W \ tmp1
+#     # cone.correction .= tmp2
+#     cone.correction .= conic_prod!(similar(cone.point), cone, -cone.grad, mehrotra_term)
+#     return cone.correction
+# end
 
 # divides arr by lambda, the scaled point
 # TODO there is a faster way
@@ -348,8 +378,9 @@ function scalvec_ldiv!(div::AbstractVecOrMat, cone::EpiNormEucl, arr::AbstractVe
     if !cone.scaling_updated
         update_scaling(cone)
     end
-    lambda = similar(cone.point)
-    scalmat_prod!(lambda, cone.dual_point, cone)
+    # lambda = scalmat_ldiv!(similar(cone.point), cone.point, cone)
+    lambda = scalmat_prod!(similar(cone.point), cone.dual_point, cone)
+
     #jordan_ldiv!(div, lambda, arr)
 
     return jordan_ldiv!(div, lambda, arr)
@@ -359,52 +390,81 @@ end
 # TODO figure out why things don't work in-place
 function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     m = length(A)
+    D = similar(B)
     @assert m == size(B, 1)
     @assert size(B) == size(C)
     A1 = A[1]
     A2m = view(A, 2:m)
     schur = abs2(A1) - sum(abs2, A2m)
     @views begin
-        mul!(C[1, :], B[2:end, :]', A2m)
-        @. C[2:end, :] = A2m * C[1, :]' / A1
-        axpby!(A1, B[1, :], -1.0, C[1, :])
-        @. C[2:end, :] -= A2m * B[1, :]'
-        C ./= schur
-        @. C[2:end, :] += B[2:end, :] / A1
+        mul!(D[1, :], B[2:end, :]', A2m)
+        @. D[2:end, :] = A2m * D[1, :]' / A1
+        axpby!(A1, B[1, :], -1.0, D[1, :])
+        @. D[2:end, :] -= A2m * B[1, :]'
+        D ./= schur
+        @. D[2:end, :] += B[2:end, :] / A1
     end
-    return C
+    C .= D
+    return D
 end
 
-function dist_to_bndry(::EpiNormEucl{T}, lambda::Vector{T}, dir::AbstractVector{T}) where {T}
-    lambda_dir_dist = lambda[1] * dir[1] - sum(lambda[i] * dir[i] for i in 2:length(lambda))
-    fact = (lambda_dir_dist + dir[1]) / (lambda[1] + 1)
+# function dist_to_bndry(::EpiNormEucl{T}, lambda::Vector{T}, dir::AbstractVector{T}) where {T}
+#     lambda_dir_dist = lambda[1] * dir[1] - sum(lambda[i] * dir[i] for i in 2:length(lambda))
+#     fact = (lambda_dir_dist + dir[1]) / (lambda[1] + 1)
+#
+#     dist2n = zero(T)
+#     for i in 2:length(lambda)
+#         dist2n += abs2(dir[i] - fact * lambda[i])
+#     end
+#     return -lambda_dir_dist + sqrt(dist2n)
+# end
+#
+# function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
+#     s_sol_scaled = similar(cone.point)
+#     z_sol_scaled = similar(cone.point)
+#
+#     point = cone.point
+#     dual_point = cone.dual_point
+#
+#     # get lambda
+#     # TODO there is a shortcut for getting lambda
+#     lambda = scalmat_prod!(similar(cone.point), dual_point, cone)
+#     scalmat_ldiv!(s_sol_scaled, s_sol, cone)
+#     scalmat_prod!(z_sol_scaled, z_sol, cone)
+#
+#     lambda_dist = abs2(lambda[1]) - sum(abs2, lambda[2:end])
+#     lambda_dist_sqrt = sqrt(lambda_dist)
+#     lambda ./= lambda_dist_sqrt
+#     primal_step_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, s_sol_scaled)
+#     dual_step_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, z_sol_scaled)
+#
+#     # TODO refactor
+#     step_dist = one(T)
+#     if primal_step_dist > 0
+#         step_dist = min(step_dist, primal_step_dist)
+#     end
+#     if dual_step_dist > 0
+#         step_dist = min(step_dist, dual_step_dist)
+#     end
+#
+#     return step_dist
+#
+# end
+
+function dist_to_bndry(::EpiNormEucl{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
+    point_dir_dist = point[1] * dir[1] - sum(point[i] * dir[i] for i in 2:length(point))
+    fact = (point_dir_dist + dir[1]) / (point[1] + 1)
 
     dist2n = zero(T)
-    for i in 2:length(lambda)
-        dist2n += abs2(dir[i] - fact * lambda[i])
+    for i in 2:length(point)
+        dist2n += abs2(dir[i] - fact * point[i])
     end
-    return -lambda_dir_dist + sqrt(dist2n)
+    return -point_dir_dist + sqrt(dist2n)
 end
 
 function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
-    lambda = similar(cone.point)
-    s_sol_scaled = similar(cone.point)
-    z_sol_scaled = similar(cone.point)
-
-    point = cone.point
-    dual_point = cone.dual_point
-
-    # get lambda
-    # TODO there is a shortcut for getting lambda
-    scalmat_prod!(lambda, dual_point, cone)
-    scalmat_ldiv!(s_sol_scaled, s_sol, cone)
-    scalmat_prod!(z_sol_scaled, z_sol, cone)
-
-    lambda_dist = abs2(lambda[1]) - sum(abs2, lambda[2:end])
-    lambda_dist_sqrt = sqrt(lambda_dist)
-    lambda ./= lambda_dist_sqrt
-    primal_step_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, s_sol_scaled)
-    dual_step_dist = lambda_dist_sqrt / dist_to_bndry(cone, lambda, z_sol_scaled)
+    primal_step_dist = sqrt(cone.dist) / dist_to_bndry(cone, cone.scaled_point, s_sol)
+    dual_step_dist = sqrt(cone.dual_dist) / dist_to_bndry(cone, cone.scaled_dual_point, z_sol)
 
     # TODO refactor
     step_dist = one(T)
