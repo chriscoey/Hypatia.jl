@@ -136,7 +136,7 @@ function test_barrier_scaling_oracles(
     λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
     @test CO.conic_prod!(similar(e1), λinv, λ, cone) ≈ e1 atol=tol rtol=tol
 
-    # e1 = W * λ \circ -grad tested in different ways
+    # e1 = λ \circ W * -grad tested in different ways
     @test e1 ≈ CO.conic_prod!(prod, λ, -W * grad, cone) atol=tol rtol=tol
     @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
     @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone) atol=tol rtol=tol
