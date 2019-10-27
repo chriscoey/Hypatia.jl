@@ -122,7 +122,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dir" get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    solver.prev_alpha = alpha = 0.99999 * find_max_alpha(stepper, solver) # TODO make the constant an option, depends on eps(T)?
+    solver.prev_alpha = alpha = 0.99 * find_max_alpha(stepper, solver) # TODO make the constant an option, depends on eps(T)?
     if iszero(alpha)
         @warn("numerical failure: could not step in combined direction; terminating")
         solver.status = :NumericalFailure
@@ -239,11 +239,11 @@ function check_nbhd(
     end
 
     @assert solver.use_infty_nbhd # TODO hess nbhd?
-    # rhs_nbhd = mu_temp * abs2(nbhd)
+    rhs_nbhd = mu_temp * abs2(nbhd)
     for (k, cone_k) in enumerate(cones)
-        # if Cones.use_scaling(cone_k)
-        #     continue
-        # end
+        if Cones.use_scaling(cone_k)
+            continue
+        end
 
         if !solver.cones_loaded[k]
             Cones.reset_data(cone_k)
@@ -252,16 +252,16 @@ function check_nbhd(
             end
         end
 
-        # duals_k = solver.dual_views[k]
-        # # duals_k = copy(solver.dual_views[k]) # TODO prealloc or modify dual_views
-        # g_k = Cones.grad(cone_k)
-        # @. duals_k += g_k * solver.mu
-        #
-        # k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
-        # # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
-        # if k_nbhd > rhs_nbhd
-        #     return false
-        # end
+        duals_k = solver.dual_views[k]
+        # duals_k = copy(solver.dual_views[k]) # TODO prealloc or modify dual_views
+        g_k = Cones.grad(cone_k)
+        @. duals_k += g_k * solver.mu
+
+        k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
+        # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
+        if k_nbhd > rhs_nbhd
+            return false
+        end
     end
 
     return true
@@ -357,10 +357,10 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
 
             # @show cone_k.dist, cone_k.dual_dist
             # these should be identical for any primal/dual pair, but they are not
-            lambda1 = Cones.scalmat_prod!(similar(cone_k.point), cone_k.dual_point, cone_k)
-            lambda2 = Cones.scalmat_ldiv!(similar(cone_k.point), cone_k.point, cone_k)
-            @show lambda1 ./ lambda2
-            @show lambda1 .- lambda2
+            # lambda1 = Cones.scalmat_prod!(similar(cone_k.point), cone_k.dual_point, cone_k)
+            # lambda2 = Cones.scalmat_ldiv!(similar(cone_k.point), cone_k.point, cone_k)
+            # @show lambda1 ./ lambda2
+            # @show lambda1 .- lambda2
 
             # these updates should be identical
             # @. stepper.s_rhs_k[k] += gamma_mu * tmp2

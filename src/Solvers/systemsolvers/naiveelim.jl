@@ -77,7 +77,7 @@ function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}
     # s = -G*x + h*tau - zrhs
     s = @view sol[(dim4 + 1):(end - 1)]
     @. @views s = model.h * sol4[end] - rhs[(n + p) .+ (1:q)]
-    mul!(s, model.G, view(sol, 1:n), -1, true)
+    @views mul!(s, model.G, sol[1:n], -1, true)
 
     # kap = kapbar/taubar*(kaprhs - tau)
     sol[end] = kapontau * (rhs[end] - sol4[end])
