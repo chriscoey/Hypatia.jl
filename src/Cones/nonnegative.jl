@@ -59,15 +59,9 @@ get_nu(cone::Nonnegative) = cone.dim
 
 set_initial_point(arr::AbstractVector, cone::Nonnegative) = (arr .= 1)
 
-check_feas(cone::Nonnegative, point::Vector) = all(u -> (u > 0), point)
-
-# TODO decide what input should be once we know when checking dual feas is helpful
-function update_feas(cone::Nonnegative; check_dual::Bool = false)
+function update_feas(cone::Nonnegative)
     @assert !cone.feas_updated
-    cone.is_feas = check_feas(cone, cone.point)
-    if check_dual
-        cone.is_feas = cone.is_feas && check_point(cone, cone.dual_point)
-    end
+    cone.is_feas = all(u -> (u > 0), cone.point)
     cone.feas_updated = true
     return cone.is_feas
 end
@@ -138,17 +132,11 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonn
 end
 
 # divides arr by lambda, the scaled point
-# TODO change order of args
 # TODO think better about whether this oracle is needed
 function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
     @. div = arr / sqrt(cone.point * cone.dual_point)
     return div
 end
-
-# calculates W inverse times lambda inverse times e
-# function scalmat_scalveci(cone::Nonnegative)
-#     return inv.(cone.point) # TODO this is minus gradient - remove the oracle if it is always the same
-# end
 
 function dist_to_bndry(::Nonnegative{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
     dist = one(T)
@@ -163,7 +151,6 @@ end
 # TODO optimize this
 function step_max_dist(cone::Nonnegative{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
     @assert cone.is_feas
-    any(cone.dual_point .< 0) && error("dual pt infeasible") # TODO something else
 
     # TODO this could go in Cones.jl
     primal_dist = dist_to_bndry(cone, cone.point, s_sol)

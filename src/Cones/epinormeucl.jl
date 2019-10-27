@@ -11,6 +11,7 @@ contains some adapted code from https://github.com/embotech/ecos
 TODO all oracles assumed we are using dense version of the Nesterov Todd scaling
 TODO factor out repetitions in products, hessians, inverse hessians
 TODO factor out eta
+TODO probably undo (a-b)(a+b) dist calculations
 =#
 
 mutable struct EpiNormEucl{T <: Real} <: Cone{T}
@@ -81,24 +82,18 @@ function set_initial_point(arr::AbstractVector, cone::EpiNormEucl)
     return arr
 end
 
-function check_feas(cone::EpiNormEucl, point::Vector, primal::Bool)
-    u = point[1]
-    if u > 0
-        w = view(point, 2:cone.dim)
-        dist = (u - norm(w)) * (u + norm(w))
-        # TODO record dual_dist here and make sure operations trickle through correctly
-        primal ? (cone.dist = dist) : (cone.dual_dist = dist)
-        return dist > 0
-    else
-        return false
-    end
-end
+# calculates u ^ 2 - norm(w) ^ 2 for a vector (u, w)
+calc_dist(x::Vector) = @views abs2(x[1]) - sum(abs2, x[2:end])
 
 function update_feas(cone::EpiNormEucl)
     @assert !cone.feas_updated
-    cone.is_feas = check_feas(cone, cone.point, true)
-    if cone.use_scaling && cone.is_feas
-        cone.is_feas = check_feas(cone, cone.dual_point, false)
+    u = cone.point[1]
+    if u > 0
+        w = view(cone.point, 2:cone.dim)
+        cone.dist = calc_dist(cone.point)
+        cone.is_feas = (cone.dist > 0)
+    else
+        cone.is_feas = false
     end
     cone.feas_updated = true
     return cone.is_feas
@@ -115,7 +110,7 @@ end
 function update_scaling(cone::EpiNormEucl)
     @assert !cone.scaling_updated
     @assert cone.feas_updated
-    dual_dist = cone.dual_dist = (cone.dual_point[1] - norm(cone.dual_point[2:end])) * (cone.dual_point[1] + norm(cone.dual_point[2:end]))
+    dual_dist = cone.dual_dist = calc_dist(cone.dual_point)
     @assert dual_dist >= 0
     scaled_point = cone.scaled_point .= cone.point ./ sqrt(cone.dist)
     scaled_dual_point = cone.scaled_dual_point .= cone.dual_point ./ sqrt(dual_dist)
@@ -329,7 +324,6 @@ end
 
 # divides arr by lambda, the scaled point
 # TODO there is a faster way to get lambda
-# TODO remove this oracle if not used in the near future
 function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
     if !cone.scaling_updated
         update_scaling(cone)
@@ -338,14 +332,13 @@ function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNo
     return jordan_ldiv!(div, lambda, arr)
 end
 
-# TODO figure out why things don't work in-place
 function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     m = length(A)
     @assert m == size(B, 1)
     @assert size(B) == size(C)
     A1 = A[1]
     A2m = view(A, 2:m)
-    schur = (A1 + norm(A2m)) * (A1 - norm(A2m))
+    schur = calc_dist(A)
     @views begin
         mul!(C[1, :], B[2:end, :]', A2m)
         @. C[2:end, :] = A2m * C[1, :]' / A1

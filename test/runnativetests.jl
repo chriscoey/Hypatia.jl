@@ -120,8 +120,8 @@ options = (verbose = true,)
 
     # test each system solver
     @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
-        # t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-        t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
     end
     # @testset "NaiveSparse tests: $t" for t in testfuns
     #     T = Float64

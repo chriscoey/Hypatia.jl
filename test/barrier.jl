@@ -79,7 +79,6 @@ end
 function test_barrier_scaling_oracles(
     cone::CO.Cone{T};
     noise::Real = 0.2,
-    scale::Real = 100,
     tol::Real = 100eps(T),
     ) where {T <: Real}
     @test CO.use_scaling(cone)
@@ -93,28 +92,29 @@ function test_barrier_scaling_oracles(
 
     CO.set_initial_point(point, cone)
     CO.set_initial_point(dual_point, cone)
-    point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
-    dual_point .+= T(noise) * (rand(T, dim) .- inv(T(2))) / scale
+    point .+= T(noise) * (rand(T, dim) .- inv(T(2)))
+    dual_point .+= T(noise) * (rand(T, dim) .- inv(T(2)))
 
     CO.load_point(cone, point)
-    # TODO why isn't load_dual_point implemented?
-    cone.dual_point .= dual_point
+    CO.load_dual_point(cone, dual_point)
     @test cone.point == point
     @test cone.dual_point == dual_point
     @test CO.is_feas(cone)
 
     grad = CO.grad(cone)
     cone.use_scaling = true # TODO update when it's an option, run these tests optionally
-    # not the same hessian and inverse hessians as for non-scaling tests
+    # hess and inv_hess oracles, not the same as for non-scaling tests
     hess = CO.hess(cone)
     @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
     inv_hess = CO.inv_hess(cone)
     @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
     @test hess * inv_hess ≈ I atol=tol rtol=tol
+    # hess and inv_hes product oracles
     prod_mat = similar(point, dim, dim)
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
+    # multiplication and division by scaling matrix W
     λ = similar(cone.point)
     CO.scalmat_prod!(λ, cone.dual_point, cone)
     W = similar(point, dim, dim)
@@ -122,47 +122,58 @@ function test_barrier_scaling_oracles(
     @test W * λ ≈ cone.point atol=tol rtol=tol
     prod = similar(point)
     @test CO.scalmat_prod!(prod, λ, cone) ≈ cone.point atol=tol rtol=tol
+    @test CO.scalmat_ldiv!(prod, cone.point, cone) ≈ λ atol=tol rtol=tol
+    @test CO.scalmat_ldiv!(prod_mat, W, cone) ≈ I atol=tol rtol=tol
+
+    # additional sanity checks
     @test W * W' ≈ inv_hess atol=tol rtol=tol
-    # WW' * z = W * λ
     WWz = CO.inv_hess_prod!(prod, cone.dual_point, cone)
     Wλ = CO.scalmat_prod!(prod, λ, cone)
     @test WWz ≈ Wλ atol=tol rtol=tol
-    #
-    # # TODO this is probably an internal function only needed for SOC
-    # @test CO.scalmat_ldiv!(prod, cone.point, cone) ≈ λ atol=tol rtol=tol
-    # @test CO.scalmat_ldiv!(prod_mat, W, cone) ≈ I atol=tol rtol=tol
 
+    # conic product oracle and conic division by the scaled point λ
     e1 = CO.set_initial_point(zeros(T, cone.dim), cone)
-    # # e1 = W * λ \circ -grad
+    λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
+    @test CO.conic_prod!(similar(e1), λinv, λ, cone) ≈ e1 atol=tol rtol=tol
+
+    # e1 = W * λ \circ -grad tested in different ways
     @test e1 ≈ CO.conic_prod!(prod, λ, -W * grad, cone) atol=tol rtol=tol
     @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
     @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone) atol=tol rtol=tol
 
-    λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
-    @test CO.conic_prod!(similar(e1), λinv, λ, cone) ≈ e1 atol=tol rtol=tol
+    # max step in a recession direction
+    max_step = CO.step_max_dist(cone, e1, e1)
+    @test max_step ≈ one(T) atol=tol rtol=tol
 
-    primal_dir = randn(cone.dim) ./ norm(cone.point) ./ 2
-    dual_dir = randn(cone.dim) ./ norm(cone.dual_point) ./ 2
+    # max step elsewhere
+    primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
+    dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
     max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
+    prev_primal = copy(cone.point)
+    prev_dual = copy(cone.dual_point)
+    # check smaller step returns feasible iterates
+    CO.load_point(cone, prev_primal + 0.99 * max_step * primal_dir)
+    CO.reset_data(cone)
+    primal_feas = CO.is_feas(cone)
+    CO.load_point(cone, prev_dual + 0.99 * max_step * dual_dir)
+    CO.reset_data(cone)
+    dual_feas = CO.is_feas(cone)
+    @test primal_feas && dual_feas
+    # check larger step returns infeasible iterates
+    CO.load_point(cone, prev_primal + 1.01 * max_step * primal_dir)
+    CO.reset_data(cone)
+    primal_feas = CO.is_feas(cone)
+    CO.load_point(cone, prev_dual + 1.01 * max_step * dual_dir)
+    CO.reset_data(cone)
+    dual_feas = CO.is_feas(cone)
+    @test !primal_feas || !dual_feas
 
-    correction = CO.correction(cone, primal_dir, dual_dir)
-    prod2 = similar(prod)
-    # λ \circ W * correction = actual Mehrotra term
-    @test CO.conic_prod!(prod2, λ, W * correction, cone) ≈ CO.conic_prod!(prod, W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
-
-    randvec = CO.conic_prod!(similar(prod), cone, W \ primal_dir, W * dual_dir)
-    # @test correction ≈ CO.conic_prod!(prod2, cone, -cone.grad, randvec) atol=tol rtol=tol # don't think this fact is true
-
-    @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), randvec, cone)
-
-    # @test cone.correction ≈ CO.conic_prod!(prod2, CO.conic_prod!(prod, -grad, W \ primal_dir, cone), W * dual_dir, cone) atol=tol rtol=tol
-    # @test cone.correction ≈ CO.conic_prod!(prod2, CO.conic_prod!(prod, -grad, W * dual_dir, cone), W \ primal_dir, cone) atol=tol rtol=tol
-
-
-    @test CO.check_feas(cone, cone.point + 0.9999 * max_step * primal_dir, true) && CO.check_feas(cone, cone.dual_point + 0.9999 * max_step * dual_dir, false)
-    if max_step < one(T)
-        @test !CO.check_feas(cone, cone.point + 1.0001 * max_step * primal_dir, true) || !CO.check_feas(cone, cone.dual_point + 1.0001 * max_step * dual_dir, false)
-    end
+    # correction = CO.correction(cone, primal_dir, dual_dir)
+    # prod2 = similar(prod)
+    # # λ \circ W * correction = actual Mehrotra term
+    # @test CO.conic_prod!(prod2, λ, W * correction, cone) ≈ CO.conic_prod!(prod, W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
+    # randvec = CO.conic_prod!(similar(prod), W \ primal_dir, W * dual_dir, cone)
+    # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), randvec, cone)
 
     return
 end

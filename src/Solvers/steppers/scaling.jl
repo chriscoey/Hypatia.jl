@@ -350,10 +350,11 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
 
             # @show cone_k.dist, cone_k.dual_dist
             # these should be identical for any primal/dual pair, but they are not
-            # lambda1 = Cones.scalmat_prod!(similar(cone_k.point), cone_k.dual_point, cone_k)
-            # lambda2 = Cones.scalmat_ldiv!(similar(cone_k.point), cone_k.point, cone_k)
-            # @show lambda1 ./ lambda2
-            # @show lambda1 .- lambda2
+            lambda1 = Cones.scalmat_prod!(similar(cone_k.point), cone_k.dual_point, cone_k)
+            lambda2 = Cones.scalmat_ldiv!(similar(cone_k.point), cone_k.point, cone_k)
+            @show lambda1 ./ lambda2
+            @show lambda1 .- lambda2
+            @show solver.point.dual_views[k] - solver.mu * grad_k
 
             # these updates should be identical
             # @. stepper.s_rhs_k[k] += gamma_mu * tmp2
