@@ -348,13 +348,6 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
             # TODO store this if doing line search so don't need to reload the point right before combined phase
             grad_k = Cones.grad(cone_k)
 
-            # e1 = zeros(size(stepper.s_rhs_k[k]))
-            # Cones.set_initial_point(e1, cone_k)
-            # tmp1 = Cones.scalvec_ldiv!(zeros(size(e1)), cone_k, e1)
-            # tmp2 = zeros(size(stepper.s_rhs_k[k]))
-            # Cones.scalmat_ldiv!(tmp2, tmp1, cone_k)
-
-
             # @show cone_k.dist, cone_k.dual_dist
             # these should be identical for any primal/dual pair, but they are not
             # lambda1 = Cones.scalmat_prod!(similar(cone_k.point), cone_k.dual_point, cone_k)
@@ -364,11 +357,25 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
 
             # these updates should be identical
             # @. stepper.s_rhs_k[k] += gamma_mu * tmp2
-            @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
+            # @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
 
             if Cones.use_scaling(cone_k)
-                corr = Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
-                @. stepper.s_rhs_k[k] -= corr
+                e1 = similar(cone_k.point)
+                Cones.set_initial_point(e1, cone_k)
+                lambda = Cones.scalmat_prod!(similar(e1), cone_k.dual_point, cone_k)
+                lambda_circ_lambda = Cones.conic_prod!(e1, lambda, lambda, cone_k)
+                mehrotra_s = Cones.scalmat_ldiv!(similar(e1), stepper.s_dir_k[k], cone_k)
+                mehrotra_z = Cones.scalmat_prod!(similar(e1), stepper.z_dir_k[k], cone_k)
+                mehrotra_full = Cones.conic_prod!(similar(e1), mehrotra_s, mehrotra_z, cone_k)
+                ds = -lambda_circ_lambda - mehrotra_full + gamma_mu * e1
+                ds_by_lambda = Cones.scalvec_ldiv!(similar(e1), ds, cone_k)
+
+                stepper.s_rhs_k[k] .= Cones.scalmat_ldiv!(similar(e1), ds_by_lambda, cone_k)
+                #
+                # corr = Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
+                # @. stepper.s_rhs_k[k] -= corr
+            else
+                @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
             end
         end
 

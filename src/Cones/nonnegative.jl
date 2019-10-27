@@ -179,7 +179,7 @@ function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVec
     return cone.correction
 end
 
-function conic_prod!(w::AbstractVector, cone::Nonnegative, u::AbstractVector, v::AbstractVector)
+function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::Nonnegative)
     @. w = u * v
 end
 

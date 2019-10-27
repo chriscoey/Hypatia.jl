@@ -319,7 +319,7 @@ function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVec
     tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
 
-    mehrotra_term = conic_prod!(similar(cone.point), cone, tmp_s, tmp_z)
+    mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
 
     C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
     scalmat_ldiv!(cone.correction, C, cone)
@@ -384,7 +384,7 @@ function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::Ab
 end
 
 # NOTE this may be used as an internal function rather than an oracle defined for all cones
-function conic_prod!(w::AbstractVector, cone::EpiNormEucl, u::AbstractVector, v::AbstractVector)
+function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::EpiNormEucl)
     @assert length(u) == length(v)
     w[1] = dot(u, v)
     @. @views w[2:end] = u[1] * v[2:end] + v[1] * u[2:end]
