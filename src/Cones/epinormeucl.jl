@@ -33,6 +33,11 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     scaled_point::Vector{T}
     scaled_dual_point::Vector{T}
     w::Vector{T} #think about naming, it's w_bar in cvxopt paper
+    # experimental
+    lambda::Vector{T} #think about naming, it's w_bar in cvxopt paper
+    v::Vector{T}
+    q::Vector{T}
+
     dist::T
     dual_dist::T
     gamma::T
@@ -70,6 +75,7 @@ function setup_data(cone::EpiNormEucl{T}) where {T <: Real}
     cone.scaled_point = zeros(T, dim)
     cone.scaled_dual_point = zeros(T, dim)
     cone.w = zeros(T, dim)
+    cone.v = zeros(T, dim)
     cone.correction = zeros(T, dim)
     return
 end
@@ -107,6 +113,8 @@ function update_grad(cone::EpiNormEucl)
     return cone.grad
 end
 
+jdot(x::AbstractVector, y::AbstractVector) = @views x[1] * y[1] - dot(x[2:end], y[2:end])
+
 function update_scaling(cone::EpiNormEucl)
     @assert !cone.scaling_updated
     @assert cone.feas_updated
@@ -114,13 +122,46 @@ function update_scaling(cone::EpiNormEucl)
     @assert dual_dist >= 0
     scaled_point = cone.scaled_point .= cone.point ./ sqrt(cone.dist)
     scaled_dual_point = cone.scaled_dual_point .= cone.dual_point ./ sqrt(dual_dist)
-    cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
+    gamma = cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
 
     w = cone.w
     w[1] = scaled_point[1] + scaled_dual_point[1]
     @. @views w[2:end] = scaled_point[2:end] - scaled_dual_point[2:end]
     w ./= 2 # NOTE probably not /2 for unhalved barrier
-    w ./= cone.gamma
+    w ./= gamma
+
+    # different code
+    # v = cone.v
+    # vs = dot(scaled_point, v)
+    # vz = jdot(scaled_dual_point, v)
+    # vq = (vs + vz) / gamma / 2 # this is just v'q since q = (s + Jz) / 2 gamma
+    # vu = vs - vz # dunno what this is
+    #
+    # lambda = cone.lambda
+    # lambda[1] = gamma
+    #
+    # w[1] = 2 * v[1] * vq - (scaled_point[1] + scaled_dual_point[1]) / gamma / 2
+    # d = (v[1] * vu - scaled_point[1] / 2 + scaled_dual_point[1] / 2) / (1 + w[1])
+    #
+    # @views begin
+    #     copyto!(lambda[2:end], v[2:end])
+    #     @. lambda[2:end] *= 2 * (-d * vq + 0.5 * vu)
+    #     @. lambda[2:end] +=  (1 - d / gamma) * scaled_point[2:end] / 2
+    #     @. lambda[2:end] +=  (1 + d / gamma) * scaled_dual_point[2:end] / 2
+    # end
+    # @. lambda .*= sqrt(cone.dist / dual_dist)
+    #
+    # v .*= 2 * vq
+    # v[1] -= scaled_point[1] / 2 / gamma
+    # @views @. v[2:end] += scaled_point / gamma / 2
+    # @views @. v[2:end] -= scaled_dual_point /  gamma / 2
+    # v[1] += 1
+    # v ./=  sqrt(2 * v[1])
+
+    v = cone.v
+    copyto!(v, w)
+    v[1] += 1
+    v ./= sqrt(2 * (w[1] + 1))
 
     w2nw2n = sum(abs2, w[2:end])
     cone.ww = abs2(w[1]) + w2nw2n
@@ -129,6 +170,45 @@ function update_scaling(cone::EpiNormEucl)
 
     cone.scaling_updated = true
 end
+
+# J(q) = (q[1] *= -1; q)
+#
+# function update_scaling(cone::EpiNormEucl)
+#     @assert !cone.scaling_updated
+#     @assert cone.feas_updated
+#     dual_dist = cone.dual_dist = calc_dist(cone.dual_point)
+#     @assert dual_dist >= 0
+#     scaled_point = cone.scaled_point .= cone.point ./ sqrt(cone.dist)
+#     scaled_dual_point = cone.scaled_dual_point .= cone.dual_point ./ sqrt(dual_dist)
+#     cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
+#
+#     q = cone.q
+#     v = cone.v
+#     w = cone.w
+#     w_old_dist = calc_dist(cone.w)
+#     q_old_dist = calc_dist(cone.q)
+#
+#     q[1] = scaled_point[1] + scaled_dual_point[1]
+#     @. @views q[2:end] = scaled_point[2:end] - scaled_dual_point[2:end]
+#     q ./= 2
+#     q ./= cone.gamma
+#
+#     w .= sqrt(w_old_dist) * sqrt(q_old_dist) * (2 * v * v' * q - J(q))
+#
+#     v = copy(w)
+#     v[1] += 1
+#     v ./= sqrt(2 * (w[1] + 1))
+#
+#
+#
+#
+#     w2nw2n = sum(abs2, w[2:end])
+#     cone.ww = abs2(w[1]) + w2nw2n
+#     cone.b = 1 + 2 / (1 + w[1]) + w2nw2n / abs2(1 + w[1])
+#     cone.c = 1 + w[1] + w2nw2n / (1 + w[1])
+#
+#     cone.scaling_updated = true
+# end
 
 function update_hess(cone::EpiNormEucl)
     @assert cone.grad_updated
@@ -257,54 +337,78 @@ end
 
 # multiplies arr by W, the squareroot of the scaling matrix
 # TODO there is a faster way
+# function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
+#     if !cone.scaling_updated
+#         update_scaling(cone)
+#     end
+#     w = cone.w
+#
+#     @views begin
+#         mul!(prod[1, :], arr', w)
+#         for j in 1:size(prod, 2)
+#             pa = dot(w[2:end], arr[2:end, j])
+#             @. prod[2:end, j] = w[2:end] * pa
+#         end
+#         @. prod[2:end, :] /= (w[1] + 1)
+#         @. prod[2:end, :] += arr[2:end, :]
+#         @. prod[2:end, :] += arr[1, :]' * w[2:end]
+#         # @. prod[2:end, :] += w[2:end] * arr[1, :]'
+#
+#     end
+#     prod .*= sqrt(sqrt(cone.dist / cone.dual_dist))
+#
+#     # Wbar = similar(cone.inv_hess)
+#     # Wbar.data[1, :] .= w
+#     # Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
+#     # Wbar.data[2:end, 2:end] += I
+#     # W = Wbar * (cone.dist / cone.dual_dist) ^ (1 / 4)
+#     # prod .= W * arr
+#
+#     return prod
+# end
+
 function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
-    if !cone.scaling_updated
-        update_scaling(cone)
+    copyto!(prod, cone.v)
+    @inbounds @views for j in 1:size(arr, 2)
+        prod[:, j] *= 2 * dot(cone.v, arr[:, j])
     end
-    w = cone.w
-
-    @views begin
-        mul!(prod[1, :], arr', w)
-        for j in 1:size(prod, 2)
-            pa = dot(w[2:end], arr[2:end, j])
-            @. prod[2:end, j] = w[2:end] * pa
-        end
-        @. prod[2:end, :] /= (w[1] + 1)
-        @. prod[2:end, :] += arr[2:end, :]
-        @. prod[2:end, :] += arr[1, :]' * w[2:end]
-        # @. prod[2:end, :] += w[2:end] * arr[1, :]'
-
-    end
-    prod .*= sqrt(sqrt(cone.dist / cone.dual_dist))
-
-    # Wbar = similar(cone.inv_hess)
-    # Wbar.data[1, :] .= w
-    # Wbar.data[2:end, 2:end] = w[2:end] * w[2:end]' / (w[1] + 1)
-    # Wbar.data[2:end, 2:end] += I
-    # W = Wbar * (cone.dist / cone.dual_dist) ^ (1 / 4)
-    # prod .= W * arr
-
+    @views prod[1, :] .-= arr[1, :]
+    @views prod[2:end, :] .+= arr[2:end, :]
+    prod .*= (cone.dist / cone.dual_dist) ^ (1 / 4)
     return prod
 end
+#
+# function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
+#     if !cone.scaling_updated
+#         update_scaling(cone)
+#     end
+#     w = cone.w
+#
+#     @views begin
+#         prod[1, :] .= arr[1, :] * w[1]
+#         mul!(prod[1, :], arr[2:end, :]', w[2:end], -1, true)
+#         for j in 1:size(prod, 2)
+#             pa = dot(w[2:end], arr[2:end, j])
+#             @. prod[2:end, j] = w[2:end] * pa
+#         end
+#         @. prod[2:end, :] /= (w[1] + 1)
+#         @. prod[2:end, :] += arr[2:end, :]
+#         @. prod[2:end, :] -= arr[1, :]' * w[2:end]
+#     end
+#     prod .*= sqrt(sqrt(cone.dual_dist / cone.dist))
+#     return prod
+# end
 
 function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
-    if !cone.scaling_updated
-        update_scaling(cone)
+    copyto!(prod, cone.v)
+    @views prod[2:end, :] *= -1
+    @inbounds @views for j in 1:size(arr, 2)
+        prod[:, j] *= 2 * jdot(cone.v, arr[:, j])
     end
-    w = cone.w
 
-    @views begin
-        prod[1, :] .= arr[1, :] * w[1]
-        mul!(prod[1, :], arr[2:end, :]', w[2:end], -1, true)
-        for j in 1:size(prod, 2)
-            pa = dot(w[2:end], arr[2:end, j])
-            @. prod[2:end, j] = w[2:end] * pa
-        end
-        @. prod[2:end, :] /= (w[1] + 1)
-        @. prod[2:end, :] += arr[2:end, :]
-        @. prod[2:end, :] -= arr[1, :]' * w[2:end]
-    end
-    prod .*= sqrt(sqrt(cone.dual_dist / cone.dist))
+    @views prod[1, :] .-= arr[1, :]
+    @views prod[2:end, :] .+= arr[2:end, :]
+    prod .*= (cone.dual_dist / cone.dist) ^ (1 / 4)
     return prod
 end
 
