@@ -149,8 +149,7 @@ function load(system_solver::NaiveSparseSystemSolver{T}, solver::Solver{T}) wher
     H_Is = Vector{Int}(undef, hess_nz_total)
     H_Js = Vector{Int}(undef, hess_nz_total)
     offset = 1
-    for (k, cone_k) in enumerate(cones)
-        cone_idxs_k = cone_idxs[k]
+    for (cone_k, idxs_k) in enumerate(cones, cone_idxs)
         z_start_k = n + p + first(cone_idxs_k) - 1
         s_start_k = tau_row + first(cone_idxs_k) - 1
         H_start_k = Cones.use_dual(cone_k) ? z_start_k : s_start_k
@@ -272,8 +271,7 @@ function load(system_solver::NaiveDenseSystemSolver{T}, solver::Solver{T}) where
 end
 
 function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
-    for (k, cone_k) in enumerate(solver.model.cones)
-        lhs_k = system_solver.lhs6_H_k[k]
+    for (cone_k, lhs_k) in zip(solver.model.cones, system_solver.lhs6_H_k)
         copyto!(lhs_k, Cones.hess(cone_k))
         if !Cones.use_scaling(cone_k)
             lmul!(solver.mu, lhs_k)

@@ -30,10 +30,9 @@ abstract type SymIndefSystemSolver{T <: Real} <: SystemSolver{T} end
 function solve_system(system_solver::SymIndefSystemSolver{T}, solver::Solver{T}, sol::Vector{T}, rhs::Vector{T}) where {T <: Real}
     model = solver.model
     (n, p, q) = (model.n, model.p, model.q)
-
     rhs3 = system_solver.rhs3
     sol3 = system_solver.sol3
-    dim3 = size(sol3, 1)
+    dim3 = length(rhs3)
     x_rows = 1:n
     y_rows = n .+ (1:p)
     z_rows = (n + p) .+ (1:q)
@@ -41,8 +40,7 @@ function solve_system(system_solver::SymIndefSystemSolver{T}, solver::Solver{T},
     @. @views rhs3[x_rows] = rhs[x_rows]
     @. @views rhs3[y_rows] = -rhs[y_rows]
 
-    for (k, cone_k) in enumerate(model.cones)
-        idxs_k = model.cone_idxs[k]
+    for (cone_k, idxs_k) in enumerate(model.cones, model.cone_idxs)
         z_rows_k = (n + p) .+ idxs_k
         z_k = @view rhs[z_rows_k]
         z3_k = @view rhs3[z_rows_k]
@@ -64,6 +62,7 @@ function solve_system(system_solver::SymIndefSystemSolver{T}, solver::Solver{T},
 
     solve_subsystem(system_solver, sol3, rhs3)
 
+    # TODO refactor all below
     # TODO maybe use higher precision here
     kapontau = solver.kap / solver.tau
     const_sol = system_solver.const_sol
@@ -87,17 +86,6 @@ function solve_system(system_solver::SymIndefSystemSolver{T}, solver::Solver{T},
     sol[end] = kapontau * (rhs[end] - sol_tau)
 
     return sol
-end
-
-# setup constant RHS with b, c, h
-function setup_const_rhs(system_solver::SymIndefSystemSolver{T}, solver::Solver{T}) where {T <: Real}
-    model = solver.model
-    (n, p, q) = (model.n, model.p, model.q)
-    const_rhs = Vector{T}(undef, n + p + q)
-    @. const_rhs[1:n] = -model.c
-    @. const_rhs[n .+ (1:p)] = model.b
-    @. const_rhs[(n + p) .+ (1:q)] = model.h
-    return const_rhs
 end
 
 #=
@@ -125,8 +113,9 @@ function load(system_solver::SymIndefSparseSystemSolver{T}, solver::Solver{T}) w
     (n, p, q) = (model.n, model.p, model.q)
     cones = model.cones
     cone_idxs = model.cone_idxs
+    dim = n + p + q
 
-    system_solver.sol3 = zeros(n + p + q)
+    system_solver.sol3 = zeros(dim)
     system_solver.rhs3 = similar(system_solver.sol3)
 
     # form sparse LHS without Hessians and inverse Hessians in z/z block
@@ -149,8 +138,7 @@ function load(system_solver::SymIndefSparseSystemSolver{T}, solver::Solver{T}) w
     H_Js = Vector{Int}(undef, hess_nz_total)
     offset = 1
     y_start = n + p - 1
-    for (k, cone_k) in enumerate(cones)
-        cone_idxs_k = cone_idxs[k]
+    for (cone_k, idxs_k) in enumerate(cones, cone_idxs)
         z_start_k = y_start + first(cone_idxs_k)
         for j in 1:Cones.dimension(cone_k)
             nz_rows_kj = z_start_k .+ (Cones.use_dual(cone_k) ? Cones.hess_nz_idxs_col(cone_k, j, true) : Cones.inv_hess_nz_idxs_col(cone_k, j, true))
@@ -172,7 +160,6 @@ function load(system_solver::SymIndefSparseSystemSolver{T}, solver::Solver{T}) w
     append!(Vs, fill(pert, n))
     append!(Vs, fill(-pert, p))
 
-    dim = size(lhs3, 1)
     # integer type supported by the sparse system solver library to be used
     Ti = int_type(system_solver.fact_cache)
     # prefer conversions of integer types to happen here than inside external wrappers
@@ -199,7 +186,7 @@ function load(system_solver::SymIndefSparseSystemSolver{T}, solver::Solver{T}) w
         end
     end
 
-    system_solver.const_rhs = setup_const_rhs(system_solver, solver)
+    system_solver.const_rhs = vcat(-model.c, model.b, model.h)
     system_solver.const_sol = similar(system_solver.const_rhs)
 
     return system_solver
@@ -276,7 +263,7 @@ function load(system_solver::SymIndefDenseSystemSolver{T}, solver::Solver{T}) wh
 
     load_matrix(system_solver.fact_cache, system_solver.lhs3)
 
-    system_solver.const_rhs = setup_const_rhs(system_solver, solver)
+    system_solver.const_rhs = vcat(-model.c, model.b, model.h)
     system_solver.const_sol = similar(system_solver.const_rhs)
 
     return system_solver
@@ -287,8 +274,7 @@ function update_fact(system_solver::SymIndefDenseSystemSolver, solver::Solver)
     (n, p) = (model.n, model.p)
     lhs3 = system_solver.lhs3.data
 
-    for (k, cone_k) in enumerate(model.cones)
-        idxs_k = model.cone_idxs[k]
+    for (cone_k, idxs_k) in enumerate(model.cones, model.cone_idxs)
         z_rows_k = (n + p) .+ idxs_k
 
         if Cones.use_dual(cone_k) # no scaling

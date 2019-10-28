@@ -4,50 +4,83 @@ Copyright 2018, Chris Coey and contributors
 QR+Cholesky linear system solver
 requires precomputed QR factorization of A'
 solves linear system in naive.jl by first eliminating s, kap, and tau via the method in the symindef solver, then reducing the 3x3 symmetric indefinite system to a series of low-dimensional operations via a procedure similar to that described by S10.3 of
-http://www.seas.ucla.edu/~vandenbe/publications/coneprog.pdf (the dominating subroutine is a positive definite linear solve with RHS of dimension n-p x 3)
+http://www.seas.ucla.edu/~vandenbe/publications/coneprog.pdf (the dominating subroutine is a positive definite linear solve with side dimension n-p)
 =#
 
 abstract type QRCholSystemSolver{T <: Real} <: SystemSolver{T} end
 
-function solve_system(system_solver::QRCholSystemSolver{T}, solver::Solver{T}, sol::Matrix{T}, rhs::Matrix{T}) where {T <: Real}
+function solve_system(system_solver::QRCholSystemSolver{T}, solver::Solver{T}, sol::Vector{T}, rhs::Vector{T}) where {T <: Real}
     model = solver.model
     (n, p, q) = (model.n, model.p, model.q)
-    tau_row = n + p + q + 1
 
-    # TODO in-place
-    x = zeros(T, n, 3)
-    @. @views x[:, 1:2] = rhs[1:n, :]
-    @. @views x[:, 3] = -model.c
-    x_sub1 = @view x[1:p, :]
-    x_sub2 = @view x[(p + 1):end, :]
+    rhs3 = system_solver.rhs3
+    dim3 = length(rhs3)
+    x_rows = 1:n
+    y_rows = n .+ (1:p)
+    z_rows = (n + p) .+ (1:q)
 
-    y = zeros(T, p, 3)
-    @. @views y[:, 1:2] = -rhs[n .+ (1:p), :]
-    @. @views y[:, 3] = model.b
+    @. @views rhs3[x_rows] = rhs[x_rows]
+    @. @views rhs3[y_rows] = -rhs[y_rows]
 
-    z = zeros(T, q, 3)
-
-    for (k, cone_k) in enumerate(model.cones)
-        idxs_k = model.cone_idxs[k]
+    for (cone_k, idxs_k) in zip(model.cones, model.cone_idxs)
         z_rows_k = (n + p) .+ idxs_k
-        s_rows_k = tau_row .+ idxs_k
-        zk12 = @view rhs[z_rows_k, :]
-        sk12 = @view rhs[s_rows_k, :]
-        hk = @view model.h[idxs_k]
-        zk12_new = @view z[idxs_k, 1:2]
-        zk3_new = @view z[idxs_k, 3]
+        z_k = @view rhs[z_rows_k]
+        z3_k = @view rhs3[z_rows_k]
+        s_rows_k = (dim3 + 1) .+ idxs_k
+        s_k = @view rhs[s_rows_k]
 
-        if Cones.use_dual(cone_k)
-            zk12_temp = -zk12 - sk12 # TODO in place
-            Cones.inv_hess_prod!(zk12_new, zk12_temp, cone_k)
-            Cones.inv_hess_prod!(zk3_new, hk, cone_k)
+        if Cones.use_dual(cone_k) # no scaling
+            z_temp_k = @view sol[z_rows_k]
+            @. z_temp_k = -z_k - s_k
+            Cones.inv_hess_prod!(z3_k, z_temp_k, cone_k)
+            z3_k ./= solver.mu
         else
-            Cones.hess_prod!(zk12_new, zk12, cone_k)
-            @. zk12_new *= -1
-            @. zk12_new -= sk12
-            Cones.hess_prod!(zk3_new, hk, cone_k)
+            Cones.hess_prod!(z3_k, z_k, cone_k)
+            if Cones.use_scaling(cone_k)
+                axpby!(-1, s_k, -1, z3_k)
+            else
+                axpby!(-1, s_k, -solver.mu, z3_k)
+            end
         end
     end
+
+    sol3 = solve_3x3_subsystem(system_solver, solver, rhs3) # NOTE modifies and returns rhs3
+
+    # TODO refactor all below
+    # TODO maybe use higher precision here
+    kapontau = solver.kap / solver.tau
+    const_sol = system_solver.const_sol
+
+    # lift to get tau
+    @views tau_num = rhs[dim3 + 1] + kapontau * rhs[end] + dot(model.c, sol3[x_rows]) + dot(model.b, sol3[y_rows]) + dot(model.h, sol3[z_rows])
+    @views tau_denom = kapontau - dot(model.c, const_sol[x_rows]) - dot(model.b, const_sol[y_rows]) - dot(model.h, const_sol[z_rows])
+    sol_tau = tau_num / tau_denom
+
+    @. sol[1:dim3] = sol3 + sol_tau * const_sol
+    sol[dim3 + 1] = sol_tau
+
+    # lift to get s and kap
+    # TODO refactor below for use with symindef and qrchol methods
+    # s = -G*x + h*tau - zrhs
+    s = @view sol[(dim3 + 2):(end - 1)]
+    @. @views s = model.h * sol_tau - rhs[z_rows]
+    @views mul!(s, model.G, sol[x_rows], -1, true)
+
+    # kap = kapbar/taubar*(kaprhs - tau)
+    sol[end] = kapontau * (rhs[end] - sol_tau)
+
+    return sol
+end
+
+function solve_3x3_subsystem(system_solver::QRCholSystemSolver{T}, solver::Solver{T}, rhs3::Vector{T}) where {T <: Real}
+    model = solver.model
+    (n, p, q) = (model.n, model.p, model.q)
+
+    x = @view rhs3[1:n]
+    x_sub1 = @view rhs3[1:p]
+    x_sub2 = @view rhs3[(p + 1):n]
+    y = @view rhs3[n .+ (1:p)]
+    z = @view rhs3[(n + p) .+ (1:q)]
 
     ldiv!(solver.Ap_R', y)
 
@@ -59,16 +92,16 @@ function solve_system(system_solver::QRCholSystemSolver{T}, solver::Solver{T}, s
 
     if !isempty(system_solver.Q2div)
         mul!(system_solver.GQ1x, system_solver.GQ1, y)
-        @timeit solver.timer "block_hess_prod" block_hessian_product(model.cones, system_solver.HGQ1x_k, system_solver.GQ1x_k)
+        block_hessian_product(solver, model.cones, system_solver.HGQ1x_k, system_solver.GQ1x_k)
         mul!(system_solver.Q2div, system_solver.GQ2', system_solver.HGQ1x, -1, true)
 
-        @timeit solver.timer "solve_subsystem" solve_subsystem(system_solver, x_sub2, system_solver.Q2div)
+        solve_subsystem(system_solver, x_sub2, system_solver.Q2div)
     end
 
     lmul!(solver.Ap_Q, x)
 
     mul!(system_solver.Gx, model.G, x)
-    @timeit solver.timer "block_hess_prod" block_hessian_product(model.cones, system_solver.HGx_k, system_solver.Gx_k)
+    block_hessian_product(solver, model.cones, system_solver.HGx_k, system_solver.Gx_k)
 
     @. z = system_solver.HGx - z
 
@@ -78,49 +111,19 @@ function solve_system(system_solver::QRCholSystemSolver{T}, solver::Solver{T}, s
         ldiv!(solver.Ap_R, y)
     end
 
-    x3 = @view x[:, 3]
-    y3 = @view y[:, 3]
-    z3 = @view z[:, 3]
-    x12 = @view x[:, 1:2]
-    y12 = @view y[:, 1:2]
-    z12 = @view z[:, 1:2]
-
-    # lift to get tau
-    # TODO maybe use higher precision here
-    tau_denom = solver.mu / solver.tau / solver.tau - dot(model.c, x3) - dot(model.b, y3) - dot(model.h, z3)
-    tau = @view sol[tau_row:tau_row, :]
-    @. @views tau = rhs[tau_row:tau_row, :] + rhs[end:end, :]
-    tau .+= model.c' * x12 + model.b' * y12 + model.h' * z12 # TODO in place
-    @. tau /= tau_denom
-
-    @. x12 += tau * x3
-    @. y12 += tau * y3
-    @. z12 += tau * z3
-
-    @views sol[1:n, :] = x12
-    @views sol[n .+ (1:p), :] = y12
-    @views sol[(n + p) .+ (1:q), :] = z12
-
-    # lift to get s and kap
-    # TODO refactor below for use with symindef and qrchol methods
-    # s = -G*x + h*tau - zrhs
-    s = @view sol[(tau_row + 1):(end - 1), :]
-    mul!(s, model.h, tau)
-    mul!(s, model.G, sol[1:n, :], -one(T), true)
-    @. @views s -= rhs[(n + p) .+ (1:q), :]
-
-    # kap = -mu/(taubar^2)*tau + kaprhs
-    @. @views sol[end:end, :] = -solver.mu / solver.tau * tau / solver.tau + rhs[end:end, :]
-
-    return sol
+    return rhs3
 end
 
-function block_hessian_product(cones::Vector, prod_k::Vector, arr_k::Vector)
-    for (k, cone_k) in enumerate(cones)
-        if Cones.use_dual(cone_k)
-            Cones.inv_hess_prod!(prod_k[k], arr_k[k], cone_k)
+function block_hessian_product(solver::Solver, cones::Vector, prods::Vector, arrs::Vector)
+    for (cone_k, prod_k, arr_k) in zip(cones, prods, arrs)
+        if Cones.use_dual(cone_k) # no scaling
+            Cones.inv_hess_prod!(prod_k, arr_k, cone_k)
+            prod_k ./= solver.mu
         else
-            Cones.hess_prod!(prod_k[k], arr_k[k], cone_k)
+            Cones.hess_prod!(prod_k, arr_k, cone_k)
+            if !Cones.use_scaling(cone_k)
+                prod_k .*= solver.mu
+            end
         end
     end
 end
@@ -130,6 +133,8 @@ direct dense
 =#
 
 mutable struct QRCholDenseSystemSolver{T <: Real} <: QRCholSystemSolver{T}
+    rhs3::Vector{T}
+    const_sol::Vector{T}
     lhs1::Symmetric{T, Matrix{T}}
     GQ1
     GQ2
@@ -162,6 +167,8 @@ function load(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}) wher
     (n, p, q) = (model.n, model.p, model.q)
     cone_idxs = model.cone_idxs
 
+    system_solver.rhs3 = zeros(T, n + p + q)
+
     # TODO optimize for case of empty A
     # TODO very inefficient method used for sparse G * QRSparseQ : see https://github.com/JuliaLang/julia/issues/31124#issuecomment-501540818
     if !isa(model.G, Matrix{T})
@@ -175,10 +182,10 @@ function load(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}) wher
     nmp = n - p
     system_solver.HGQ2 = Matrix{T}(undef, q, nmp)
     system_solver.lhs1 = Symmetric(Matrix{T}(undef, nmp, nmp), :U)
-    system_solver.QpbxGHbz = Matrix{T}(undef, n, 3)
-    system_solver.Q1pbxGHbz = view(system_solver.QpbxGHbz, 1:p, :)
-    system_solver.Q2div = view(system_solver.QpbxGHbz, (p + 1):n, :)
-    system_solver.GQ1x = Matrix{T}(undef, q, 3)
+    system_solver.QpbxGHbz = Vector{T}(undef, n)
+    system_solver.Q1pbxGHbz = view(system_solver.QpbxGHbz, 1:p)
+    system_solver.Q2div = view(system_solver.QpbxGHbz, (p + 1):n)
+    system_solver.GQ1x = Vector{T}(undef, q)
     system_solver.HGQ1x = similar(system_solver.GQ1x)
     system_solver.Gx = similar(system_solver.GQ1x)
     system_solver.HGx = similar(system_solver.Gx)
@@ -191,22 +198,45 @@ function load(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}) wher
 
     load_matrix(system_solver.fact_cache, system_solver.lhs1, copy_A = false) # overwrite lhs1 with new factorization each time update_fact is called
 
+    system_solver.const_sol = similar(system_solver.rhs3)
+
     return system_solver
 end
 
 function update_fact(system_solver::QRCholDenseSystemSolver, solver::Solver)
     isempty(system_solver.Q2div) && return system_solver
+    model = solver.model
 
     # TODO can be faster and numerically better for some cones to use L factor of cholesky of hessian here, with BLAS.syrk updating
-    @timeit solver.timer "block_hess_prod" block_hessian_product(solver.model.cones, system_solver.HGQ2_k, system_solver.GQ2_k)
-    @timeit solver.timer "Q2GHGQ2" mul!(system_solver.lhs1.data, system_solver.GQ2', system_solver.HGQ2)
+    block_hessian_product(solver, model.cones, system_solver.HGQ2_k, system_solver.GQ2_k)
+    mul!(system_solver.lhs1.data, system_solver.GQ2', system_solver.HGQ2)
 
     update_fact(system_solver.fact_cache, system_solver.lhs1) # overwrites lhs1 with new factorization
+
+    (n, p) = (model.n, model.p)
+    const_sol = system_solver.const_sol
+    @views const_sol[1:n] = -model.c
+    @views const_sol[n .+ (1:p)] = model.b
+    for (cone_k, idxs_k) in zip(model.cones, model.cone_idxs)
+        h_k = @view model.h[idxs_k]
+        z3_k = @view const_sol[(n + p) .+ idxs_k]
+
+        if Cones.use_dual(cone_k) # no scaling
+            Cones.inv_hess_prod!(z3_k, h_k, cone_k)
+            z3_k ./= solver.mu
+        else
+            Cones.hess_prod!(z3_k, h_k, cone_k)
+            if !Cones.use_scaling(cone_k)
+                z3_k .*= solver.mu
+            end
+        end
+    end
+    solve_3x3_subsystem(system_solver, solver, const_sol)
 
     return system_solver
 end
 
-function solve_subsystem(system_solver::QRCholDenseSystemSolver, sol1::AbstractMatrix, rhs1::AbstractMatrix)
+function solve_subsystem(system_solver::QRCholDenseSystemSolver, sol1::AbstractVector, rhs1::AbstractVector)
     copyto!(sol1, rhs1)
     solve_system(system_solver.fact_cache, sol1)
     # TODO recover if fails - check issuccess
