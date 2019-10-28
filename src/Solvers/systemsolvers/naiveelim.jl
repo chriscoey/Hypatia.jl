@@ -43,7 +43,7 @@ function solve_system(system_solver::NaiveElimSystemSolver{T}, solver::Solver{T}
     dim4 = size(sol4, 1)
     @views copyto!(rhs4, rhs[1:dim4])
 
-    for (cone_k, idxs_k) in enumerate(model.cones, model.cone_idxs)
+    for (cone_k, idxs_k) in zip(model.cones, model.cone_idxs)
         z_rows_k = (n + p) .+ idxs_k
         s_rows_k = (q + 1) .+ z_rows_k
 
@@ -141,8 +141,8 @@ function load(system_solver::NaiveElimSparseSystemSolver{T}, solver::Solver{T}) 
     H_Is = Vector{Int}(undef, hess_nz_total)
     H_Js = Vector{Int}(undef, hess_nz_total)
     offset = 1
-    for (cone_k, idxs_k) in enumerate(cones, cone_idxs)
-        z_start_k = n + p + first(cone_idxs_k) - 1
+    for (cone_k, idxs_k) in zip(cones, cone_idxs)
+        z_start_k = n + p + first(idxs_k) - 1
         for j in 1:Cones.dimension(cone_k)
             nz_rows_kj = z_start_k .+ (Cones.use_dual(cone_k) ? Cones.hess_nz_idxs_col(cone_k, j, false) : Cones.inv_hess_nz_idxs_col(cone_k, j, false))
             len_kj = length(nz_rows_kj)
@@ -168,8 +168,7 @@ function load(system_solver::NaiveElimSparseSystemSolver{T}, solver::Solver{T}) 
     # cache indices of nonzeros of Hessians and inverse Hessians in sparse LHS nonzeros vector
     system_solver.hess_idxs = [Vector{Union{UnitRange, Vector{Int}}}(undef, Cones.dimension(cone_k)) for cone_k in cones]
     for (k, cone_k) in enumerate(cones)
-        cone_idxs_k = cone_idxs[k]
-        z_start_k = n + p + first(cone_idxs_k) - 1
+        z_start_k = n + p + first(cone_idxs[k]) - 1
         for j in 1:Cones.dimension(cone_k)
             col = z_start_k + j
             # get nonzero rows in the current column of the LHS
@@ -267,9 +266,9 @@ function update_fact(system_solver::NaiveElimDenseSystemSolver{T}, solver::Solve
     (n, p) = (model.n, model.p)
     lhs4 = system_solver.lhs4
 
-    for (cone_k, idxs_k) in enumerate(model.cones, model.cone_idxs)
+    for (cone_k, idxs_k) in zip(model.cones, model.cone_idxs)
         z_rows_k = (n + p) .+ idxs_k
-        
+
         if Cones.use_dual(cone_k) # no scaling
             # -G_k*x + mu*H_k*z_k + h_k*tau = zrhs_k + srhs_k
             H = Cones.hess(cone_k)

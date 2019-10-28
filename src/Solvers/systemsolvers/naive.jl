@@ -149,9 +149,9 @@ function load(system_solver::NaiveSparseSystemSolver{T}, solver::Solver{T}) wher
     H_Is = Vector{Int}(undef, hess_nz_total)
     H_Js = Vector{Int}(undef, hess_nz_total)
     offset = 1
-    for (cone_k, idxs_k) in enumerate(cones, cone_idxs)
-        z_start_k = n + p + first(cone_idxs_k) - 1
-        s_start_k = tau_row + first(cone_idxs_k) - 1
+    for (cone_k, idxs_k) in zip(cones, cone_idxs)
+        z_start_k = n + p + first(idxs_k) - 1
+        s_start_k = tau_row + first(idxs_k) - 1
         H_start_k = Cones.use_dual(cone_k) ? z_start_k : s_start_k
         for j in 1:Cones.dimension(cone_k)
             nz_rows_kj = s_start_k .+ Cones.hess_nz_idxs_col(cone_k, j, false)
@@ -178,9 +178,9 @@ function load(system_solver::NaiveSparseSystemSolver{T}, solver::Solver{T}) wher
     # cache indices of nonzeros of Hessians in sparse LHS nonzeros vector
     system_solver.hess_idxs = [Vector{Union{UnitRange, Vector{Int}}}(undef, Cones.dimension(cone_k)) for cone_k in cones]
     for (k, cone_k) in enumerate(cones)
-        cone_idxs_k = cone_idxs[k]
-        z_start_k = n + p + first(cone_idxs_k) - 1
-        s_start_k = tau_row + first(cone_idxs_k) - 1
+        idxs_k = cone_idxs[k]
+        z_start_k = n + p + first(idxs_k) - 1
+        s_start_k = tau_row + first(idxs_k) - 1
         H_start_k = Cones.use_dual(cone_k) ? z_start_k : s_start_k
         for j in 1:Cones.dimension(cone_k)
             col = H_start_k + j

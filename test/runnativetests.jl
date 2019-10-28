@@ -88,7 +88,7 @@ blas_reals = [
     Float32,
     ]
 
-options = (verbose = true,)
+options = (verbose = false,)
 
 @info("starting native tests")
 @testset "native tests" begin
@@ -119,32 +119,32 @@ options = (verbose = true,)
     # end
 
     # test each system solver
-    # @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
-    #     t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-    #     # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-    # end
-    # @testset "NaiveSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
-    # end
+    @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
+        t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...)) # TODO delete
+    end
+    @testset "NaiveSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
+    end
     # @testset "NaiveIndirect tests: $t" for t in testfuns # TODO need to use linearmaps here with the apply_LHS function, not blockmatrix
     #     T = Float64
     #     t(T, solver = SO.Solver{T}(preprocess = false, init_use_indirect = true, reduce = false, system_solver = SO.NaiveIndirectSystemSolver{T}(); options...))
     # end
-    # @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
-    # end
-    # @testset "NaiveElimSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
-    # end
-    # @testset "SymIndefDense tests: $t, $T" for t in testfuns, T in generic_reals
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefDenseSystemSolver{T}(); options...))
-    # end
-    # @testset "SymIndefSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
-    # end
+    @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
+    end
+    @testset "NaiveElimSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
+    end
+    @testset "SymIndefDense tests: $t, $T" for t in testfuns, T in generic_reals
+        t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefDenseSystemSolver{T}(); options...))
+    end
+    @testset "SymIndefSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
+    end
     @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache, Hypatia.DensePosDefCache]
         t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
     end

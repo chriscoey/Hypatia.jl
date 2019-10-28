@@ -40,7 +40,7 @@ function solve_system(system_solver::SymIndefSystemSolver{T}, solver::Solver{T},
     @. @views rhs3[x_rows] = rhs[x_rows]
     @. @views rhs3[y_rows] = -rhs[y_rows]
 
-    for (cone_k, idxs_k) in enumerate(model.cones, model.cone_idxs)
+    for (cone_k, idxs_k) in zip(model.cones, model.cone_idxs)
         z_rows_k = (n + p) .+ idxs_k
         z_k = @view rhs[z_rows_k]
         z3_k = @view rhs3[z_rows_k]
@@ -138,8 +138,8 @@ function load(system_solver::SymIndefSparseSystemSolver{T}, solver::Solver{T}) w
     H_Js = Vector{Int}(undef, hess_nz_total)
     offset = 1
     y_start = n + p - 1
-    for (cone_k, idxs_k) in enumerate(cones, cone_idxs)
-        z_start_k = y_start + first(cone_idxs_k)
+    for (cone_k, idxs_k) in zip(cones, cone_idxs)
+        z_start_k = y_start + first(idxs_k)
         for j in 1:Cones.dimension(cone_k)
             nz_rows_kj = z_start_k .+ (Cones.use_dual(cone_k) ? Cones.hess_nz_idxs_col(cone_k, j, true) : Cones.inv_hess_nz_idxs_col(cone_k, j, true))
             len_kj = length(nz_rows_kj)
@@ -274,7 +274,7 @@ function update_fact(system_solver::SymIndefDenseSystemSolver, solver::Solver)
     (n, p) = (model.n, model.p)
     lhs3 = system_solver.lhs3.data
 
-    for (cone_k, idxs_k) in enumerate(model.cones, model.cone_idxs)
+    for (cone_k, idxs_k) in zip(model.cones, model.cone_idxs)
         z_rows_k = (n + p) .+ idxs_k
 
         if Cones.use_dual(cone_k) # no scaling
