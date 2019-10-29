@@ -10,6 +10,8 @@ W \in S^n : 0 >= eigmin(W)
 
 barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Programming" by Nesterov & Todd
 -logdet(W)
+
+TODO fix native and moi tests, and moi
 =#
 
 mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
@@ -18,6 +20,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     side::Int
     is_complex::Bool
     point::Vector{T}
+    rt2::T
 
     feas_updated::Bool
     grad_updated::Bool
@@ -40,6 +43,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         cone = new{T, R}()
         cone.use_dual = is_dual
         cone.dim = dim # real vector dimension
+        cone.rt2 = sqrt(T(2))
         if R <: Complex
             side = isqrt(dim) # real lower triangle and imaginary under diagonal
             @assert side^2 == dim
@@ -87,7 +91,7 @@ end
 
 function update_feas(cone::PosSemidefTri)
     @assert !cone.feas_updated
-    vec_to_mat_U!(cone.mat, cone.point)
+    svec_to_smat!(cone.mat, cone.point, cone.rt2)
     copyto!(cone.mat2, cone.mat)
     cone.fact_mat = cholesky!(Hermitian(cone.mat2, :U), check = false)
     cone.is_feas = isposdef(cone.fact_mat)
@@ -98,7 +102,7 @@ end
 function update_grad(cone::PosSemidefTri)
     @assert cone.is_feas
     cone.inv_mat = inv(cone.fact_mat)
-    mat_U_to_vec_scaled!(cone.grad, cone.inv_mat)
+    smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
     cone.grad .*= -1
     copytri!(cone.mat, 'U', cone.is_complex)
     cone.grad_updated = true
@@ -106,10 +110,8 @@ function update_grad(cone::PosSemidefTri)
 end
 
 # TODO parallelize
-function _build_hess(H::Matrix{T}, mat::Matrix{T}, is_inv::Bool) where {T <: Real}
+function _build_hess(H::Matrix{T}, mat::Matrix{T}, rt2::T) where {T <: Real}
     side = size(mat, 1)
-    scale1 = (is_inv ? inv(T(2)) : T(2))
-    scale2 = (is_inv ? one(T) : scale1)
     k = 1
     for i in 1:side, j in 1:i
         k2 = 1
@@ -117,9 +119,9 @@ function _build_hess(H::Matrix{T}, mat::Matrix{T}, is_inv::Bool) where {T <: Rea
             if (i == j) && (i2 == j2)
                 H[k2, k] = abs2(mat[i2, i])
             elseif (i != j) && (i2 != j2)
-                H[k2, k] = scale1 * (mat[i2, i] * mat[j, j2] + mat[j2, i] * mat[j, i2])
+                H[k2, k] = mat[i2, i] * mat[j, j2] + mat[j2, i] * mat[j, i2]
             else
-                H[k2, k] = scale2 * mat[i2, i] * mat[j, j2]
+                H[k2, k] = rt2 * mat[i2, i] * mat[j, j2]
             end
             if k2 == k
                 break
@@ -131,10 +133,8 @@ function _build_hess(H::Matrix{T}, mat::Matrix{T}, is_inv::Bool) where {T <: Rea
     return H
 end
 
-function _build_hess(H::Matrix{T}, mat::Matrix{Complex{T}}, is_inv::Bool) where {T <: Real}
+function _build_hess(H::Matrix{T}, mat::Matrix{Complex{T}}, rt2::T) where {T <: Real}
     side = size(mat, 1)
-    scale1 = (is_inv ? inv(T(2)) : T(2))
-    scale2 = (is_inv ? one(T) : scale1)
     k = 1
     for i in 1:side, j in 1:i
         k2 = 1
@@ -144,7 +144,7 @@ function _build_hess(H::Matrix{T}, mat::Matrix{Complex{T}}, is_inv::Bool) where 
                     H[k2, k] = abs2(mat[i2, i])
                     k2 += 1
                 else
-                    c = scale2 * mat[i, i2] * mat[j2, j]
+                    c = rt2 * mat[i, i2] * mat[j2, j]
                     H[k2, k] = real(c)
                     k2 += 1
                     H[k2, k] = -imag(c)
@@ -158,18 +158,18 @@ function _build_hess(H::Matrix{T}, mat::Matrix{Complex{T}}, is_inv::Bool) where 
         else
             @inbounds for i2 in 1:side, j2 in 1:i2
                 if i2 == j2
-                    c = scale2 * mat[i2, i] * mat[j, j2]
+                    c = rt2 * mat[i2, i] * mat[j, j2]
                     H[k2, k] = real(c)
                     H[k2, k + 1] = -imag(c)
                     k2 += 1
                 else
                     b1 = mat[i2, i] * mat[j, j2]
                     b2 = mat[j2, i] * mat[j, i2]
-                    c1 = scale1 * (b1 + b2)
+                    c1 = b1 + b2
                     H[k2, k] = real(c1)
                     H[k2, k + 1] = -imag(c1)
                     k2 += 1
-                    c2 = scale1 * (b1 - b2)
+                    c2 = b1 - b2
                     H[k2, k] = imag(c2)
                     H[k2, k + 1] = real(c2)
                     k2 += 1
@@ -186,14 +186,14 @@ end
 
 function update_hess(cone::PosSemidefTri)
     @assert cone.grad_updated
-    _build_hess(cone.hess.data, cone.inv_mat, false)
+    _build_hess(cone.hess.data, cone.inv_mat, cone.rt2)
     cone.hess_updated = true
     return cone.hess
 end
 
 function update_inv_hess(cone::PosSemidefTri)
     @assert is_feas(cone)
-    _build_hess(cone.inv_hess.data, cone.mat, true)
+    _build_hess(cone.inv_hess.data, cone.mat, cone.rt2)
     cone.inv_hess_updated = true
     return cone.inv_hess
 end
@@ -204,11 +204,11 @@ update_inv_hess_prod(cone::PosSemidefTri) = nothing
 function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     @inbounds for i in 1:size(arr, 2)
-        vec_to_mat_U!(cone.mat4, view(arr, :, i))
+        svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
         copytri!(cone.mat4, 'U', cone.is_complex)
         rdiv!(cone.mat4, cone.fact_mat)
         ldiv!(cone.fact_mat, cone.mat4)
-        mat_U_to_vec_scaled!(view(prod, :, i), cone.mat4)
+        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
     end
     return prod
 end
@@ -216,10 +216,72 @@ end
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     @inbounds for i in 1:size(arr, 2)
-        vec_to_mat_U_scaled!(cone.mat4, view(arr, :, i))
+        svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
         mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.mat)
         mul!(cone.mat4, Hermitian(cone.mat, :U), cone.mat3)
-        mat_U_to_vec!(view(prod, :, i), cone.mat4)
+        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
     end
     return prod
+end
+
+# TODO fix later, rt2::T doesn't work with tests using ForwardDiff
+function smat_to_svec!(vec::AbstractVector{T}, mat::AbstractMatrix{T}, rt2::Number) where {T}
+    k = 1
+    m = size(mat, 1)
+    @inbounds for j in 1:m, i in 1:j
+        if i == j
+            vec[k] = mat[i, j]
+        else
+            vec[k] = mat[i, j] * rt2
+        end
+        k += 1
+    end
+    return vec
+end
+
+function svec_to_smat!(mat::AbstractMatrix{T}, vec::AbstractVector{T}, rt2::Number) where {T}
+    k = 1
+    m = size(mat, 1)
+    @inbounds for j in 1:m, i in 1:j
+        if i == j
+            mat[i, j] = vec[k]
+        else
+            mat[i, j] = vec[k] / rt2
+        end
+        k += 1
+    end
+    return mat
+end
+
+function smat_to_svec!(vec::AbstractVector{T}, mat::AbstractMatrix{Complex{T}}, rt2::Number) where {T}
+    k = 1
+    m = size(mat, 1)
+    @inbounds for j in 1:m, i in 1:j
+        if i == j
+            vec[k] = real(mat[i, j])
+            k += 1
+        else
+            ck = mat[i, j] * rt2
+            vec[k] = real(ck)
+            k += 1
+            vec[k] = -imag(ck)
+            k += 1
+        end
+    end
+    return vec
+end
+
+function svec_to_smat!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVector{T}, rt2::Number) where {T}
+    k = 1
+    m = size(mat, 1)
+    @inbounds for j in 1:m, i in 1:j
+        if i == j
+            mat[i, j] = vec[k]
+            k += 1
+        else
+            mat[i, j] = Complex(vec[k], -vec[k + 1]) / rt2
+            k += 2
+        end
+    end
+    return mat
 end

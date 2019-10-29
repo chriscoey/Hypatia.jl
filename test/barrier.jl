@@ -299,7 +299,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
         # real PSD cone
         function R_barrier(s)
             S = similar(s, side, side)
-            CO.vec_to_mat_U!(S, s)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
@@ -307,7 +307,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
         # complex PSD cone
         function C_barrier(s)
             S = zeros(Complex{eltype(s)}, side, side)
-            CO.vec_to_mat_U!(S, s)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
             return -logdet(cholesky!(Hermitian(S, :U)))
         end
         dim = side^2
