@@ -169,6 +169,7 @@ function update_scaling(cone::EpiNormEucl)
     cone.c = 1 + w[1] + w2nw2n / (1 + w[1])
 
     cone.scaling_updated = true
+    return cone.scaling_updated
 end
 
 # J(q) = (q[1] *= -1; q)

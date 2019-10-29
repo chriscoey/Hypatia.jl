@@ -41,7 +41,7 @@ testfuns = [
     # epinorminf3,
     # epinorminf4,
     # epinorminf5,
-    epinormeucl1,
+    # epinormeucl1,
     # epinormeucl2,
     # epinormeucl3,
     # epipersquare1,
@@ -63,9 +63,9 @@ testfuns = [
     # hypogeomean2,
     # hypogeomean3,
     # epinormspectral1,
-    # possemideftri1,
-    # possemideftri2,
-    # possemideftricomplex1,
+    possemideftri1,
+    possemideftri2,
+    possemideftricomplex1,
     # hypoperlogdettri1,
     # hypoperlogdettri2,
     # hypoperlogdettri3,
@@ -79,8 +79,8 @@ testfuns = [
 
 generic_reals = [
     Float64,
-    # Float32,
-    # BigFloat,
+    Float32,
+    BigFloat,
     ]
 
 blas_reals = [

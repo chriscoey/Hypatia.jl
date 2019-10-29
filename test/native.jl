@@ -314,8 +314,6 @@ end
 
 function possemideftri1(T; options...)
     tol = sqrt(sqrt(eps(T)))
-    Trt2 = sqrt(T(2))
-    Trt2i = inv(Trt2)
     c = T[0, -1, 0]
     A = T[1 0 0; 0 0 1]
     b = T[0.5, 1]
@@ -328,11 +326,11 @@ function possemideftri1(T; options...)
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal
         if is_dual
-            @test r.primal_obj ≈ -Trt2 atol=tol rtol=tol
-            @test r.x[2] ≈ Trt2 atol=tol rtol=tol
+            @test r.primal_obj ≈ -one(T) atol=tol rtol=tol
+            @test r.x[2] ≈ one(T) atol=tol rtol=tol
         else
-            @test r.primal_obj ≈ -Trt2i atol=tol rtol=tol
-            @test r.x[2] ≈ Trt2i atol=tol rtol=tol
+            @test r.primal_obj ≈ -one(T) atol=tol rtol=tol
+            @test r.x[2] ≈ one(T) atol=tol rtol=tol
         end
     end
 end
@@ -358,6 +356,7 @@ end
 function possemideftricomplex1(T; options...)
     tol = sqrt(sqrt(eps(T)))
     Trt2 = sqrt(T(2))
+    Trt2i = inv(Trt2)
     c = T[1, 0, 0, 1]
     A = T[0 0 1 0]
     b = T[1]
@@ -367,8 +366,8 @@ function possemideftricomplex1(T; options...)
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
-    @test r.primal_obj ≈ 2 atol=tol rtol=tol
-    @test r.x ≈ [1, 0, 1, 1] atol=tol rtol=tol
+    @test r.primal_obj ≈ Trt2 atol=tol rtol=tol
+    @test r.x ≈ [Trt2i, 0, 1, Trt2i] atol=tol rtol=tol
 end
 
 function hypoperlog1(T; options...)

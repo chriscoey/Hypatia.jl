@@ -15,35 +15,43 @@ TODO fix native and moi tests, and moi
 =#
 
 mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
-    use_dual::Bool
+    use_scaling::Bool
     dim::Int
     side::Int
     is_complex::Bool
     point::Vector{T}
+    dual_point::Vector{T}
     rt2::T
 
     feas_updated::Bool
     grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
+    scaling_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
 
     mat::Matrix{R}
+    dual_mat::Matrix{R}
     mat2::Matrix{R}
+    dual_mat2::Matrix{R}
     mat3::Matrix{R}
     mat4::Matrix{R}
     inv_mat::Matrix{R}
     fact_mat
+    dual_fact_mat
 
-    function PosSemidefTri{T, R}(dim::Int, is_dual::Bool) where {R <: RealOrComplex{T}} where {T <: Real}
+    scalmat_sqrt::Matrix{R}
+    scalmat_sqrti::Matrix{R}
+
+    function PosSemidefTri{T, R}(dim::Int, use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
-        cone.use_dual = is_dual
         cone.dim = dim # real vector dimension
         cone.rt2 = sqrt(T(2))
+        cone.use_scaling = use_scaling
         if R <: Complex
             side = isqrt(dim) # real lower triangle and imaginary under diagonal
             @assert side^2 == dim
@@ -58,19 +66,26 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     end
 end
 
-PosSemidefTri{T, R}(dim::Int) where {R <: RealOrComplex{T}} where {T <: Real} = PosSemidefTri{T, R}(dim, false)
+use_dual(cone::PosSemidefTri) = false # self-dual
 
-reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
+use_scaling(cone::PosSemidefTri) = cone.use_scaling
+
+load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
+
+reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
 
 function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
+    cone.dual_point = zeros(T, dim)
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.mat = zeros(R, cone.side, cone.side)
+    cone.dual_mat = similar(cone.mat)
     cone.mat2 = similar(cone.mat)
+    cone.dual_mat2 = similar(cone.mat)
     cone.mat3 = similar(cone.mat)
     cone.mat4 = similar(cone.mat)
     return
@@ -107,6 +122,25 @@ function update_grad(cone::PosSemidefTri)
     copytri!(cone.mat, 'U', cone.is_complex)
     cone.grad_updated = true
     return cone.grad
+end
+
+function update_scaling(cone::PosSemidefTri)
+    @assert !cone.scaling_updated
+    @assert cone.is_feas
+    svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
+    copyto!(cone.dual_mat2, cone.dual_mat)
+
+    fact1 = cone.fact_mat
+    fact2 = cholesky(Symmetric(cone.dual_mat2, :U), Val(false))
+    # cone.dual_fact_mat = cholesky!(Hermitian(cone.dual_mat2, :U), check = false)
+    # @assert isposdef(cone.dual_fact_mat)
+
+    (U, lambda, V) = svd(fact2.U * fact1.L)
+    cone.scalmat_sqrt = fact1.L * V * Diagonal(sqrt.(inv.(lambda)))
+    cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * fact2.U
+
+    cone.scaling_updated = true
+    return cone.scaling_updated
 end
 
 # TODO parallelize
@@ -186,14 +220,28 @@ end
 
 function update_hess(cone::PosSemidefTri)
     @assert cone.grad_updated
-    _build_hess(cone.hess.data, cone.inv_mat, cone.rt2)
+    if cone.use_scaling
+        if !cone.scaling_updated
+            update_scaling(cone)
+        end
+        _build_hess(cone.hess.data, (cone.scalmat_sqrti)^2, cone.rt2)
+    else
+        _build_hess(cone.hess.data, cone.inv_mat, cone.rt2)
+    end
     cone.hess_updated = true
     return cone.hess
 end
 
 function update_inv_hess(cone::PosSemidefTri)
     @assert is_feas(cone)
-    _build_hess(cone.inv_hess.data, cone.mat, cone.rt2)
+    if cone.use_scaling
+        if !cone.scaling_updated
+            update_scaling(cone)
+        end
+        _build_hess(cone.hess.data, (cone.scalmat_sqrt)^2, cone.rt2)
+    else
+        _build_hess(cone.hess.data, cone.mat, cone.rt2)
+    end
     cone.inv_hess_updated = true
     return cone.inv_hess
 end
@@ -219,6 +267,33 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
         svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
         mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.mat)
         mul!(cone.mat4, Hermitian(cone.mat, :U), cone.mat3)
+        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+    end
+    return prod
+end
+
+# TODO since outer-producting with non-symmetric matrices, would make sense to factorize arr and syrk
+function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    @inbounds for i in 1:size(arr, 2)
+        svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
+        mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.scalmat_sqrt)
+        mul!(cone.mat4, cone.scalmat_sqrt', cone.mat3)
+        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+    end
+    return prod
+end
+
+function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    @inbounds for i in 1:size(arr, 2)
+        svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
+        mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.scalmat_sqrti')
+        mul!(cone.mat4, cone.scalmat_sqrti, cone.mat3)
         smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
     end
     return prod

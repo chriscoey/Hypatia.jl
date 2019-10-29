@@ -104,21 +104,22 @@ function test_barrier_scaling_oracles(
     grad = CO.grad(cone)
     cone.use_scaling = true # TODO update when it's an option, run these tests optionally
     # hess and inv_hess oracles, not the same as for non-scaling tests
-    hess = CO.hess(cone)
-    @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
-    inv_hess = CO.inv_hess(cone)
-    @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
-    @test hess * inv_hess ≈ I atol=tol rtol=tol
-    # hess and inv_hes product oracles
-    prod_mat = similar(point, dim, dim)
-    @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
-    @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
+    # hess = CO.hess(cone)
+    # @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
+    # inv_hess = CO.inv_hess(cone)
+    # @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
+    # @test hess * inv_hess ≈ I atol=tol rtol=tol
+    # # hess and inv_hes product oracles
+    # prod_mat = similar(point, dim, dim)
+    # @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
+    # @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
     # multiplication and division by scaling matrix W
     λ = similar(cone.point)
     CO.scalmat_prod!(λ, cone.dual_point, cone)
     W = similar(point, dim, dim)
     CO.scalmat_prod!(W, Matrix{T}(I, cone.dim, cone.dim), cone)
+    @show W
     @test W * λ ≈ cone.point atol=tol rtol=tol
     prod = similar(point)
     @test CO.scalmat_prod!(prod, λ, cone) ≈ cone.point atol=tol rtol=tol
@@ -303,15 +304,15 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim))
         # complex PSD cone
-        function C_barrier(s)
-            S = zeros(Complex{eltype(s)}, side, side)
-            CO.svec_to_smat!(S, s, sqrt(T(2)))
-            return -logdet(cholesky!(Hermitian(S, :U)))
-        end
-        dim = side^2
-        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim), C_barrier)
+        # function C_barrier(s)
+        #     S = zeros(Complex{eltype(s)}, side, side)
+        #     CO.svec_to_smat!(S, s, sqrt(T(2)))
+        #     return -logdet(cholesky!(Hermitian(S, :U)))
+        # end
+        # dim = side^2
+        # test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim), C_barrier)
     end
     return
 end

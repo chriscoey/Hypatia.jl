@@ -461,7 +461,7 @@ function MOI.optimize!(opt::Optimizer{T}) where {T <: Real}
     opt.z = r.z
     opt.s[opt.interval_idxs] ./= opt.interval_scales
     for (k, cone_k) in enumerate(model.cones)
-        if cone_k isa Cones.PosSemidefTri || cone_k isa Cones.HypoPerLogdetTri # rescale duals for symmetric triangle cones
+        if cone_k isa Cones.HypoPerLogdetTri # rescale duals for symmetric triangle cones
             cone_idxs_k = Models.get_cone_idxs(r.model)[k]
             unscale_vec = (Cones.use_dual(cone_k) ? opt.s : opt.z)
             idxs = (cone_k isa Cones.PosSemidefTri ? cone_idxs_k : cone_idxs_k[3:end])
@@ -473,6 +473,13 @@ function MOI.optimize!(opt::Optimizer{T}) where {T <: Real}
                 end
                 offset += 1
             end
+        end
+
+        if cone_k isa Cones.PosSemidefTri
+            idxs = opt.cone_idxs[k]
+            scale_vec = svec_unscale(length(idxs))
+            opt.s[idxs] .*= scale_vec
+            opt.z[idxs] .*= scale_vec
         end
     end
     opt.constr_prim_cone += opt.s

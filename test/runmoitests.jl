@@ -7,7 +7,7 @@ include(joinpath(@__DIR__, "moi.jl"))
 system_solvers = [
     SO.NaiveDenseSystemSolver,
     SO.NaiveSparseSystemSolver,
-    SO.NaiveIndirectSystemSolver,
+    # SO.NaiveIndirectSystemSolver, # TODO uncomment
     SO.NaiveElimDenseSystemSolver,
     SO.NaiveElimSparseSystemSolver,
     SO.SymIndefDenseSystemSolver,
