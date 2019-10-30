@@ -368,8 +368,12 @@ end
 #     return prod
 # end
 
+# TODO this oracle may not be necessary for matrices
 function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
-    copyto!(prod, cone.v)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    prod .= cone.v
     @inbounds @views for j in 1:size(arr, 2)
         prod[:, j] *= 2 * dot(cone.v, arr[:, j])
     end
@@ -402,7 +406,10 @@ end
 
 # scaling is symmetric, trans kwarg ignored TODO factor as another function?
 function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl; trans::Bool = false)
-    copyto!(prod, cone.v)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    prod .= cone.v
     @views prod[2:end, :] *= -1
     @inbounds @views for j in 1:size(arr, 2)
         prod[:, j] *= 2 * jdot(cone.v, arr[:, j])

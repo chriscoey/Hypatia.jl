@@ -362,6 +362,7 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
                 e1 = similar(cone_k.point)
                 Cones.set_initial_point(e1, cone_k)
                 lambda = Cones.scalmat_prod!(similar(e1), cone_k.dual_point, cone_k)
+                @show sqrt(cone_k.point[1] * cone_k.dual_point[1]), lambda
                 lambda_circ_lambda = Cones.conic_prod!(similar(e1), lambda, lambda, cone_k)
                 mehrotra_s = Cones.scalmat_ldiv!(similar(e1), stepper.s_dir_k[k], cone_k, trans = true)
                 mehrotra_z = Cones.scalmat_prod!(similar(e1), stepper.z_dir_k[k], cone_k)

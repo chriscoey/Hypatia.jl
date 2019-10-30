@@ -31,13 +31,14 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
 
     mat::Matrix{R}
     dual_mat::Matrix{R}
-    mat2::Matrix{R}
-    dual_mat2::Matrix{R}
-    mat3::Matrix{R}
-    mat4::Matrix{R}
+    fact_mat::Matrix{R}
+    dual_fact_mat::Matrix{R}
+    work_mat::Matrix{R}
+    work_mat2::Matrix{R}
+    work_mat3::Matrix{R}
     inv_mat::Matrix{R}
-    fact_mat
-    dual_fact_mat
+    fact
+    dual_fact
 
     scalmat_sqrt::Matrix{R}
     scalmat_sqrti::Matrix{R}
@@ -84,10 +85,11 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.mat = zeros(R, cone.side, cone.side)
     cone.dual_mat = similar(cone.mat)
-    cone.mat2 = similar(cone.mat)
-    cone.dual_mat2 = similar(cone.mat)
-    cone.mat3 = similar(cone.mat)
-    cone.mat4 = similar(cone.mat)
+    cone.fact_mat = similar(cone.mat)
+    cone.dual_fact_mat = similar(cone.mat)
+    cone.work_mat = similar(cone.mat)
+    cone.work_mat2 = similar(cone.mat)
+    cone.work_mat3 = similar(cone.mat)
     return
 end
 
@@ -107,16 +109,16 @@ end
 function update_feas(cone::PosSemidefTri)
     @assert !cone.feas_updated
     svec_to_smat!(cone.mat, cone.point, cone.rt2)
-    copyto!(cone.mat2, cone.mat)
-    cone.fact_mat = cholesky!(Hermitian(cone.mat2, :U), check = false)
-    cone.is_feas = isposdef(cone.fact_mat)
+    copyto!(cone.fact_mat, cone.mat)
+    cone.fact = cholesky!(Hermitian(cone.fact_mat, :U), check = false)
+    cone.is_feas = isposdef(cone.fact)
     cone.feas_updated = true
     return cone.is_feas
 end
 
 function update_grad(cone::PosSemidefTri)
     @assert cone.is_feas
-    cone.inv_mat = inv(cone.fact_mat)
+    cone.inv_mat = inv(cone.fact)
     smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
     cone.grad .*= -1
     copytri!(cone.mat, 'U', cone.is_complex)
@@ -127,11 +129,11 @@ end
 function update_scaling(cone::PosSemidefTri)
     @assert !cone.scaling_updated
     @assert cone.is_feas
-    fact = cone.fact_mat
+    fact = cone.fact
     svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
-    copyto!(cone.dual_mat2, cone.dual_mat)
-    dual_fact = cone.dual_fact_mat = cholesky!(Hermitian(cone.dual_mat2, :U), check = false)
-    @assert isposdef(cone.dual_fact_mat)
+    copyto!(cone.dual_fact_mat, cone.dual_mat)
+    dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
+    @assert isposdef(cone.dual_fact)
 
     (U, lambda, V) = svd(dual_fact.U * fact.L)
     cone.scalmat_sqrt = fact.L * V * Diagonal(sqrt.(inv.(lambda)))
@@ -251,21 +253,21 @@ update_inv_hess_prod(cone::PosSemidefTri) = nothing
 # PXP where P is Hermitian
 function herm_congruence_prod!(prod::AbstractVecOrMat, inner::AbstractVecOrMat, outer::AbstractVecOrMat, cone::PosSemidefTri)
     @inbounds for i in 1:size(inner, 2)
-        svec_to_smat!(cone.mat4, view(inner, :, i), cone.rt2)
-        mul!(cone.mat3, Hermitian(cone.mat4, :U), outer)
-        mul!(cone.mat4, Hermitian(outer, :U), cone.mat3)
-        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+        svec_to_smat!(cone.work_mat2, view(inner, :, i), cone.rt2)
+        mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), outer)
+        mul!(cone.work_mat2, Hermitian(outer, :U), cone.work_mat)
+        smat_to_svec!(view(prod, :, i), cone.work_mat2, cone.rt2)
     end
     return prod
 end
 
-# P'XP where P is not symmetric or Hermitian
+# PXP or P'XP depending on `trans`, where P is not symmetric or Hermitian
 function gen_congruence_prod!(prod::AbstractVecOrMat, inner::AbstractVecOrMat, outer::AbstractVecOrMat, cone::PosSemidefTri)
     @inbounds for i in 1:size(inner, 2)
-        svec_to_smat!(cone.mat4, view(inner, :, i), cone.rt2)
-        mul!(cone.mat3, Hermitian(cone.mat4, :U), outer)
-        mul!(cone.mat4, transpose(outer), cone.mat3)
-        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+        svec_to_smat!(cone.work_mat2, view(inner, :, i), cone.rt2)
+        mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), outer)
+        mul!(cone.work_mat2, transpose(outer), cone.work_mat)
+        smat_to_svec!(view(prod, :, i), cone.work_mat2, cone.rt2)
     end
     return prod
 end
@@ -276,15 +278,15 @@ function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemi
         if !cone.scaling_updated
             update_scaling(cone)
         end
-        mul!(cone.mat2, cone.scalmat_sqrti', cone.scalmat_sqrti)
-        herm_congruence_prod!(prod, arr, cone.mat2, cone)
+        mul!(cone.work_mat3, cone.scalmat_sqrti', cone.scalmat_sqrti)
+        herm_congruence_prod!(prod, arr, cone.work_mat3, cone)
     else
         @inbounds for i in 1:size(arr, 2)
-            svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
-            copytri!(cone.mat4, 'U', cone.is_complex)
-            rdiv!(cone.mat4, cone.fact_mat)
-            ldiv!(cone.fact_mat, cone.mat4)
-            smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+            svec_to_smat!(cone.work_mat2, view(arr, :, i), cone.rt2)
+            copytri!(cone.work_mat2, 'U', cone.is_complex)
+            rdiv!(cone.work_mat2, cone.fact)
+            ldiv!(cone.fact, cone.work_mat2)
+            smat_to_svec!(view(prod, :, i), cone.work_mat2, cone.rt2)
         end
     end
     return prod
@@ -296,8 +298,8 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
         if !cone.scaling_updated
             update_scaling(cone)
         end
-        mul!(cone.mat2, cone.scalmat_sqrt, cone.scalmat_sqrt')
-        herm_congruence_prod!(prod, arr, cone.mat2, cone)
+        mul!(cone.work_mat3, cone.scalmat_sqrt, cone.scalmat_sqrt')
+        herm_congruence_prod!(prod, arr, cone.work_mat3, cone)
     else
         herm_congruence_prod!(prod, arr, cone.mat, cone)
     end
@@ -327,20 +329,20 @@ function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSe
     if !cone.scaling_updated
         update_scaling(cone)
     end
-    @. cone.mat2 = cone.lambda
-    @. cone.mat2 += cone.mat2'
-    @. cone.mat2 = 2 / cone.mat2
-    svec_to_smat!(cone.mat3, arr, cone.rt2)
-    # only upper triangle of cone.mat3 is updated, but that is enough (wrapping in UpperTriangular is slower)
-    @. cone.mat4 = cone.mat3 * cone.mat2
-    smat_to_svec!(div, cone.mat4, cone.rt2)
+    @. cone.fact_mat = cone.lambda
+    @. cone.fact_mat += cone.fact_mat'
+    @. cone.fact_mat = 2 / cone.fact_mat
+    svec_to_smat!(cone.work_mat, arr, cone.rt2)
+    # only upper triangle of cone.work_mat is updated, but that is enough (wrapping in UpperTriangular is slower)
+    @. cone.work_mat2 = cone.work_mat * cone.fact_mat
+    smat_to_svec!(div, cone.work_mat2, cone.rt2)
     return div
 end
 
 function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::PosSemidefTri)
-    U = Hermitian(svec_to_smat!(cone.mat2, u, cone.rt2), :U)
-    V = Hermitian(svec_to_smat!(cone.mat3, v, cone.rt2), :U)
-    W = cone.mat4
+    U = Hermitian(svec_to_smat!(cone.fact_mat, u, cone.rt2), :U)
+    V = Hermitian(svec_to_smat!(cone.work_mat, v, cone.rt2), :U)
+    W = cone.work_mat2
     mul!(W, U, V)
     @. W = (W + W') / 2
     smat_to_svec!(w, W, cone.rt2)
@@ -348,29 +350,30 @@ function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, co
 end
 
 function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
-    dist = one(T)
-    svec_to_smat!(cone.mat2, dir, cone.rt2)
-    mul!(cone.mat3, Hermitian(cone.mat2, :U), inv(fact.L)')
-    ldiv!(fact.L, cone.mat3)
-    cone.bndry_dists .= eigvals(Hermitian(cone.mat3, :U))
+    svec_to_smat!(cone.work_mat2, dir, cone.rt2)
+    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.L)')
+    ldiv!(fact.L, cone.work_mat)
+    cone.bndry_dists .= eigvals(Hermitian(cone.work_mat, :U))
+    @show cone.bndry_dists
     inv_min_dist = minimum(cone.bndry_dists)
-    if inv_min_dist > 0
+    if inv_min_dist >= 0
         return one(T)
     else
         return -inv(inv_min_dist)
     end
-    return dist
 end
 
-function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
-    # TODO only need this for dual_fact_mat, here and in other cones cones maybe break up update_scaling
+function step_max_dist(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
+    # TODO only need this for dual_fact, here and in other cones cones maybe break up update_scaling
     if !cone.scaling_updated
         update_scaling(cone)
     end
     # TODO this could go in Cones.jl
-    primal_dist = dist_to_bndry(cone, cone.fact_mat, s_sol)
-    dual_dist = dist_to_bndry(cone, cone.dual_fact_mat, z_sol)
-    step_dist = min(primal_dist, dual_dist)
+    primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
+    dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
+    step_dist = min(one(T), primal_dist, dual_dist)
+    @show primal_dist, dual_dist, step_dist
+    return step_dist
 end
 
 # TODO fix later, rt2::T doesn't work with tests using ForwardDiff

@@ -155,7 +155,7 @@ function step_max_dist(cone::Nonnegative{T}, s_sol::AbstractVector{T}, z_sol::Ab
     # TODO this could go in Cones.jl
     primal_dist = dist_to_bndry(cone, cone.point, s_sol)
     dual_dist = dist_to_bndry(cone, cone.dual_point, z_sol)
-    step_dist = min(primal_dist, dual_dist)
+    step_dist = min(one(T), primal_dist, dual_dist)
 
     return step_dist
 end
