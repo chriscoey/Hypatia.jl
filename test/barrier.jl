@@ -236,6 +236,15 @@ function test_hypoperlog_barrier(T::Type{<:Real})
     return
 end
 
+function test_hypoperlog3_barrier(T::Type{<:Real})
+    function barrier(s)
+        (u, v, w) = (s[1], s[2], s[3])
+        return -log(v * log(w / v) - u) - log(w) - log(v)
+    end
+    test_barrier_oracles(CO.HypoPerLog3{T}(), barrier, init_tol = 1e-6)
+    return
+end
+
 function test_epiperexp_barrier(T::Type{<:Real})
     function barrier(s)
         (u, v, w) = (s[1], s[2], s[3:end])

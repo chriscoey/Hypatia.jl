@@ -27,6 +27,7 @@ include("epinormeucl.jl")
 include("epipersquare.jl")
 include("power.jl")
 include("hypoperlog.jl")
+include("hypoperlog3.jl")
 include("epiperexp.jl")
 include("hypogeomean.jl")
 include("epinormspectral.jl")
@@ -52,12 +53,26 @@ inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(
 # fallbacks
 
 # number of nonzeros in the Hessian and inverse
-hess_nz_count(cone::Cone, lower_only::Bool) = (lower_only ? div(cone.dim * (cone.dim + 1), 2) : abs2(cone.dim))
-inv_hess_nz_count(cone::Cone, lower_only::Bool) = (lower_only ? div(cone.dim * (cone.dim + 1), 2) : abs2(cone.dim))
+function hess_nz_count(cone::Cone, lower_only::Bool)
+    dim = dimension(cone)
+    if lower_only
+        return div(dim * (dim + 1), 2)
+    else
+        return abs2(dim)
+    end
+end
+inv_hess_nz_count(cone::Cone, lower_only::Bool) = hess_nz_count(cone, lower_only) # NOTE careful: fallback yields same for inv hess as hess
 
 # the row indices of nonzero elements in column j
-hess_nz_idxs_col(cone::Cone, j::Int, lower_only::Bool) = (lower_only ? (j:cone.dim) : (1:cone.dim))
-inv_hess_nz_idxs_col(cone::Cone, j::Int, lower_only::Bool) = (lower_only ? (j:cone.dim) : (1:cone.dim))
+function hess_nz_idxs_col(cone::Cone, j::Int, lower_only::Bool)
+    dim = dimension(cone)
+    if lower_only
+        return j:dim
+    else
+        return 1:dim
+    end
+end
+inv_hess_nz_idxs_col(cone::Cone, j::Int, lower_only::Bool) = hess_nz_idxs_col(cone, j, lower_only) # NOTE careful: fallback yields same for inv hess as hess
 
 reset_data(cone::Cone) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.inv_hess_prod_updated = false)
 
