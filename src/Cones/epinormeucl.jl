@@ -401,7 +401,7 @@ end
 # end
 
 # scaling is symmetric, trans kwarg ignored TODO factor as another function?
-function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl; trans::Bool = false)
+function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl, trans::Bool = false)
     copyto!(prod, cone.v)
     @views prod[2:end, :] *= -1
     @inbounds @views for j in 1:size(arr, 2)
