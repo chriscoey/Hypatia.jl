@@ -23,6 +23,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     hess::Diagonal{T, Vector{T}}
     inv_hess::Diagonal{T, Vector{T}}
 
+    bndry_dists::Vector{T}
     correction::Vector{T}
 
     function Nonnegative{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
@@ -51,6 +52,7 @@ function setup_data(cone::Nonnegative{T}) where {T <: Real}
     cone.grad = zeros(T, dim)
     cone.hess = Diagonal(zeros(T, dim))
     cone.inv_hess = Diagonal(zeros(T, dim))
+    cone.bndry_dists = zeros(T, dim)
     cone.correction = zeros(T, dim)
     return
 end
@@ -138,14 +140,14 @@ function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonne
     return div
 end
 
-function dist_to_bndry(::Nonnegative{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
-    dist = one(T)
-    @inbounds for i in eachindex(point)
-        if dir[i] < 0
-            dist = min(dist, -point[i] / dir[i])
-        end
+function dist_to_bndry(cone::Nonnegative{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
+    @. cone.bndry_dists = dir / point
+    inv_min_dist = minimum(cone.bndry_dists)
+    if inv_min_dist > 0
+        return one(T)
+    else
+        return -inv(inv_min_dist)
     end
-    return dist
 end
 
 # TODO optimize this
@@ -155,7 +157,7 @@ function step_max_dist(cone::Nonnegative{T}, s_sol::AbstractVector{T}, z_sol::Ab
     # TODO this could go in Cones.jl
     primal_dist = dist_to_bndry(cone, cone.point, s_sol)
     dual_dist = dist_to_bndry(cone, cone.dual_point, z_sol)
-    step_dist = min(one(T), primal_dist, dual_dist)
+    step_dist = min(primal_dist, dual_dist)
 
     return step_dist
 end
