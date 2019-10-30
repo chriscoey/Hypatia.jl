@@ -113,7 +113,7 @@ function update_hess(cone::EpiPerExp3)
     # TODO how to use?
     # find an R factor for F''(point) = R(x) R(x)'
     R = similar(H)
-    R[1,1] = (1 - sqrt(1 + 2v / vluvw
+    R[1,1] = (1 - sqrt(1 + 2v)) / vluvw
 
 
     cone.hess_updated = true
