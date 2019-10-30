@@ -45,7 +45,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     lambda::Vector{R}
     bndry_dists::Vector{R}
 
-    function PosSemidefTri{T, R}(dim::Int, use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
+    function PosSemidefTri{T, R}(dim::Int; use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
         cone.dim = dim # real vector dimension
@@ -171,9 +171,7 @@ end
 function _build_hess(H::Matrix{T}, mat::Matrix{Complex{T}}, rt2::T) where {T <: Real}
     side = size(mat, 1)
     k = 1
-    for i in 1:side, j in 1:i    # cone.bndry_dists .= eigvals(Hermitian(cone.work_mat, :U))
-    # @show cone.bndry_dists
-    # inv_min_dist = minimum(cone.bndry_dists)
+    for i in 1:side, j in 1:i
         k2 = 1
         if i == j
             @inbounds for i2 in 1:side, j2 in 1:i2
@@ -268,7 +266,7 @@ function gen_congruence_prod!(prod::AbstractVecOrMat, inner::AbstractVecOrMat, o
     @inbounds for i in 1:size(inner, 2)
         svec_to_smat!(cone.work_mat2, view(inner, :, i), cone.rt2)
         mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), outer)
-        mul!(cone.work_mat2, transpose(outer), cone.work_mat)
+        mul!(cone.work_mat2, outer', cone.work_mat)
         smat_to_svec!(view(prod, :, i), cone.work_mat2, cone.rt2)
     end
     return prod
@@ -322,7 +320,7 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosS
     if !cone.scaling_updated
         update_scaling(cone)
     end
-    outer_term = (trans ? transpose(cone.scalmat_sqrti) : cone.scalmat_sqrti)
+    outer_term = (trans ? cone.scalmat_sqrti' : cone.scalmat_sqrti)
     gen_congruence_prod!(prod, arr, outer_term, cone)
     return prod
 end

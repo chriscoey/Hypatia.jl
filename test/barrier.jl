@@ -310,16 +310,17 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, false), R_barrier)
-        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim))
+        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true))
         # complex PSD cone
-        # function C_barrier(s)
-        #     S = zeros(Complex{eltype(s)}, side, side)
-        #     CO.svec_to_smat!(S, s, sqrt(T(2)))
-        #     return -logdet(cholesky!(Hermitian(S, :U)))
-        # end
-        # dim = side^2
-        # test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim), C_barrier)
+        function C_barrier(s)
+            S = zeros(Complex{eltype(s)}, side, side)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
+            return -logdet(cholesky!(Hermitian(S, :U)))
+        end
+        dim = side^2
+        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true))
     end
     return
 end
