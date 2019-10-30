@@ -125,8 +125,8 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonn
     return prod
 end
 
-# potentially unnedeed, currently only used in tests
-function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+# scaling is symmetric, trans kwarg ignored TODO factor as another function?
+function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative; trans::Bool = false)
     @. prod = arr * sqrt(cone.dual_point / cone.point)
     return prod
 end

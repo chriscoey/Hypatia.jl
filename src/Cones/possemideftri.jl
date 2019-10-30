@@ -298,6 +298,7 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
 end
 
 # TODO since outer-producting with non-symmetric matrices, would make sense to factorize arr and syrk
+# TODO think about whether transpose oracle is needed
 function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     if !cone.scaling_updated
         update_scaling(cone)
@@ -311,14 +312,16 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosS
     return prod
 end
 
-function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
+# TODO think about whether transpose oracle is needed in the future (it is now)
+function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri; trans::Bool = false)
     if !cone.scaling_updated
         update_scaling(cone)
     end
+    outer_term = (trans ? cone.scalmat_sqrti : transpose(cone.scalmat_sqrti))
     @inbounds for i in 1:size(arr, 2)
         svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
-        mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.scalmat_sqrti')
-        mul!(cone.mat4, cone.scalmat_sqrti, cone.mat3)
+        mul!(cone.mat3, Hermitian(cone.mat4, :U), transpose(outer_term))
+        mul!(cone.mat4, outer_term, cone.mat3)
         smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
     end
     return prod
@@ -332,9 +335,9 @@ function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSe
     @. cone.mat2 += cone.mat2'
     @. cone.mat2 = 2 / cone.mat2
     svec_to_smat!(cone.mat3, arr, cone.rt2)
+    # only upper triangle of cone.mat3 is updated, but that is enough (wrapping in UpperTriangular is slower)
     @. cone.mat4 = cone.mat3 * cone.mat2
     smat_to_svec!(div, cone.mat4, cone.rt2)
-    # @show sqrt(cone.point[1] * cone.dual_point[1])
     return div
 end
 

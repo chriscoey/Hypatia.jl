@@ -363,12 +363,12 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
                 Cones.set_initial_point(e1, cone_k)
                 lambda = Cones.scalmat_prod!(similar(e1), cone_k.dual_point, cone_k)
                 lambda_circ_lambda = Cones.conic_prod!(similar(e1), lambda, lambda, cone_k)
-                mehrotra_s = Cones.scalmat_ldiv!(similar(e1), stepper.s_dir_k[k], cone_k)
+                mehrotra_s = Cones.scalmat_ldiv!(similar(e1), stepper.s_dir_k[k], cone_k, trans = true)
                 mehrotra_z = Cones.scalmat_prod!(similar(e1), stepper.z_dir_k[k], cone_k)
                 mehrotra_full = Cones.conic_prod!(similar(e1), mehrotra_s, mehrotra_z, cone_k)
                 ds = -lambda_circ_lambda - mehrotra_full + gamma_mu * e1
                 ds_by_lambda = Cones.scalvec_ldiv!(similar(e1), ds, cone_k)
-                stepper.s_rhs_k[k] .= Cones.scalmat_ldiv!(similar(e1), ds_by_lambda, cone_k)
+                stepper.s_rhs_k[k] .= Cones.scalmat_ldiv!(similar(e1), ds_by_lambda, cone_k, trans = false)
             else
                 @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
             end
