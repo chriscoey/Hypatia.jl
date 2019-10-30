@@ -110,13 +110,11 @@ function update_hess(cone::EpiPerExp3)
     H[1, 2] = -(v * cone.g2a + 1) / cone.vluvw / u
     H[2, 2] = abs2(g2a) + (inv(vluvw) + inv(v)) / v
 
-    # vwivluvw = v / cone.vluvw / w
-    # H[1, 1] = abs2(cone.grad[1])
-    # H[1, 2] = cone.g2a / cone.vluvw
-    # H[1, 3] = -vwivluvw / cone.vluvw
-    # H[2, 2] = abs2(cone.g2a) + (inv(cone.vluvw) + inv(v)) / v
-    # H[2, 3] = -(v * cone.g2a + 1) / cone.vluvw / w
-    # H[3, 3] = abs2(vwivluvw) - cone.grad[3] / w
+    # TODO how to use?
+    # find an R factor for F''(point) = R(x) R(x)'
+    R = similar(H)
+    R[1,1] = (1 - sqrt(1 + 2v / vluvw
+
 
     cone.hess_updated = true
     return cone.hess
