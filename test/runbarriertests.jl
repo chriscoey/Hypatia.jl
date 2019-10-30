@@ -5,11 +5,12 @@ Copyright 2019, Chris Coey and contributors
 include(joinpath(@__DIR__, "barrier.jl"))
 
 barrier_testfuns = [
-    test_nonnegative_barrier,
+    # test_nonnegative_barrier,
     # test_epinorminf_barrier,
-    test_epinormeucl_barrier,
+    # test_epinormeucl_barrier,
     # test_epipersquare_barrier,
     # test_hypoperlog_barrier,
+    test_epiperexp3_barrier,
     # test_epiperexp_barrier,
     # test_power_barrier,
     # test_hypogeomean_barrier,

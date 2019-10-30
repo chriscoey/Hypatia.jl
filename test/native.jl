@@ -370,6 +370,70 @@ function possemideftricomplex1(T; options...)
     @test r.x ≈ [Trt2i, 0, 1, Trt2i] atol=tol rtol=tol
 end
 
+function epiperexp1(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    Texph = exp(T(0.5))
+    c = T[1, 1, 1]
+    A = T[0 1 0; 1 0 0]
+    b = T[2, 1]
+    G = sparse([3, 2, 1], [1, 2, 3], -ones(T, 3))
+    h = zeros(T, 3)
+    cones = CO.Cone{T}[CO.EpiPerExp3{T}()]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 2 * Texph + 3 atol=tol rtol=tol
+    @test r.x ≈ [1, 2, 2 * Texph] atol=tol rtol=tol
+    @test r.y ≈ -[1 + Texph / 2, 1 + Texph] atol=tol rtol=tol
+    @test r.z ≈ -G * (c + A' * r.y) atol=tol rtol=tol
+end
+
+function epiperexp2(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    c = T[0, 0, -1]
+    A = T[0 1 0]
+    b = T[0]
+    G = Diagonal(-one(T) * I, 3)
+    h = zeros(T, 3)
+    cones = CO.Cone{T}[CO.EpiPerExp3{T}()]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 0 atol=tol rtol=tol
+end
+
+function epiperexp3(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    c = T[1, 1, 1]
+    A = zeros(T, 0, 3)
+    b = zeros(T, 0)
+    G = sparse([3, 2, 1, 4], [1, 2, 3, 1], -ones(T, 4))
+    h = zeros(T, 4)
+    cones = CO.Cone{T}[CO.EpiPerExp3{T}(), CO.Nonnegative{T}(1)]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 0 atol=tol rtol=tol
+    @test norm(r.x) ≈ 0 atol=tol rtol=tol
+    @test isempty(r.y)
+end
+
+function epiperexp4(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    Texp2 = exp(T(-2))
+    c = T[1, 0, 0]
+    A = T[0 1 0; 0 0 1]
+    b = T[1, -1]
+    G = SparseMatrixCSC(-one(T) * I, 3, 3)
+    h = zeros(T, 3)
+    cones = CO.Cone{T}[CO.EpiPerExp3{T}(true)]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ Texp2 atol=tol rtol=tol
+    @test r.x ≈ [Texp2, 1, -1] atol=tol rtol=tol
+end
+
 function hypoperlog1(T; options...)
     tol = sqrt(sqrt(eps(T)))
     Texph = exp(T(0.5))
@@ -378,7 +442,8 @@ function hypoperlog1(T; options...)
     b = T[2, 1]
     G = Matrix{T}(-I, 3, 3)
     h = zeros(T, 3)
-    cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
+    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
+    cones = CO.Cone{T}[CO.HypoPerLog3{T}()]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -395,7 +460,8 @@ function hypoperlog2(T; options...)
     b = T[0]
     G = Diagonal(-one(T) * I, 3)
     h = zeros(T, 3)
-    cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
+    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
+    cones = CO.Cone{T}[CO.HypoPerLog3{T}()]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -409,7 +475,8 @@ function hypoperlog3(T; options...)
     b = zeros(T, 0)
     G = sparse([1, 2, 3, 4], [1, 2, 3, 1], -ones(T, 4))
     h = zeros(T, 4)
-    cones = CO.Cone{T}[CO.HypoPerLog{T}(3), CO.Nonnegative{T}(1)]
+    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3), CO.Nonnegative{T}(1)]
+    cones = CO.Cone{T}[CO.HypoPerLog3{T}(), CO.Nonnegative{T}(1)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -426,7 +493,8 @@ function hypoperlog4(T; options...)
     b = T[1, -1]
     G = SparseMatrixCSC(-one(T) * I, 3, 3)
     h = zeros(T, 3)
-    cones = CO.Cone{T}[CO.HypoPerLog{T}(3, true)]
+    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3, true)]
+    cones = CO.Cone{T}[CO.HypoPerLog3{T}(true)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -701,39 +769,39 @@ function hypoperlogdettri3(T; options...)
     @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
-function epiperexp1(T; options...)
-    tol = sqrt(sqrt(eps(T)))
-    l = 5
-    c = vcat(zero(T), -ones(T, l))
-    A = hcat(one(T), zeros(T, 1, l))
-    b = T[1]
-    G = [-one(T) zeros(T, 1, l); zeros(T, 1, l + 1); zeros(T, l, 1) sparse(-one(T) * I, l, l)]
-    h = zeros(T, l + 2)
-    cones = CO.Cone{T}[CO.EpiPerExp{T}(l + 2)]
-
-    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r.status == :Optimal
-    @test r.x[1] ≈ 1 atol=tol rtol=tol
-    @test r.s[2] ≈ 0 atol=tol rtol=tol
-    @test r.s[1] ≈ 1 atol=tol rtol=tol
-end
-
-function epiperexp2(T; options...)
-    tol = sqrt(sqrt(eps(T)))
-    l = 5
-    c = vcat(zero(T), -ones(T, l))
-    A = hcat(one(T), zeros(T, 1, l))
-    b = T[1]
-    G = [-one(T) spzeros(T, 1, l); spzeros(T, 1, l + 1); spzeros(T, l, 1) sparse(-one(T) * I, l, l)]
-    h = zeros(T, l + 2); h[2] = 1
-    cones = CO.Cone{T}[CO.EpiPerExp{T}(l + 2)]
-
-    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r.status == :Optimal
-    @test r.x[1] ≈ 1 atol=tol rtol=tol
-    @test r.s[2] ≈ 1 atol=tol rtol=tol
-    @test r.s[2] * sum(exp, r.s[3:end] / r.s[2]) ≈ r.s[1] atol=tol rtol=tol
-end
+# function epiperexp1(T; options...)
+#     tol = sqrt(sqrt(eps(T)))
+#     l = 5
+#     c = vcat(zero(T), -ones(T, l))
+#     A = hcat(one(T), zeros(T, 1, l))
+#     b = T[1]
+#     G = [-one(T) zeros(T, 1, l); zeros(T, 1, l + 1); zeros(T, l, 1) sparse(-one(T) * I, l, l)]
+#     h = zeros(T, l + 2)
+#     cones = CO.Cone{T}[CO.EpiPerExp{T}(l + 2)]
+#
+#     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+#     @test r.status == :Optimal
+#     @test r.x[1] ≈ 1 atol=tol rtol=tol
+#     @test r.s[2] ≈ 0 atol=tol rtol=tol
+#     @test r.s[1] ≈ 1 atol=tol rtol=tol
+# end
+#
+# function epiperexp2(T; options...)
+#     tol = sqrt(sqrt(eps(T)))
+#     l = 5
+#     c = vcat(zero(T), -ones(T, l))
+#     A = hcat(one(T), zeros(T, 1, l))
+#     b = T[1]
+#     G = [-one(T) spzeros(T, 1, l); spzeros(T, 1, l + 1); spzeros(T, l, 1) sparse(-one(T) * I, l, l)]
+#     h = zeros(T, l + 2); h[2] = 1
+#     cones = CO.Cone{T}[CO.EpiPerExp{T}(l + 2)]
+#
+#     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+#     @test r.status == :Optimal
+#     @test r.x[1] ≈ 1 atol=tol rtol=tol
+#     @test r.s[2] ≈ 1 atol=tol rtol=tol
+#     @test r.s[2] * sum(exp, r.s[3:end] / r.s[2]) ≈ r.s[1] atol=tol rtol=tol
+# end
 
 function primalinfeas1(T; options...)
     tol = sqrt(sqrt(eps(T)))
@@ -768,7 +836,8 @@ function primalinfeas3(T; options...)
     b = [one(T), one(T), T(3)]
     G = SparseMatrixCSC(-one(T) * I, 3, 3)
     h = zeros(T, 3)
-    cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
+    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
+    cones = CO.Cone{T}[CO.HypoPerLog3{T}()]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :PrimalInfeasible
