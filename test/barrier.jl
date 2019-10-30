@@ -141,7 +141,7 @@ function test_barrier_scaling_oracles(
 
     # max step in a recession direction
     max_step = CO.step_max_dist(cone, e1, e1)
-    @test max_step ≈ one(T) atol=tol rtol=tol
+    @test max_step ≈ T(Inf) atol=tol rtol=tol
 
     # max step elsewhere
     primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))

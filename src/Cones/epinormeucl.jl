@@ -479,7 +479,7 @@ function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::Ab
     dual_step_dist = sqrt(cone.dual_dist) / dist_to_bndry(cone, cone.scaled_dual_point, z_sol)
 
     # TODO refactor
-    step_dist = one(T)
+    step_dist = T(Inf)
     if primal_step_dist > 0
         step_dist = min(step_dist, primal_step_dist)
     end

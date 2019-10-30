@@ -171,7 +171,9 @@ end
 function _build_hess(H::Matrix{T}, mat::Matrix{Complex{T}}, rt2::T) where {T <: Real}
     side = size(mat, 1)
     k = 1
-    for i in 1:side, j in 1:i
+    for i in 1:side, j in 1:i    # cone.bndry_dists .= eigvals(Hermitian(cone.work_mat, :U))
+    # @show cone.bndry_dists
+    # inv_min_dist = minimum(cone.bndry_dists)
         k2 = 1
         if i == j
             @inbounds for i2 in 1:side, j2 in 1:i2
@@ -353,14 +355,23 @@ function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) 
     svec_to_smat!(cone.work_mat2, dir, cone.rt2)
     mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.L)')
     ldiv!(fact.L, cone.work_mat)
-    cone.bndry_dists .= eigvals(Hermitian(cone.work_mat, :U))
-    @show cone.bndry_dists
-    inv_min_dist = minimum(cone.bndry_dists)
+    inv_min_dist = eigmin(Hermitian(cone.work_mat, :U))
+
     if inv_min_dist >= 0
-        return one(T)
+        return T(Inf)
     else
         return -inv(inv_min_dist)
     end
+
+    # dist = one(T)
+    # dir_mat = Hermitian(svec_to_smat!(cone.work_mat, dir, cone.rt2), :U)
+    # eig_vals = eigvals(inv(fact.L) * dir_mat * inv(fact.L)')
+    # @inbounds for v in eig_vals
+    #     if v < 0
+    #         dist = min(dist, -inv(v))
+    #     end
+    # end
+    # return dist
 end
 
 function step_max_dist(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
@@ -371,8 +382,8 @@ function step_max_dist(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_so
     # TODO this could go in Cones.jl
     primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
     dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
-    step_dist = min(one(T), primal_dist, dual_dist)
-    @show primal_dist, dual_dist, step_dist
+    step_dist = min(primal_dist, dual_dist)
+    @show step_dist
     return step_dist
 end
 
