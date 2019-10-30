@@ -45,6 +45,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
 
     scalmat_sqrt::Matrix{R}
     scalmat_sqrti::Matrix{R}
+    lambda::Vector{R} # TODO remove if unneeded
 
     function PosSemidefTri{T, R}(dim::Int, use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
@@ -79,6 +80,7 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     dim = cone.dim
     cone.point = zeros(T, dim)
     cone.dual_point = zeros(T, dim)
+    cone.lambda = zeros(T, cone.side)
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
@@ -127,17 +129,16 @@ end
 function update_scaling(cone::PosSemidefTri)
     @assert !cone.scaling_updated
     @assert cone.is_feas
+    fact = cone.fact_mat
     svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
     copyto!(cone.dual_mat2, cone.dual_mat)
+    dual_fact = cone.dual_fact_mat = cholesky!(Hermitian(cone.dual_mat2, :U), check = false)
+    @assert isposdef(cone.dual_fact_mat)
 
-    fact1 = cone.fact_mat
-    fact2 = cholesky(Symmetric(cone.dual_mat2, :U), Val(false))
-    # cone.dual_fact_mat = cholesky!(Hermitian(cone.dual_mat2, :U), check = false)
-    # @assert isposdef(cone.dual_fact_mat)
-
-    (U, lambda, V) = svd(fact2.U * fact1.L)
-    cone.scalmat_sqrt = fact1.L * V * Diagonal(sqrt.(inv.(lambda)))
-    cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * fact2.U
+    (U, lambda, V) = svd(dual_fact.U * fact.L)
+    cone.scalmat_sqrt = fact.L * V * Diagonal(sqrt.(inv.(lambda)))
+    cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
+    cone.lambda = lambda
 
     cone.scaling_updated = true
     return cone.scaling_updated
@@ -224,7 +225,7 @@ function update_hess(cone::PosSemidefTri)
         if !cone.scaling_updated
             update_scaling(cone)
         end
-        _build_hess(cone.hess.data, (cone.scalmat_sqrti)^2, cone.rt2)
+        _build_hess(cone.hess.data, cone.scalmat_sqrti' * cone.scalmat_sqrti, cone.rt2)
     else
         _build_hess(cone.hess.data, cone.inv_mat, cone.rt2)
     end
@@ -238,9 +239,9 @@ function update_inv_hess(cone::PosSemidefTri)
         if !cone.scaling_updated
             update_scaling(cone)
         end
-        _build_hess(cone.hess.data, (cone.scalmat_sqrt)^2, cone.rt2)
+        _build_hess(cone.inv_hess.data, cone.scalmat_sqrt * cone.scalmat_sqrt', cone.rt2)
     else
-        _build_hess(cone.hess.data, cone.mat, cone.rt2)
+        _build_hess(cone.inv_hess.data, cone.mat, cone.rt2)
     end
     cone.inv_hess_updated = true
     return cone.inv_hess
@@ -251,23 +252,47 @@ update_inv_hess_prod(cone::PosSemidefTri) = nothing
 
 function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
-    @inbounds for i in 1:size(arr, 2)
-        svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
-        copytri!(cone.mat4, 'U', cone.is_complex)
-        rdiv!(cone.mat4, cone.fact_mat)
-        ldiv!(cone.fact_mat, cone.mat4)
-        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+    if cone.use_scaling
+        if !cone.scaling_updated
+            update_scaling(cone)
+        end
+        @inbounds for i in 1:size(arr, 2)
+            svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
+            mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.scalmat_sqrti' * cone.scalmat_sqrti)
+            mul!(cone.mat4, Hermitian(cone.scalmat_sqrti' * cone.scalmat_sqrti, :U), cone.mat3)
+            smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+        end
+    else
+        @inbounds for i in 1:size(arr, 2)
+            svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
+            copytri!(cone.mat4, 'U', cone.is_complex)
+            rdiv!(cone.mat4, cone.fact_mat)
+            ldiv!(cone.fact_mat, cone.mat4)
+            smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+        end
     end
     return prod
 end
 
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
-    @inbounds for i in 1:size(arr, 2)
-        svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
-        mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.mat)
-        mul!(cone.mat4, Hermitian(cone.mat, :U), cone.mat3)
-        smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+    if cone.use_scaling
+        if !cone.scaling_updated
+            update_scaling(cone)
+        end
+        @inbounds for i in 1:size(arr, 2)
+            svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
+            mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.scalmat_sqrt * cone.scalmat_sqrt')
+            mul!(cone.mat4, Hermitian(cone.scalmat_sqrt * cone.scalmat_sqrt', :U), cone.mat3)
+            smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+        end
+    else
+        @inbounds for i in 1:size(arr, 2)
+            svec_to_smat!(cone.mat4, view(arr, :, i), cone.rt2)
+            mul!(cone.mat3, Hermitian(cone.mat4, :U), cone.mat)
+            mul!(cone.mat4, Hermitian(cone.mat, :U), cone.mat3)
+            smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
+        end
     end
     return prod
 end
@@ -297,6 +322,63 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosS
         smat_to_svec!(view(prod, :, i), cone.mat4, cone.rt2)
     end
     return prod
+end
+
+function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    @. cone.mat2 = cone.lambda
+    @. cone.mat2 += cone.mat2'
+    @. cone.mat2 = 2 / cone.mat2
+    svec_to_smat!(cone.mat3, arr, cone.rt2)
+    @. cone.mat4 = cone.mat3 * cone.mat2
+    smat_to_svec!(div, cone.mat4, cone.rt2)
+    # @show sqrt(cone.point[1] * cone.dual_point[1])
+    return div
+end
+
+function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::PosSemidefTri)
+    U = Hermitian(svec_to_smat!(cone.mat2, u, cone.rt2), :U)
+    V = Hermitian(svec_to_smat!(cone.mat3, v, cone.rt2), :U)
+    W = cone.mat4
+    W .= (U * V + V' * U') / 2
+    smat_to_svec!(w, W, cone.rt2)
+    return w
+end
+
+# dist = one(T)
+# @inbounds for i in eachindex(point)
+#     if dir[i] < 0
+#         dist = min(dist, -point[i] / dir[i])
+#     end
+# end
+# return dist
+
+function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
+    dist = one(T)
+    dir_mat = Hermitian(svec_to_smat!(cone.mat2, dir, cone.rt2), :U)
+    eig_vals = eigvals(inv(fact.L) * dir_mat * inv(fact.L)')
+    @inbounds for v in eig_vals
+        if v < 0
+            dist = min(dist, -inv(v))
+        end
+    end
+    return dist
+end
+
+function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
+    # TODO only need this for dual_fact_mat, here and in other cones cones maybe break up update_scaling
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
+    # TODO this could go in Cones.jl
+    # Stilde = scalmat_ldiv!(cone.mat2, cone.point, cone)
+    # Ztilde = scalmat_prod!(cone.mat2, cone.dual_point, cone)
+
+    primal_dist = dist_to_bndry(cone, cone.fact_mat, s_sol)
+    dual_dist = dist_to_bndry(cone, cone.dual_fact_mat, z_sol)
+    step_dist = min(primal_dist, dual_dist)
 end
 
 # TODO fix later, rt2::T doesn't work with tests using ForwardDiff
