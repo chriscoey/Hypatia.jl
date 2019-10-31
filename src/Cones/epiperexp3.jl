@@ -35,7 +35,7 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
 
     function EpiPerExp3{T}(
         is_dual::Bool;
-        use_scaling::Bool = false, # TODO MOSEK paper scaling
+        use_scaling::Bool = true, # TODO MOSEK paper scaling
         hess_fact_cache = hessian_cache(T), # TODO delete
         ) where {T <: Real}
         cone = new{T}()
@@ -128,6 +128,19 @@ end
 
 function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVector)
     # TODO F'''
-    cone.correction ./= 2
+    @assert cone.grad_updated
+
+    function barrier(s)
+        (u, v, w) = (s[1], s[2], s[3])
+        return -log(v * log(u / v) - w) - log(u) - log(v)
+    end
+
+    # FD_hess = ForwardDiff.hessian(barrier, cone.point)
+    # Hinv_z_sol = cholesky(Symmetric(FD_hess)) \ z_sol
+    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
+    Hinv_z_sol = similar(z_sol)
+    inv_hess_prod!(Hinv_z_sol, z_sol, cone)
+    cone.correction .= reshape(FD_3deriv * s_sol, dim, dim) * Hinv_z_sol / -2
+
     return cone.correction
 end
