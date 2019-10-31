@@ -34,7 +34,7 @@ end
 
 use_dual(cone::Nonnegative) = false # self-dual
 
-use_scaling(cone::Nonnegative) = cone.use_scaling
+use_scaling(cone::Nonnegative) = cone.use_scaling # TODO remove from here and just use one in Cones.jl when all cones allow scaling
 
 load_dual_point(cone::Nonnegative, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 

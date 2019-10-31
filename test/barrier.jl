@@ -77,7 +77,8 @@ end
 
 # TODO cleanup, cover all scaling oracles, comment in some places
 function test_barrier_scaling_oracles(
-    cone::CO.Cone{T};
+    cone::CO.Cone{T},
+    barrier::Function;
     noise::Real = 0.2,
     tol::Real = 100eps(T),
     ) where {T <: Real}
@@ -173,6 +174,22 @@ function test_barrier_scaling_oracles(
     # randvec = CO.conic_prod!(similar(prod), W \ primal_dir, W * dual_dir, cone)
     # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), randvec, cone)
 
+    # TODO correction term is directional third derivative of barrier
+    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
+        FD_hess = ForwardDiff.hessian(barrier, point)
+        FD_d3 = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+
+        # check log-homog property that F'''(x)[x] = -2F''(x)
+        @test reshape(FD_d3 * point, dim, dim) ≈ -2 * FD_hess
+
+        # check correction term agrees with directional 3rd derivative
+        # TODO fix failures
+        Da_s = rand(T, dim)
+        Da_z = rand(T, dim)
+        FD_corr = reshape(FD_d3 * Da_s, dim, dim) * (Symmetric(FD_hess) \ Da_z) / -2
+        @test FD_corr ≈ CO.correction(cone, Da_s, Da_z) atol=tol rtol=tol
+    end
+
     return
 end
 
@@ -180,7 +197,7 @@ function test_nonnegative_barrier(T::Type{<:Real})
     barrier = (s -> -sum(log, s))
     for dim in [1, 3, 6]
         test_barrier_oracles(CO.Nonnegative{T}(dim, use_scaling = false), barrier)
-        test_barrier_scaling_oracles(CO.Nonnegative{T}(dim, use_scaling = true))
+        test_barrier_scaling_oracles(CO.Nonnegative{T}(dim, use_scaling = true), barrier)
     end
     return
 end
@@ -203,7 +220,7 @@ function test_epinormeucl_barrier(T::Type{<:Real})
     end
     for dim in [2, 4, 6]
         test_barrier_oracles(CO.EpiNormEucl{T}(dim, use_scaling = false), barrier)
-        test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true))
+        test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true), barrier)
     end
     return
 end
@@ -311,7 +328,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
         end
         dim = div(side * (side + 1), 2)
         test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, false), R_barrier)
-        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim))
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim), R_barrier)
         # complex PSD cone
         # function C_barrier(s)
         #     S = zeros(Complex{eltype(s)}, side, side)
