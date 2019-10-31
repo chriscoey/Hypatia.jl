@@ -43,8 +43,8 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     scalmat_sqrt::Matrix{R}
     scalmat_sqrti::Matrix{R}
     lambda::Vector{R}
-    bndry_dists::Vector{R}
-    correction::Vector{R}
+    bndry_dists::Vector{T}
+    correction::Vector{T}
 
     function PosSemidefTri{T, R}(dim::Int; use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
@@ -91,6 +91,7 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     cone.work_mat = similar(cone.mat)
     cone.work_mat2 = similar(cone.mat)
     cone.work_mat3 = similar(cone.mat)
+    cone.correction = zeros(T, dim)
     return
 end
 
@@ -309,7 +310,7 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
 end
 
 # TODO think about whether transpose oracle is needed
-function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
+function scalmat_prod!(prod::AbstractVecOrMat{R}, arr::AbstractVecOrMat, cone::PosSemidefTri) where {R <: Real}
     if !cone.scaling_updated
         update_scaling(cone)
     end
@@ -381,7 +382,7 @@ end
 
 # TODO refactor into Cones.jl
 function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
-    @assert cone.grad_updated
+    @assert cone.scaling_updated
     tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
     mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)

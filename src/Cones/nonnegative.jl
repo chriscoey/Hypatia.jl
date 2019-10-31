@@ -166,6 +166,7 @@ end
 
 function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::Nonnegative)
     @. w = u * v
+    return w
 end
 
 hess_nz_count(cone::Nonnegative, ::Bool) = cone.dim

@@ -155,6 +155,19 @@ function test_barrier_scaling_oracles(
     @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
     @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ CO.conic_prod!(similar(e1), W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
 
+    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
+        FD_hess = ForwardDiff.hessian(barrier, point)
+        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+
+        # check log-homog property that F'''(point)[point] = -2F''(point)
+        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * FD_hess
+
+        # check correction term agrees with directional 3rd derivative
+        Hinv_Da_z = cholesky(Symmetric(FD_hess)) \ dual_dir
+        FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_Da_z / -2
+        @test FD_corr ≈ correction atol=tol rtol=tol
+    end
+
     # max step tests for these new directions
     max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
     # check smaller step returns feasible iterates
@@ -173,22 +186,6 @@ function test_barrier_scaling_oracles(
     CO.reset_data(cone)
     dual_feas = CO.is_feas(cone)
     @test !primal_feas || !dual_feas
-
-    # TODO correction term is directional third derivative of barrier
-    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
-        FD_hess = ForwardDiff.hessian(barrier, point)
-        FD_d3 = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-
-        # check log-homog property that F'''(x)[x] = -2F''(x)
-        @test reshape(FD_d3 * point, dim, dim) ≈ -2 * FD_hess
-
-        # check correction term agrees with directional 3rd derivative
-        # TODO fix failures
-        Da_s = rand(T, dim)
-        Da_z = rand(T, dim)
-        FD_corr = reshape(FD_d3 * Da_s, dim, dim) * (Symmetric(FD_hess) \ Da_z) / -2
-        @test FD_corr ≈ CO.correction(cone, Da_s, Da_z) atol=tol rtol=tol
-    end
 
     return
 end
@@ -327,7 +324,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        # test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
         test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
         # complex PSD cone
         function C_barrier(s)
