@@ -117,8 +117,7 @@ function test_barrier_scaling_oracles(
 
     # multiplication and division by scaling matrix W
     λ = CO.scalmat_prod!(similar(cone.point), cone.dual_point, cone)
-    W = similar(point, dim, dim)
-    CO.scalmat_prod!(W, Matrix{T}(I, cone.dim, cone.dim), cone)
+    W = CO.scalmat_prod!(similar(point, dim, dim), Matrix{T}(I, cone.dim, cone.dim), cone)
     @test W' * λ ≈ cone.point atol=tol rtol=tol
     prod = similar(point)
     @test CO.scalmat_ldiv!(prod, cone.point, cone, trans = true) ≈ λ atol=tol rtol=tol
@@ -140,29 +139,6 @@ function test_barrier_scaling_oracles(
     @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
     @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone, trans = false) atol=tol rtol=tol
 
-    # correction = CO.correction(cone, primal_dir, dual_dir)
-    # prod2 = similar(prod)
-    # # λ \circ W * correction = actual Mehrotra term
-    # @test CO.conic_prod!(prod2, λ, W * correction, cone) ≈ CO.conic_prod!(prod, W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
-    # randvec = CO.conic_prod!(similar(prod), W \ primal_dir, W * dual_dir, cone)
-    # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), randvec, cone)
-
-    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
-        FD_hess = ForwardDiff.hessian(barrier, point)
-        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-
-        # check log-homog property that F'''(point)[point] = -2F''(point)
-        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * FD_hess
-
-        # check correction term agrees with directional 3rd derivative
-        Da_s = rand(T, dim)
-        Da_z = rand(T, dim)
-        corr = CO.correction(cone, Da_s, Da_z)
-        Hinv_Da_z = cholesky(Symmetric(FD_hess)) \ Da_z
-        FD_corr = reshape(FD_3deriv * Da_s, dim, dim) * Hinv_Da_z / -2
-        @test FD_corr ≈ corr atol=tol rtol=tol
-    end
-
     # max step in a recession direction
     max_step = CO.step_max_dist(cone, e1, e1)
     @test max_step ≈ T(Inf) atol=tol rtol=tol
@@ -172,6 +148,27 @@ function test_barrier_scaling_oracles(
     dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
     prev_primal = copy(cone.point)
     prev_dual = copy(cone.dual_point)
+
+    # λ \circ W * correction = actual Mehrotra term
+    mehrotra_term = CO.conic_prod!(similar(prod), W \ primal_dir, W * dual_dir, cone)
+    correction = CO.correction(cone, primal_dir, dual_dir)
+    @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
+    @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ CO.conic_prod!(similar(e1), W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
+
+    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
+        FD_hess = ForwardDiff.hessian(barrier, point)
+        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+
+        # check log-homog property that F'''(point)[point] = -2F''(point)
+        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * FD_hess
+
+        # check correction term agrees with directional 3rd derivative
+        Hinv_Da_z = cholesky(Symmetric(FD_hess)) \ dual_dir
+        FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_Da_z / -2
+        @test FD_corr ≈ correction atol=tol rtol=tol
+    end
+
+    # max step tests for these new directions
     max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
     # check smaller step returns feasible iterates
     CO.load_point(cone, prev_primal + 0.99 * max_step * primal_dir)
@@ -327,7 +324,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        # test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
         test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
         # complex PSD cone
         function C_barrier(s)

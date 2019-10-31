@@ -43,7 +43,8 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     scalmat_sqrt::Matrix{R}
     scalmat_sqrti::Matrix{R}
     lambda::Vector{R}
-    bndry_dists::Vector{R}
+    bndry_dists::Vector{T}
+    correction::Vector{T}
 
     function PosSemidefTri{T, R}(dim::Int; use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
@@ -90,6 +91,7 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     cone.work_mat = similar(cone.mat)
     cone.work_mat2 = similar(cone.mat)
     cone.work_mat3 = similar(cone.mat)
+    cone.correction = zeros(T, dim)
     return
 end
 
@@ -308,7 +310,7 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
 end
 
 # TODO think about whether transpose oracle is needed
-function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
+function scalmat_prod!(prod::AbstractVecOrMat{R}, arr::AbstractVecOrMat, cone::PosSemidefTri) where {R <: Real}
     if !cone.scaling_updated
         update_scaling(cone)
     end
@@ -365,7 +367,7 @@ function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) 
     end
 end
 
-function step_max_dist(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
+function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
     # TODO only need this for dual_fact, here and in other cones cones maybe break up update_scaling
     @assert cone.is_feas
     if !cone.scaling_updated
@@ -376,6 +378,19 @@ function step_max_dist(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_so
     dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
     step_dist = min(primal_dist, dual_dist)
     return step_dist
+end
+
+# TODO refactor into Cones.jl
+function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
+    @assert cone.scaling_updated
+    tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
+    tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
+    mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
+
+    C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
+    scalmat_ldiv!(cone.correction, C, cone)
+
+    return cone.correction
 end
 
 # TODO fix later, rt2::T doesn't work with tests using ForwardDiff
