@@ -5,8 +5,8 @@ Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 using Test
 import Random
 using LinearAlgebra
+import GenericLinearAlgebra.svdvals
 using SparseArrays
-import GenericSVD.svdvals
 import Hypatia
 import Hypatia.Solvers.build_solve_check
 const CO = Hypatia.Cones
@@ -320,19 +320,11 @@ function possemideftri1(T; options...)
     G = Matrix{T}(-I, 3, 3)
     h = zeros(T, 3)
 
-    for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3, is_dual)]
-
-        r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-        @test r.status == :Optimal
-        if is_dual
-            @test r.primal_obj ≈ -one(T) atol=tol rtol=tol
-            @test r.x[2] ≈ one(T) atol=tol rtol=tol
-        else
-            @test r.primal_obj ≈ -one(T) atol=tol rtol=tol
-            @test r.x[2] ≈ one(T) atol=tol rtol=tol
-        end
-    end
+    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3)]
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ -one(T) atol=tol rtol=tol
+    @test r.x[2] ≈ one(T) atol=tol rtol=tol
 end
 
 function possemideftri2(T; options...)
@@ -343,14 +335,12 @@ function possemideftri2(T; options...)
     G = Diagonal(-one(T) * I, 3)
     h = zeros(T, 3)
 
-    for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3, is_dual)]
+    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3)]
 
-        r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-        @test r.status == :Optimal
-        @test r.primal_obj ≈ 0 atol=tol rtol=tol
-        @test norm(r.x) ≈ 0 atol=tol rtol=tol
-    end
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    @test r.primal_obj ≈ 0 atol=tol rtol=tol
+    @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
 function possemideftricomplex1(T; options...)

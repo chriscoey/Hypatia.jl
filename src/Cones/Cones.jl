@@ -8,6 +8,8 @@ module Cones
 
 using LinearAlgebra
 import LinearAlgebra.copytri!
+import GenericLinearAlgebra.eigvals
+import GenericLinearAlgebra.svd
 import Hypatia.RealOrComplex
 import Hypatia.DenseSymCache
 import Hypatia.DensePosDefCache

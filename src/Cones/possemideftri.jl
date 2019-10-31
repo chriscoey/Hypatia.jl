@@ -1,5 +1,5 @@
 #=
-Copyright 2018, Chris Coey and contributors
+Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 TODO describe hermitian complex PSD cone
 on-diagonal (real) elements have one slot in the vector and below diagonal (complex) elements have two consecutive slots in the vector
 row-wise lower triangle of positive semidefinite matrix cone
@@ -45,7 +45,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     lambda::Vector{R}
     bndry_dists::Vector{R}
 
-    function PosSemidefTri{T, R}(dim::Int, use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
+    function PosSemidefTri{T, R}(dim::Int; use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
         cone.dim = dim # real vector dimension
@@ -135,6 +135,7 @@ function update_scaling(cone::PosSemidefTri)
     dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
     @assert isposdef(cone.dual_fact)
 
+    # TODO preallocate
     (U, lambda, V) = svd(dual_fact.U * fact.L)
     cone.scalmat_sqrt = fact.L * V * Diagonal(sqrt.(inv.(lambda)))
     cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
@@ -171,9 +172,7 @@ end
 function _build_hess(H::Matrix{T}, mat::Matrix{Complex{T}}, rt2::T) where {T <: Real}
     side = size(mat, 1)
     k = 1
-    for i in 1:side, j in 1:i    # cone.bndry_dists .= eigvals(Hermitian(cone.work_mat, :U))
-    # @show cone.bndry_dists
-    # inv_min_dist = minimum(cone.bndry_dists)
+    for i in 1:side, j in 1:i
         k2 = 1
         if i == j
             @inbounds for i2 in 1:side, j2 in 1:i2
@@ -268,7 +267,7 @@ function gen_congruence_prod!(prod::AbstractVecOrMat, inner::AbstractVecOrMat, o
     @inbounds for i in 1:size(inner, 2)
         svec_to_smat!(cone.work_mat2, view(inner, :, i), cone.rt2)
         mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), outer)
-        mul!(cone.work_mat2, transpose(outer), cone.work_mat)
+        mul!(cone.work_mat2, outer', cone.work_mat)
         smat_to_svec!(view(prod, :, i), cone.work_mat2, cone.rt2)
     end
     return prod
@@ -322,7 +321,7 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosS
     if !cone.scaling_updated
         update_scaling(cone)
     end
-    outer_term = (trans ? transpose(cone.scalmat_sqrti) : cone.scalmat_sqrti)
+    outer_term = (trans ? cone.scalmat_sqrti' : cone.scalmat_sqrti)
     gen_congruence_prod!(prod, arr, outer_term, cone)
     return prod
 end
@@ -331,20 +330,20 @@ function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSe
     if !cone.scaling_updated
         update_scaling(cone)
     end
-    @. cone.fact_mat = cone.lambda
-    @. cone.fact_mat += cone.fact_mat'
-    @. cone.fact_mat = 2 / cone.fact_mat
-    svec_to_smat!(cone.work_mat, arr, cone.rt2)
+    @. cone.work_mat = cone.lambda
+    @. cone.work_mat += cone.work_mat'
+    @. cone.work_mat = 2 / cone.work_mat
+    svec_to_smat!(cone.work_mat2, arr, cone.rt2)
     # only upper triangle of cone.work_mat is updated, but that is enough (wrapping in UpperTriangular is slower)
-    @. cone.work_mat2 = cone.work_mat * cone.fact_mat
-    smat_to_svec!(div, cone.work_mat2, cone.rt2)
+    @. cone.work_mat3 = cone.work_mat * cone.work_mat2
+    smat_to_svec!(div, cone.work_mat3, cone.rt2)
     return div
 end
 
 function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::PosSemidefTri)
-    U = Hermitian(svec_to_smat!(cone.fact_mat, u, cone.rt2), :U)
-    V = Hermitian(svec_to_smat!(cone.work_mat, v, cone.rt2), :U)
-    W = cone.work_mat2
+    U = Hermitian(svec_to_smat!(cone.work_mat, u, cone.rt2), :U)
+    V = Hermitian(svec_to_smat!(cone.work_mat2, v, cone.rt2), :U)
+    W = cone.work_mat3
     mul!(W, U, V)
     @. W = (W + W') / 2
     smat_to_svec!(w, W, cone.rt2)
@@ -353,29 +352,22 @@ end
 
 function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
     svec_to_smat!(cone.work_mat2, dir, cone.rt2)
-    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.L)')
-    ldiv!(fact.L, cone.work_mat)
-    inv_min_dist = eigmin(Hermitian(cone.work_mat, :U))
-
+    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.U))
+    ldiv!(fact.U', cone.work_mat)
+    # TODO preallocate. also explore faster options.
+    # NOTE julia calls eigvals inside eigmin, and eigmin is not currently implemented in GenericLinearAlgebra
+    v = eigvals(Hermitian(cone.work_mat, :U))
+    inv_min_dist = minimum(v)
     if inv_min_dist >= 0
         return T(Inf)
     else
         return -inv(inv_min_dist)
     end
-
-    # dist = one(T)
-    # dir_mat = Hermitian(svec_to_smat!(cone.work_mat, dir, cone.rt2), :U)
-    # eig_vals = eigvals(inv(fact.L) * dir_mat * inv(fact.L)')
-    # @inbounds for v in eig_vals
-    #     if v < 0
-    #         dist = min(dist, -inv(v))
-    #     end
-    # end
-    # return dist
 end
 
 function step_max_dist(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
     # TODO only need this for dual_fact, here and in other cones cones maybe break up update_scaling
+    @assert cone.is_feas
     if !cone.scaling_updated
         update_scaling(cone)
     end
@@ -383,7 +375,6 @@ function step_max_dist(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_so
     primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
     dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
     step_dist = min(primal_dist, dual_dist)
-    @show step_dist
     return step_dist
 end
 

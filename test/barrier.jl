@@ -138,7 +138,7 @@ function test_barrier_scaling_oracles(
     # e1 = λ \circ W * -grad tested in different ways
     @test e1 ≈ CO.conic_prod!(prod, λ, -W * grad, cone) atol=tol rtol=tol
     @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
-    @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone, trans = false) atol=tol rtol=tol #
+    @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone, trans = false) atol=tol rtol=tol
 
     # max step in a recession direction
     max_step = CO.step_max_dist(cone, e1, e1)
@@ -147,9 +147,9 @@ function test_barrier_scaling_oracles(
     # max step elsewhere
     primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
     dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-    max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
     prev_primal = copy(cone.point)
     prev_dual = copy(cone.dual_point)
+    max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
     # check smaller step returns feasible iterates
     CO.load_point(cone, prev_primal + 0.99 * max_step * primal_dir)
     CO.reset_data(cone)
@@ -327,16 +327,17 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, false), R_barrier)
-        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim), R_barrier)
+        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
         # complex PSD cone
-        # function C_barrier(s)
-        #     S = zeros(Complex{eltype(s)}, side, side)
-        #     CO.svec_to_smat!(S, s, sqrt(T(2)))
-        #     return -logdet(cholesky!(Hermitian(S, :U)))
-        # end
-        # dim = side^2
-        # test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim), C_barrier)
+        function C_barrier(s)
+            S = zeros(Complex{eltype(s)}, side, side)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
+            return -logdet(cholesky!(Hermitian(S, :U)))
+        end
+        dim = side^2
+        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true), C_barrier)
     end
     return
 end

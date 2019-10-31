@@ -33,17 +33,17 @@ testfuns_preproc = [
 testfuns_reduce = vcat(testfuns_no_preproc, testfuns_preproc)
 
 testfuns = [
-    # nonnegative1,
-    # nonnegative2,
-    # nonnegative3,
+    nonnegative1,
+    nonnegative2,
+    nonnegative3,
     # epinorminf1,
     # epinorminf2,
     # epinorminf3,
     # epinorminf4,
     # epinorminf5,
-    # epinormeucl1,
-    # epinormeucl2,
-    # epinormeucl3,
+    epinormeucl1,
+    epinormeucl2,
+    epinormeucl3,
     # epipersquare1,
     # epipersquare2,
     # epipersquare3,
@@ -53,10 +53,10 @@ testfuns = [
     # hypoperlog4,
     # hypoperlog5,
     # hypoperlog6,
-    epiperexp1,
-    epiperexp2,
-    epiperexp3,
-    epiperexp4,
+    # epiperexp1,
+    # epiperexp2,
+    # epiperexp3,
+    # epiperexp4,
     # power1,
     # power2,
     # power3,
@@ -65,9 +65,9 @@ testfuns = [
     # hypogeomean2,
     # hypogeomean3,
     # epinormspectral1,
-    # possemideftri1,
-    # possemideftri2,
-    # possemideftricomplex1,
+    possemideftri1,
+    possemideftri2,
+    possemideftricomplex1,
     # hypoperlogdettri1,
     # hypoperlogdettri2,
     # hypoperlogdettri3,
@@ -136,7 +136,7 @@ options = (verbose = true,)
     # @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
     #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
     # end
-    @testset "NaiveElimSparse tests: $t" for t in testfuns
+    @testset "NaiveElimSparse tests: $t" for t in testfuns, T in generic_reals
         T = Float64
         t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
     end
