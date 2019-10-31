@@ -11,8 +11,6 @@ TODO
 use StaticArrays
 =#
 
-import ForwardDiff
-
 mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     use_scaling::Bool
     use_dual::Bool
@@ -128,21 +126,23 @@ function update_hess(cone::EpiPerExp3)
     return cone.hess
 end
 
-function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVector)
-    # TODO F'''
-    @assert cone.grad_updated
+# TODO F''' without ForwardDiff
+import ForwardDiff
 
+function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVector)
     function barrier(s)
         (u, v, w) = (s[1], s[2], s[3])
         return -log(v * log(u / v) - w) - log(u) - log(v)
     end
 
-    # FD_hess = ForwardDiff.hessian(barrier, cone.point)
-    # Hinv_z_sol = cholesky(Symmetric(FD_hess)) \ z_sol
     FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
+
     Hinv_z_sol = similar(z_sol)
+    update_inv_hess_prod(cone)
     inv_hess_prod!(Hinv_z_sol, z_sol, cone)
+
     cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hinv_z_sol / -2
 
+    @show cone.correction
     return cone.correction
 end

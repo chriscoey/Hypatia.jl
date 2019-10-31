@@ -107,7 +107,8 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # TODO rename gamma to sigma maybe, if get rid of combined stepper
     solver.prev_aff_alpha = aff_alpha = find_max_alpha(stepper, solver)
     @assert 0 <= aff_alpha <= 1
-    gamma = (1 - aff_alpha) ^ 3 # TODO allow different function (heuristic)
+    # gamma = (1 - aff_alpha) ^ 3 # TODO allow different function (heuristic)
+    gamma = (1 - aff_alpha) * min(abs2(1 - aff_alpha), T(0.25)) # from MOSEK paper
     solver.prev_gamma = stepper.gamma = gamma
 
     # TODO needed?
@@ -349,9 +350,9 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
             grad_k = Cones.grad(cone_k)
 
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
-            # if Cones.use_scaling(cone_k)
+            if Cones.use_scaling(cone_k) || cone_k isa Cones.EpiPerExp3{T}
                 stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
-            # end
+            end
         end
 
         # kap rhs (with Mehrotra correction)
