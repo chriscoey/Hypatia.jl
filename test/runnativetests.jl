@@ -65,7 +65,6 @@ testfuns = [
     # hypogeomean2,
     # hypogeomean3,
     # epinormspectral1,
-    possemideftri0,
     possemideftri1,
     possemideftri2,
     possemideftricomplex1,
@@ -137,7 +136,7 @@ options = (verbose = true,)
     # @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
     #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
     # end
-    @testset "NaiveElimSparse tests: $t" for t in testfuns
+    @testset "NaiveElimSparse tests: $t" for t in testfuns, T in generic_reals
         T = Float64
         t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
     end

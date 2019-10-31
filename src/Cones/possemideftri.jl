@@ -1,5 +1,5 @@
 #=
-Copyright 2018, Chris Coey and contributors
+Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 TODO describe hermitian complex PSD cone
 on-diagonal (real) elements have one slot in the vector and below diagonal (complex) elements have two consecutive slots in the vector
 row-wise lower triangle of positive semidefinite matrix cone
@@ -135,6 +135,7 @@ function update_scaling(cone::PosSemidefTri)
     dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
     @assert isposdef(cone.dual_fact)
 
+    # TODO preallocate
     (U, lambda, V) = svd(dual_fact.U * fact.L)
     cone.scalmat_sqrt = fact.L * V * Diagonal(sqrt.(inv.(lambda)))
     cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
@@ -350,11 +351,13 @@ function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, co
 end
 
 function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
-    @assert isapprox(fact.L * fact.L', Hermitian(cone.mat)) || isapprox(fact.L * fact.L', Hermitian(cone.dual_mat))
     svec_to_smat!(cone.work_mat2, dir, cone.rt2)
-    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.L'))
-    ldiv!(fact.L, cone.work_mat)
-    inv_min_dist = eigmin(Hermitian(cone.work_mat, :U))
+    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.U))
+    ldiv!(fact.U', cone.work_mat)
+    # TODO preallocate. also explore faster options.
+    # NOTE julia calls eigvals inside eigmin, and eigmin is not currently implemented in GenericLinearAlgebra
+    v = eigvals(Hermitian(cone.work_mat, :U))
+    inv_min_dist = minimum(v)
     if inv_min_dist >= 0
         return T(Inf)
     else

@@ -5,8 +5,8 @@ Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 using Test
 import Random
 using LinearAlgebra
+import GenericLinearAlgebra.svdvals
 using SparseArrays
-import GenericSVD.svdvals
 import Hypatia
 import Hypatia.Solvers.build_solve_check
 const CO = Hypatia.Cones
@@ -311,21 +311,6 @@ function epipersquare3(T; options...)
     @test r.primal_obj ≈ 0 atol=tol rtol=tol
     @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
-
-function possemideftri0(T; options...)
-    tol = sqrt(sqrt(eps(T)))
-    c = T[1]
-    A = zeros(T, 0, 1)
-    b = T[]
-    G = Matrix{T}(-I, 1, 1)
-    h = zeros(T, 1)
-
-    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(1)]
-    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r.status == :Optimal
-    @test r.primal_obj ≈ zero(T) atol=tol rtol=tol
-end
-
 
 function possemideftri1(T; options...)
     tol = sqrt(sqrt(eps(T)))
