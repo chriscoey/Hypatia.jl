@@ -423,7 +423,9 @@ end
 
 # returns W_inv \circ lambda \diamond correction
 function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
-    @assert cone.scaling_updated
+    if !cone.scaling_updated
+        update_scaling(cone)
+    end
     tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
 

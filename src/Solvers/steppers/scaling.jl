@@ -349,9 +349,9 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
             grad_k = Cones.grad(cone_k)
 
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
-            if Cones.use_scaling(cone_k)
+            # if Cones.use_scaling(cone_k)
                 stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
-            end
+            # end
         end
 
         # kap rhs (with Mehrotra correction)
