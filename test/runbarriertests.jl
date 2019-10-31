@@ -26,7 +26,7 @@ barrier_testfuns = [
 
 real_types = [
     Float64,
-    # Float32,
+    Float32,
     # BigFloat,
     ]
 

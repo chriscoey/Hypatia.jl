@@ -140,6 +140,29 @@ function test_barrier_scaling_oracles(
     @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
     @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone, trans = false) atol=tol rtol=tol
 
+    # correction = CO.correction(cone, primal_dir, dual_dir)
+    # prod2 = similar(prod)
+    # # λ \circ W * correction = actual Mehrotra term
+    # @test CO.conic_prod!(prod2, λ, W * correction, cone) ≈ CO.conic_prod!(prod, W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
+    # randvec = CO.conic_prod!(similar(prod), W \ primal_dir, W * dual_dir, cone)
+    # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), randvec, cone)
+
+    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
+        FD_hess = ForwardDiff.hessian(barrier, point)
+        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+
+        # check log-homog property that F'''(point)[point] = -2F''(point)
+        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * FD_hess
+
+        # check correction term agrees with directional 3rd derivative
+        Da_s = rand(T, dim)
+        Da_z = rand(T, dim)
+        corr = CO.correction(cone, Da_s, Da_z)
+        Hinv_Da_z = cholesky(Symmetric(FD_hess)) \ Da_z
+        FD_corr = reshape(FD_3deriv * Da_s, dim, dim) * Hinv_Da_z / -2
+        @test FD_corr ≈ corr atol=tol rtol=tol
+    end
+
     # max step in a recession direction
     max_step = CO.step_max_dist(cone, e1, e1)
     @test max_step ≈ T(Inf) atol=tol rtol=tol
@@ -166,29 +189,6 @@ function test_barrier_scaling_oracles(
     CO.reset_data(cone)
     dual_feas = CO.is_feas(cone)
     @test !primal_feas || !dual_feas
-
-    # correction = CO.correction(cone, primal_dir, dual_dir)
-    # prod2 = similar(prod)
-    # # λ \circ W * correction = actual Mehrotra term
-    # @test CO.conic_prod!(prod2, λ, W * correction, cone) ≈ CO.conic_prod!(prod, W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
-    # randvec = CO.conic_prod!(similar(prod), W \ primal_dir, W * dual_dir, cone)
-    # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), randvec, cone)
-
-    # TODO correction term is directional third derivative of barrier
-    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
-        FD_hess = ForwardDiff.hessian(barrier, point)
-        FD_d3 = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-
-        # check log-homog property that F'''(x)[x] = -2F''(x)
-        @test reshape(FD_d3 * point, dim, dim) ≈ -2 * FD_hess
-
-        # check correction term agrees with directional 3rd derivative
-        # TODO fix failures
-        Da_s = rand(T, dim)
-        Da_z = rand(T, dim)
-        FD_corr = reshape(FD_d3 * Da_s, dim, dim) * (Symmetric(FD_hess) \ Da_z) / -2
-        @test FD_corr ≈ CO.correction(cone, Da_s, Da_z) atol=tol rtol=tol
-    end
 
     return
 end
