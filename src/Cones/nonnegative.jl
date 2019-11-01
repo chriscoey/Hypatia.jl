@@ -8,6 +8,7 @@ barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Program
 
 mutable struct Nonnegative{T <: Real} <: Cone{T}
     use_scaling::Bool
+    use_3order_corr::Bool
     dim::Int
     point::Vector{T}
     dual_point::Vector{T}
@@ -23,11 +24,16 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
 
     correction::Vector{T}
 
-    function Nonnegative{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
+    function Nonnegative{T}(
+        dim::Int;
+        use_scaling::Bool = true,
+        use_3order_corr::Bool = true,
+        ) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.dim = dim
         cone.use_scaling = use_scaling
+        cone.use_3order_corr = use_3order_corr
         return cone
     end
 end
@@ -35,6 +41,8 @@ end
 use_dual(cone::Nonnegative) = false # self-dual
 
 use_scaling(cone::Nonnegative) = cone.use_scaling # TODO remove from here and just use one in Cones.jl when all cones allow scaling
+
+use_3order_corr(cone::Nonnegative) = cone.use_3order_corr
 
 load_dual_point(cone::Nonnegative, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 

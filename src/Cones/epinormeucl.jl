@@ -16,6 +16,7 @@ TODO probably undo (a-b)(a+b) dist calculations
 
 mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     use_scaling::Bool
+    use_3order_corr::Bool
     dim::Int
     point::Vector{T}
     dual_point::Vector{T}
@@ -46,11 +47,16 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     c::T
     correction::Vector{T}
 
-    function EpiNormEucl{T}(dim::Int; use_scaling::Bool = true) where {T <: Real}
+    function EpiNormEucl{T}(
+        dim::Int;
+        use_scaling::Bool = true,
+        use_3order_corr::Bool = true,
+        ) where {T <: Real}
         @assert dim >= 2
         cone = new{T}()
         cone.dim = dim
         cone.use_scaling = use_scaling
+        cone.use_3order_corr = use_3order_corr
         return cone
     end
 end
@@ -58,6 +64,8 @@ end
 use_dual(cone::EpiNormEucl) = false # self-dual
 
 use_scaling(cone::EpiNormEucl) = cone.use_scaling
+
+use_3order_corr(cone::EpiNormEucl) = cone.use_3order_corr
 
 load_dual_point(cone::EpiNormEucl, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 

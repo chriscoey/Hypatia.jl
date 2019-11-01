@@ -12,6 +12,7 @@ TODO fix native and moi tests, and moi
 
 mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     use_scaling::Bool
+    use_3order_corr::Bool
     dim::Int
     side::Int
     is_complex::Bool
@@ -46,12 +47,17 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     bndry_dists::Vector{T}
     correction::Vector{T}
 
-    function PosSemidefTri{T, R}(dim::Int; use_scaling::Bool = true) where {R <: RealOrComplex{T}} where {T <: Real}
+    function PosSemidefTri{T, R}(
+        dim::Int;
+        use_scaling::Bool = true,
+        use_3order_corr::Bool = true,
+        ) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
         cone.dim = dim # real vector dimension
         cone.rt2 = sqrt(T(2))
         cone.use_scaling = use_scaling
+        cone.use_3order_corr = use_3order_corr
         if R <: Complex
             side = isqrt(dim) # real lower triangle and imaginary under diagonal
             @assert side^2 == dim
@@ -69,6 +75,8 @@ end
 use_dual(cone::PosSemidefTri) = false # self-dual
 
 use_scaling(cone::PosSemidefTri) = cone.use_scaling
+
+use_3order_corr(cone::PosSemidefTri) = cone.use_3order_corr
 
 load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 

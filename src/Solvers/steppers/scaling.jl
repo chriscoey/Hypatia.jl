@@ -206,7 +206,7 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
         end
 
         # iterate is outside the neighborhood: decrease alpha
-        alpha *= T(0.8) # TODO option for parameter
+        alpha *= T(0.99) # TODO option for parameter
     end
 
     return alpha
@@ -350,7 +350,7 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
             grad_k = Cones.grad(cone_k)
 
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
-            if Cones.use_scaling(cone_k) || cone_k isa Cones.EpiPerExp3{T}
+            if Cones.use_3order_corr(cone_k)
                 stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
             end
         end

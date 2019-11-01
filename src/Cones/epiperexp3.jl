@@ -13,6 +13,7 @@ use StaticArrays
 
 mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     use_scaling::Bool
+    use_3order_corr::Bool
     use_dual::Bool
     point::Vector{T}
 
@@ -31,9 +32,15 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     g2a::T
     correction::Vector{T}
 
-    function EpiPerExp3{T}(is_dual::Bool; use_scaling::Bool = false) where {T <: Real}
+    function EpiPerExp3{T}(
+        is_dual::Bool;
+        use_scaling::Bool = false,
+        use_3order_corr::Bool = true,
+        ) where {T <: Real}
         cone = new{T}()
         cone.use_dual = is_dual
+        cone.use_scaling = use_scaling
+        cone.use_3order_corr = use_3order_corr
         return cone
     end
 end
@@ -43,6 +50,8 @@ EpiPerExp3{T}() where {T <: Real} = EpiPerExp3{T}(false)
 dimension(cone::EpiPerExp3) = 3
 
 use_scaling(cone::EpiPerExp3) = cone.use_scaling # TODO remove from here and just use one in Cones.jl when all cones allow scaling
+
+use_3order_corr(cone::EpiPerExp3) = cone.use_3order_corr # TODO remove from here and just use one in Cones.jl when all cones allow scaling
 
 reset_data(cone::EpiPerExp3) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 
@@ -125,23 +134,23 @@ function update_inv_hess(cone::EpiPerExp3)
     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
     Hi = cone.inv_hess.data
     vluvw = cone.vluvw
-    denom = vluvw + 2 * v
     vluv = vluvw + w
+    denom = vluvw + 2 * v
+    uvdenom = u * v / denom
 
     # NOTE: obtained from Wolfram Alpha
     Hi[1, 1] = u * (vluvw + v) / denom * u
     Hi[2, 2] = v * (vluvw + v) / denom * v
     Hi[3, 3] = 2 * (abs2(vluv - v) + vluv * (v - w)) + abs2(w) - v / denom * abs2(vluv - 2 * v)
-    Hi[1, 2] = u * v / denom * v
-    Hi[1, 3] = u * v / denom * (2 * vluv - w)
+    Hi[1, 2] = uvdenom * v
+    Hi[1, 3] = uvdenom * (2 * vluv - w)
     Hi[2, 3] = (abs2(vluv) + w * (v - vluv)) / denom * v
 
     cone.inv_hess_updated = true
     return cone.inv_hess
 end
 
-update_hess_prod(cone::EpiPerExp3) = (cone.hess_updated ? update_hess(cone) : nothing)
-update_inv_hess_prod(cone::EpiPerExp3) = (cone.inv_hess_updated ? update_inv_hess(cone) : nothing)
+update_inv_hess_prod(cone::EpiPerExp3) = (cone.inv_hess_updated ? nothing : update_inv_hess(cone))
 
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiPerExp3)
     update_inv_hess_prod(cone)
@@ -165,8 +174,6 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
     inv_hess_prod!(Hinv_z_sol, z_sol, cone)
 
     cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hinv_z_sol / -2
-
-    @show cone.correction
 
     # a1 = s_sol
     # a2 = Hinv_z_sol
