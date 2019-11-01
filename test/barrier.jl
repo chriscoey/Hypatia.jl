@@ -175,13 +175,14 @@ function test_barrier_scaling_oracles(
     @test !primal_feas || !dual_feas
 
     # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
-    @test load_reset_check(cone, prev_primal)
+    check_feas(x) = (isfinite(barrier(x)) ? true : false)
+    @test load_reset_and_check(cone, prev_primal)
     grad = CO.grad(cone)
-    @test -CO.conjugate_gradient(barrier, -grad) ≈ cone.point atol=tol rtol=tol
-    conj_grad = CO.conjugate_gradient(barrier, cone.dual_point)
-    @test load_reset_check(cone, -conj_grad)
+    @test -CO.conjugate_gradient(barrier, check_feas, -grad) ≈ cone.point atol=tol rtol=tol
+    conj_grad = CO.conjugate_gradient(barrier, check_feas, cone.dual_point)
+    @test load_reset_and_check(cone, -conj_grad)
     grad = CO.grad(cone)
-    @test -grad ≈ cone.dual_point
+    @test -grad ≈ cone.dual_point atol=sqrt(eps(T)) rtol=sqrt(eps(T))
 
     return
 end

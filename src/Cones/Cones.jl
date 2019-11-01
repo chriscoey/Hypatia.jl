@@ -18,6 +18,9 @@ import Hypatia.update_fact
 import Hypatia.solve_system
 import Hypatia.invert
 
+using Optim
+using ForwardDiff
+
 hessian_cache(T::Type{<:LinearAlgebra.BlasReal}) = DenseSymCache{T}() # use BunchKaufman for BlasReals
 hessian_cache(T::Type{<:Real}) = DensePosDefCache{T}() # use Cholesky for generic reals
 
@@ -115,6 +118,29 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Con
     solve_system(cone.hess_fact_cache, prod)
     return prod
 end
+
+# utilities for conjugate barriers
+# may need a feas_check and return -Inf
+function conjugate_gradient(barrier::Function, check_feas::Function, z::Vector{T}) where {T}
+    function modified_legendre(x)
+        if !check_feas(x)
+            return Inf
+        else
+            return dot(z, x) + barrier(x)
+        end
+    end
+    grad(x) = ForwardDiff.gradient(modified_legendre, x)
+    hess(x) = ForwardDiff.hessian(modified_legendre, x)
+    dfc = TwiceDifferentiableConstraints(fill(-T(Inf), size(z)), fill(T(Inf), size(z)))
+    df = TwiceDifferentiable(modified_legendre, grad, hess, z, inplace = false)
+    res = optimize(df, dfc, z, IPNewton())
+    minimizer = Optim.minimizer(res)
+    return -minimizer
+end
+
+update_hess(cone::Cone, mu) = update_scaling(cone)
+scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, mu, cone::Cone) = scalmat_prod!(prod, arr, cone)
+scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Cone) = nothing
 
 # utilities for converting between symmetric/Hermitian matrix and vector triangle forms
 
