@@ -168,24 +168,31 @@ function test_barrier_scaling_oracles(
         @test FD_corr ≈ correction atol=tol rtol=tol
     end
 
+    function load_reset_and_check(cone, point)
+        CO.load_point(cone, point)
+        CO.reset_data(cone)
+        return CO.is_feas(cone)
+    end
+
     # max step tests for these new directions
     max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
     # check smaller step returns feasible iterates
-    CO.load_point(cone, prev_primal + 0.99 * max_step * primal_dir)
-    CO.reset_data(cone)
-    primal_feas = CO.is_feas(cone)
-    CO.load_point(cone, prev_dual + 0.99 * max_step * dual_dir)
-    CO.reset_data(cone)
-    dual_feas = CO.is_feas(cone)
+    primal_feas = load_reset_and_check(cone, prev_primal + 0.99 * max_step * primal_dir)
+    dual_feas = load_reset_and_check(cone, prev_dual + 0.99 * max_step * dual_dir)
     @test primal_feas && dual_feas
     # check larger step returns infeasible iterates
-    CO.load_point(cone, prev_primal + 1.01 * max_step * primal_dir)
-    CO.reset_data(cone)
-    primal_feas = CO.is_feas(cone)
-    CO.load_point(cone, prev_dual + 1.01 * max_step * dual_dir)
-    CO.reset_data(cone)
-    dual_feas = CO.is_feas(cone)
+    primal_feas = load_reset_and_check(cone, prev_primal + 1.01 * max_step * primal_dir)
+    dual_feas = load_reset_and_check(cone, prev_dual + 1.01 * max_step * dual_dir)
     @test !primal_feas || !dual_feas
+
+    # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
+    @test load_reset_and_check(cone, prev_primal)
+    grad = CO.grad(cone)
+    @test -CO.conjugate_gradient(barrier, -grad) ≈ cone.point atol=tol rtol=tol
+    conj_grad = CO.conjugate_gradient(barrier, cone.dual_point)
+    @test load_reset_and_check(cone, -conj_grad)
+    grad = CO.grad(cone)
+    @test -grad ≈ cone.dual_point
 
     return
 end
