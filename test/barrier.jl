@@ -150,10 +150,10 @@ function test_barrier_scaling_oracles(
     prev_dual = copy(cone.dual_point)
 
     # λ \circ W * correction = actual Mehrotra term
-    mehrotra_term = CO.conic_prod!(similar(prod), W \ primal_dir, W * dual_dir, cone)
+    mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
     correction = CO.correction(cone, primal_dir, dual_dir)
     @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
-    @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ CO.conic_prod!(similar(e1), W \ primal_dir, W * dual_dir, cone) atol=tol rtol=tol
+    @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ mehrotra_term atol=tol rtol=tol
 
     if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
         FD_hess = ForwardDiff.hessian(barrier, point)
@@ -324,7 +324,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        # test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
         test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
         # complex PSD cone
         function C_barrier(s)

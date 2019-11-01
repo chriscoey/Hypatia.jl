@@ -385,7 +385,7 @@ function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractV
     if !cone.scaling_updated
         update_scaling(cone)
     end
-    tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
+    tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone, trans = true)
     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
     mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
 
