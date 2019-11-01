@@ -20,12 +20,10 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
-    inv_hess_prod_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
-    hess_fact_cache
 
     luv::T
     vluvw::T
@@ -33,14 +31,9 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     g2a::T
     correction::Vector{T}
 
-    function EpiPerExp3{T}(
-        is_dual::Bool;
-        use_scaling::Bool = false, # TODO MOSEK paper scaling
-        hess_fact_cache = hessian_cache(T), # TODO delete
-        ) where {T <: Real}
+    function EpiPerExp3{T}(is_dual::Bool; use_scaling::Bool = false) where {T <: Real}
         cone = new{T}()
         cone.use_dual = is_dual
-        cone.hess_fact_cache = hess_fact_cache
         return cone
     end
 end
@@ -51,6 +44,8 @@ dimension(cone::EpiPerExp3) = 3
 
 use_scaling(cone::EpiPerExp3) = cone.use_scaling # TODO remove from here and just use one in Cones.jl when all cones allow scaling
 
+reset_data(cone::EpiPerExp3) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
+
 # TODO only allocate the fields we use
 function setup_data(cone::EpiPerExp3{T}) where {T <: Real}
     reset_data(cone)
@@ -58,7 +53,6 @@ function setup_data(cone::EpiPerExp3{T}) where {T <: Real}
     cone.grad = zeros(T, 3)
     cone.hess = Symmetric(zeros(T, 3, 3), :U)
     cone.inv_hess = Symmetric(zeros(T, 3, 3), :U)
-    load_matrix(cone.hess_fact_cache, cone.hess)
     cone.correction = zeros(T, 3)
     return
 end
@@ -126,6 +120,35 @@ function update_hess(cone::EpiPerExp3)
     return cone.hess
 end
 
+function update_inv_hess(cone::EpiPerExp3)
+    @assert cone.is_feas
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+    Hi = cone.inv_hess.data
+    vluvw = cone.vluvw
+    denom = vluvw + 2 * v
+    vluv = vluvw + w
+
+    # NOTE: obtained from Wolfram Alpha
+    Hi[1, 1] = u * (vluvw + v) / denom * u
+    Hi[2, 2] = v * (vluvw + v) / denom * v
+    Hi[3, 3] = 2 * (abs2(vluv - v) + vluv * (v - w)) + abs2(w) - v / denom * abs2(vluv - 2 * v)
+    Hi[1, 2] = u * v / denom * v
+    Hi[1, 3] = u * v / denom * (2 * vluv - w)
+    Hi[2, 3] = (abs2(vluv) + w * (v - vluv)) / denom * v
+
+    cone.inv_hess_updated = true
+    return cone.inv_hess
+end
+
+update_hess_prod(cone::EpiPerExp3) = (cone.hess_updated ? update_hess(cone) : nothing)
+update_inv_hess_prod(cone::EpiPerExp3) = (cone.inv_hess_updated ? update_inv_hess(cone) : nothing)
+
+function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiPerExp3)
+    update_inv_hess_prod(cone)
+    mul!(prod, cone.inv_hess, arr)
+    return prod
+end
+
 # TODO F''' without ForwardDiff
 import ForwardDiff
 
@@ -144,5 +167,13 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
     cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hinv_z_sol / -2
 
     @show cone.correction
+
+    # a1 = s_sol
+    # a2 = Hinv_z_sol
+
+    # corr_test = []
+    # @show corr_test
+    # println()
+
     return cone.correction
 end
