@@ -85,11 +85,11 @@ function test_barrier_oracles(
     if !iszero(noise)
         dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
     end
-    CO.load_dual_point(cone, dual_point)
-    @test cone.dual_point == dual_point
-    scal_hess = CO.scal_hess(cone, one(T))
-    @show scal_hess
-    @show eigvals(scal_hess)
+    # CO.load_dual_point(cone, dual_point)
+    # @test cone.dual_point == dual_point
+    # scal_hess = CO.scal_hess(cone, one(T))
+    # @show scal_hess
+    # @show eigvals(scal_hess)
     # TODO add tests for scal hess correctness
 
     return
@@ -125,7 +125,7 @@ function test_barrier_scaling_oracles(
 
     grad = CO.grad(cone)
     # hess and inv_hess oracles, not the same as for non-scaling tests
-    hess = CO.hess(cone, one(T))
+    hess = CO.hess(cone)
     @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
     inv_hess = CO.inv_hess(cone)
     @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
@@ -178,12 +178,12 @@ function test_barrier_scaling_oracles(
     # max step tests for these new directions
     max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
     # check smaller step returns feasible iterates
-    primal_feas = load_reset_check(cone, prev_primal + T(0.99) * max_step * primal_dir)
-    dual_feas = load_reset_check(cone, prev_dual + T(0.99) * max_step * dual_dir)
+    primal_feas = load_reset_and_check(cone, prev_primal + T(0.99) * max_step * primal_dir)
+    dual_feas = load_reset_and_check(cone, prev_dual + T(0.99) * max_step * dual_dir)
     @test primal_feas && dual_feas
     # check larger step returns infeasible iterates
-    primal_feas = load_reset_check(cone, prev_primal + T(1.01) * max_step * primal_dir)
-    dual_feas = load_reset_check(cone, prev_dual + T(1.01) * max_step * dual_dir)
+    primal_feas = load_reset_and_check(cone, prev_primal + T(1.01) * max_step * primal_dir)
+    dual_feas = load_reset_and_check(cone, prev_dual + T(1.01) * max_step * dual_dir)
     @test !primal_feas || !dual_feas
 
     # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics

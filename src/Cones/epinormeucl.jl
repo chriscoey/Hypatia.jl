@@ -387,7 +387,7 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     end
     @views prod[1, :] .-= arr[1, :]
     @views prod[2:end, :] .+= arr[2:end, :]
-    prod .*= sqrt(sqrt((cone.dist) / sqrt(cone.dual_dist)))
+    prod .*= sqrt(sqrt(cone.dist) / sqrt(cone.dual_dist))
     return prod
 end
 #
@@ -425,7 +425,7 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
 
     @views prod[1, :] .-= arr[1, :]
     @views prod[2:end, :] .+= arr[2:end, :]
-    prod .*= sqrt(sqrt((cone.dual_dist) / sqrt(cone.dist)))
+    prod .*= sqrt(sqrt(cone.dual_dist) / sqrt(cone.dist))
     return prod
 end
 
