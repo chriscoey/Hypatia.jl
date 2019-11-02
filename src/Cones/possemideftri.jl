@@ -411,19 +411,23 @@ end
 function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.grad_updated
 
-    n = cone.side
-    # TODO reuse inverse of point which was calculated for gradient
-    X = Symmetric(CO.svec_to_smat!(zeros(T, n, n), cone.point, cone.rt2))
-    xinvmat = inv(X)
+    # n = cone.side
+
+    # reuse inverse of point which was calculated for gradient
+    # inv_mat = Symmetric(cone.inv_mat)
+    # X = Symmetric(svec_to_smat!(zeros(T, n, n), cone.point, cone.rt2))
+    # inv_mat = inv(X)
 
     # TODO prealloc
-    S = Symmetric(CO.svec_to_smat!(zeros(T, n, n), primal_dir, cone.rt2))
-    Z = Symmetric(CO.svec_to_smat!(zeros(T, n, n), dual_dir, cone.rt2))
+    S = Symmetric(svec_to_smat!(similar(cone.inv_mat), s_sol, cone.rt2))
+    Z = Symmetric(svec_to_smat!(similar(cone.inv_mat), z_sol, cone.rt2))
 
-    # TODO simplify? is (xinvmat * S * Z)' == Z * S * xinvmat?
-    # TODO don't use eta name
-    etamat = (xinvmat * S * Z + Z * S * xinvmat) / 2
-    etavec = CO.smat_to_svec!(similar(e1), etamat, cone.rt2)
+    # Xinv_S_Z = (inv_mat * S * Z + Z * S * inv_mat) / 2
+    # is (inv_mat * S * Z)' == Z * S * inv_mat?
+    Xinv_S_Z = Symmetric(cone.inv_mat) * S * Z
+    @. Xinv_S_Z += Xinv_S_Z'
+    Xinv_S_Z ./= 2
+    smat_to_svec!(cone.correction, Xinv_S_Z, cone.rt2)
 
     return cone.correction
 end
