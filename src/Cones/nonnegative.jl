@@ -153,15 +153,13 @@ end
 
 # multiplies arr by W, the squareroot of the scaling matrix
 function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    # @. prod = arr * cone.scaling_point
-    @. prod = arr * sqrt(cone.point / cone.dual_point)
+    @. prod = arr * cone.scaling_point
     return prod
 end
 
 # scaling is symmetric, trans kwarg ignored TODO factor as another function?
 function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative; trans::Bool = false)
-    # @. prod = arr / cone.scaling_point
-    @. prod = arr * sqrt(cone.dual_point / cone.point)
+    @. prod = arr / cone.scaling_point
     return prod
 end
 
