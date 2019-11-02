@@ -408,18 +408,20 @@ end
 # end
 
 # from MOSEK paper
-# smat correction = (inv_mat * S * Z + Z * S * inv_mat) / 2
-
+# smat correction = (Xinv * S * Z + Z * S * Xinv) / 2
 function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.grad_updated
 
-    S = Hermitian(svec_to_smat!(similar(cone.inv_mat), s_sol, cone.rt2)) # TODO prealloc
-    Z = Hermitian(svec_to_smat!(similar(cone.inv_mat), z_sol, cone.rt2)) # TODO prealloc
-    Xinv_S_Z = S * Z # TODO prealloc
-    ldiv!(cone.fact, Xinv_S_Z)
-    @. Xinv_S_Z += Xinv_S_Z'
-    Xinv_S_Z ./= 2
-    smat_to_svec!(cone.correction, Xinv_S_Z, cone.rt2)
+    S = copytri!(svec_to_smat!(cone.work_mat, s_sol, cone.rt2), 'U', cone.is_complex)
+    Z = Hermitian(svec_to_smat!(cone.work_mat2, z_sol, cone.rt2))
+
+    # TODO compare the following numerically
+    Xinv_S_Z = mul!(cone.work_mat3, ldiv!(cone.fact, S), Z)
+    # Xinv_S_Z = ldiv!(cone.fact, mul!(cone.work_mat3, S, Z))
+
+    Xinv_S_Z_symm = cone.work_mat
+    @. Xinv_S_Z_symm = (Xinv_S_Z + Xinv_S_Z') / 2
+    smat_to_svec!(cone.correction, Xinv_S_Z_symm, cone.rt2)
 
     return cone.correction
 end

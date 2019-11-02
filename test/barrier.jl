@@ -81,16 +81,16 @@ function test_barrier_oracles(
         @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
     end
 
-    dual_point = -grad
-    if !iszero(noise)
-        dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
-    end
-    CO.load_dual_point(cone, dual_point)
-    @test cone.dual_point == dual_point
-    scal_hess = CO.scal_hess(cone, one(T))
-    @show scal_hess
-    @show eigvals(scal_hess)
-    # TODO add tests for scal hess correctness
+    # dual_point = -grad
+    # if !iszero(noise)
+    #     dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
+    # end
+    # CO.load_dual_point(cone, dual_point)
+    # @test cone.dual_point == dual_point
+    # scal_hess = CO.scal_hess(cone, one(T))
+    # @show scal_hess
+    # @show eigvals(scal_hess)
+    # # TODO add tests for scal hess correctness
 
     return
 end
@@ -342,7 +342,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
         end
         dim = div(side * (side + 1), 2)
         test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
-        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
+        # test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
         # complex PSD cone
         function C_barrier(s)
             S = zeros(Complex{eltype(s)}, side, side)
@@ -351,7 +351,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
         end
         dim = side^2
         test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
-        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true), C_barrier)
+        # test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true), C_barrier)
     end
     return
 end
