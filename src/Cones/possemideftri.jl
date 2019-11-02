@@ -392,17 +392,38 @@ function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::Abstra
     return step_dist
 end
 
-# TODO refactor into Cones.jl
-function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone, trans = true)
-    tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
-    mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
+# # TODO refactor into Cones.jl
+# function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
+#     if !cone.scaling_updated
+#         update_scaling(cone)
+#     end
+#     tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone, trans = true)
+#     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
+#     mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
+#
+#     C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
+#     scalmat_ldiv!(cone.correction, C, cone)
+#
+#     return cone.correction
+# end
 
-    C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
-    scalmat_ldiv!(cone.correction, C, cone)
+# from MOSEK paper
+function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
+    @assert cone.grad_updated
+
+    n = cone.side
+    # TODO reuse inverse of point which was calculated for gradient
+    X = Symmetric(CO.svec_to_smat!(zeros(T, n, n), cone.point, cone.rt2))
+    xinvmat = inv(X)
+
+    # TODO prealloc
+    S = Symmetric(CO.svec_to_smat!(zeros(T, n, n), primal_dir, cone.rt2))
+    Z = Symmetric(CO.svec_to_smat!(zeros(T, n, n), dual_dir, cone.rt2))
+
+    # TODO simplify? is (xinvmat * S * Z)' == Z * S * xinvmat?
+    # TODO don't use eta name
+    etamat = (xinvmat * S * Z + Z * S * xinvmat) / 2
+    etavec = CO.smat_to_svec!(similar(e1), etamat, cone.rt2)
 
     return cone.correction
 end
