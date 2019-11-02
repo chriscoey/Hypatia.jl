@@ -33,9 +33,9 @@ testfuns_preproc = [
 testfuns_reduce = vcat(testfuns_no_preproc, testfuns_preproc)
 
 testfuns = [
-    nonnegative1,
-    nonnegative2,
-    nonnegative3,
+    # nonnegative1,
+    # nonnegative2,
+    # nonnegative3,
     # epinorminf1,
     # epinorminf2,
     # epinorminf3,
@@ -65,9 +65,9 @@ testfuns = [
     # hypogeomean2,
     # hypogeomean3,
     # epinormspectral1,
-    possemideftri1,
-    possemideftri2,
-    possemideftricomplex1,
+    # possemideftri1,
+    # possemideftri2,
+    # possemideftricomplex1,
     # hypoperlogdettri1,
     # hypoperlogdettri2,
     # hypoperlogdettri3,
