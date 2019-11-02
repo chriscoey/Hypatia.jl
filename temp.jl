@@ -9,11 +9,11 @@ self-concordant barrier from "A homogeneous interior-point algorithm for nonsymm
 
 TODO
 use StaticArrays
+scaling code assumes we are using primal cone all the time, take use_dual into account
 =#
 
 mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     use_scaling::Bool
-    use_3order_corr::Bool
     use_dual::Bool
     point::Vector{T}
     dual_point::Vector{T}
@@ -28,6 +28,9 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
 
+    barrier::Function
+    check_feas::Function
+
     luv::T
     vluvw::T
     g1a::T
@@ -36,15 +39,11 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     dual_gap::Vector{T}
     correction::Vector{T}
 
-    function EpiPerExp3{T}(
-        is_dual::Bool;
-        use_scaling::Bool = false,
-        use_3order_corr::Bool = true,
-        ) where {T <: Real}
+    function EpiPerExp3{T}(is_dual::Bool; use_scaling::Bool = false) where {T <: Real}
         cone = new{T}()
         cone.use_dual = is_dual
-        cone.use_scaling = use_scaling
-        cone.use_3order_corr = use_3order_corr
+        cone.barrier(u::T, v::T, w::T) = -log(v * log(u / v) - w) - log(u) - log(v)
+        cone.check_feas(u::T, v::T, w::T) = isfinite(cone.barrier(u, v ,w))
         return cone
     end
 end
@@ -55,17 +54,12 @@ dimension(cone::EpiPerExp3) = 3
 
 use_scaling(cone::EpiPerExp3) = cone.use_scaling # TODO remove from here and just use one in Cones.jl when all cones allow scaling
 
-use_3order_corr(cone::EpiPerExp3) = cone.use_3order_corr # TODO remove from here and just use one in Cones.jl when all cones allow scaling
-
-load_dual_point(cone::EpiPerExp3, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
-
 reset_data(cone::EpiPerExp3) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::EpiPerExp3{T}) where {T <: Real}
     reset_data(cone)
     cone.point = zeros(T, 3)
-    cone.dual_point = zeros(T, 3)
     cone.grad = zeros(T, 3)
     cone.dual_grad = zeros(T, 3)
     cone.primal_gap = zeros(T, 3)
@@ -164,23 +158,23 @@ function update_inv_hess(cone::EpiPerExp3)
     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
     Hi = cone.inv_hess.data
     vluvw = cone.vluvw
-    vluv = vluvw + w
     denom = vluvw + 2 * v
-    uvdenom = u * v / denom
+    vluv = vluvw + w
 
     # NOTE: obtained from Wolfram Alpha
     Hi[1, 1] = u * (vluvw + v) / denom * u
     Hi[2, 2] = v * (vluvw + v) / denom * v
     Hi[3, 3] = 2 * (abs2(vluv - v) + vluv * (v - w)) + abs2(w) - v / denom * abs2(vluv - 2 * v)
-    Hi[1, 2] = uvdenom * v
-    Hi[1, 3] = uvdenom * (2 * vluv - w)
+    Hi[1, 2] = u * v / denom * v
+    Hi[1, 3] = u * v / denom * (2 * vluv - w)
     Hi[2, 3] = (abs2(vluv) + w * (v - vluv)) / denom * v
 
     cone.inv_hess_updated = true
     return cone.inv_hess
 end
 
-update_inv_hess_prod(cone::EpiPerExp3) = (cone.inv_hess_updated ? nothing : update_inv_hess(cone))
+update_hess_prod(cone::EpiPerExp3) = (cone.hess_updated ? update_hess(cone) : nothing)
+update_inv_hess_prod(cone::EpiPerExp3) = (cone.inv_hess_updated ? update_inv_hess(cone) : nothing)
 
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiPerExp3)
     update_inv_hess_prod(cone)
@@ -205,19 +199,14 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
 
     cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hinv_z_sol / -2
 
-    a1 = s_sol
-    a2 = Hinv_z_sol # TODO closed form
+    @show cone.correction
 
-    corr_test = similar(cone.correction)
-    # - log(u) - log(v) part
-    corr_test[1] = -2 / u * a1[1] / u * a2[1] / u
-    corr_test[2] = -2 / u * a1[2] / u * a2[2] / u
-    corr_test[3] = 0
-    # -log(v * log(u / v) - w) part
-    # corr_test[1] +=
-    # TODO finish
+    # a1 = s_sol
+    # a2 = Hinv_z_sol
 
-    @show corr_test
+    # corr_test = []
+    # @show corr_test
+    # println()
 
     return cone.correction
 end
