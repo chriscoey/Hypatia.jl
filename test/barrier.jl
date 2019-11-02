@@ -19,6 +19,7 @@ function test_barrier_oracles(
     init_tol::Real = tol,
     init_only::Bool = false,
     ) where {T <: Real}
+    Random.seed!(1)
     @test !CO.use_scaling(cone)
     CO.setup_data(cone)
     dim = CO.dimension(cone)
@@ -80,6 +81,9 @@ function test_barrier_oracles(
         @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
     end
 
+    scal_hess = CO.get_scaling(cone, one(T))
+    @show scal_hess
+
     return
 end
 
@@ -90,19 +94,20 @@ function test_barrier_scaling_oracles(
     noise::Real = 0.2,
     tol::Real = 100eps(T),
     ) where {T <: Real}
+    Random.seed!(1)
     @test CO.use_scaling(cone)
     CO.setup_data(cone)
     CO.reset_data(cone)
     dim = CO.dimension(cone)
+
     point = Vector{T}(undef, dim)
     dual_point = Vector{T}(undef, dim)
-
-    Random.seed!(1)
-
     CO.set_initial_point(point, cone)
     CO.set_initial_point(dual_point, cone)
-    point .+= T(noise) * (rand(T, dim) .- inv(T(2)))
-    dual_point .+= T(noise) * (rand(T, dim) .- inv(T(2)))
+    if !iszero(noise)
+        point += T(noise) * (rand(T, dim) .- inv(T(2)))
+        dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
+    end
 
     CO.load_point(cone, point)
     CO.load_dual_point(cone, dual_point)
@@ -111,9 +116,8 @@ function test_barrier_scaling_oracles(
     @test CO.is_feas(cone)
 
     grad = CO.grad(cone)
-    cone.use_scaling = true # TODO update when it's an option, run these tests optionally
     # hess and inv_hess oracles, not the same as for non-scaling tests
-    hess = CO.hess(cone, 1.0)
+    hess = CO.hess(cone, one(T))
     @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
     inv_hess = CO.inv_hess(cone)
     @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
@@ -125,7 +129,7 @@ function test_barrier_scaling_oracles(
 
     # multiplication and division by scaling matrix W
     λ = CO.scalmat_prod!(similar(cone.point), cone.dual_point, cone)
-    W = CO.scalmat_prod!(similar(point, dim, dim), Matrix{T}(I, cone.dim, cone.dim), cone)
+    W = CO.scalmat_prod!(similar(point, dim, dim), Matrix{T}(I, dim, dim), cone)
     @test W' * λ ≈ cone.point atol=tol rtol=tol
     prod = similar(point)
     @test CO.scalmat_ldiv!(prod, cone.point, cone, trans = true) ≈ λ atol=tol rtol=tol
@@ -138,7 +142,7 @@ function test_barrier_scaling_oracles(
     @test WWz ≈ Wλ atol=tol rtol=tol
 
     # conic product oracle and conic division by the scaled point λ
-    e1 = CO.set_initial_point(zeros(T, cone.dim), cone)
+    e1 = CO.set_initial_point(zeros(T, dim), cone)
     λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
     @test CO.conic_prod!(similar(e1), λinv, λ, cone) ≈ e1 atol=tol rtol=tol
 
@@ -156,7 +160,7 @@ function test_barrier_scaling_oracles(
     dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
     prev_primal = copy(cone.point)
     prev_dual = copy(cone.dual_point)
-    
+
     # λ \circ W * correction = actual Mehrotra term
     mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
     correction = CO.correction(cone, primal_dir, dual_dir)
@@ -166,12 +170,12 @@ function test_barrier_scaling_oracles(
     # max step tests for these new directions
     max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
     # check smaller step returns feasible iterates
-    primal_feas = load_reset_check(cone, prev_primal + 0.99 * max_step * primal_dir)
-    dual_feas = load_reset_check(cone, prev_dual + 0.99 * max_step * dual_dir)
+    primal_feas = load_reset_check(cone, prev_primal + T(0.99) * max_step * primal_dir)
+    dual_feas = load_reset_check(cone, prev_dual + T(0.99) * max_step * dual_dir)
     @test primal_feas && dual_feas
     # check larger step returns infeasible iterates
-    primal_feas = load_reset_check(cone, prev_primal + 1.01 * max_step * primal_dir)
-    dual_feas = load_reset_check(cone, prev_dual + 1.01 * max_step * dual_dir)
+    primal_feas = load_reset_check(cone, prev_primal + T(1.01) * max_step * primal_dir)
+    dual_feas = load_reset_check(cone, prev_dual + T(1.01) * max_step * dual_dir)
     @test !primal_feas || !dual_feas
 
     # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
@@ -255,9 +259,9 @@ function test_epiperexp3_barrier(T::Type{<:Real})
         (u, v, w) = (s[1], s[2], s[3])
         return -log(v * log(u / v) - w) - log(u) - log(v)
     end
-    # test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = 1e-6)
-    CO.EpiPerExp3{T}(false, use_scaling = true)
-    test_barrier_scaling_oracles(CO.EpiPerExp3{T}(false, use_scaling = true), barrier)
+    test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = 1e-6)
+    # CO.EpiPerExp3{T}(false, use_scaling = true)
+    # test_barrier_scaling_oracles(CO.EpiPerExp3{T}(false, use_scaling = true), barrier)
     return
 end
 

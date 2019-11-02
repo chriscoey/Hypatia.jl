@@ -55,7 +55,7 @@ testfuns = [
     # hypoperlog6,
     epiperexp1,
     epiperexp2,
-    epiperexp3,
+    # epiperexp3,
     # epiperexp4,
     # power1,
     # power2,
@@ -121,10 +121,10 @@ options = (verbose = true,)
     # end
 
     # # test each system solver
-    # @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
-    #     t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-    #     # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...)) # TODO delete
-    # end
+    @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
+        t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...)) # TODO delete
+    end
     # @testset "NaiveSparse tests: $t" for t in testfuns
     #     T = Float64
     #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
@@ -147,7 +147,7 @@ options = (verbose = true,)
     #     T = Float64
     #     t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
     # end
-    @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache,]#, Hypatia.DensePosDefCache]
-        t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
-    end
+    # @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache,]#, Hypatia.DensePosDefCache]
+    #     t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
+    # end
 end

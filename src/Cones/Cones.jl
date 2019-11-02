@@ -18,8 +18,8 @@ import Hypatia.update_fact
 import Hypatia.solve_system
 import Hypatia.invert
 
-using Optim
-using ForwardDiff
+import Optim
+import ForwardDiff
 
 hessian_cache(T::Type{<:LinearAlgebra.BlasReal}) = DenseSymCache{T}() # use BunchKaufman for BlasReals
 hessian_cache(T::Type{<:Real}) = DensePosDefCache{T}() # use Cholesky for generic reals
@@ -45,35 +45,60 @@ include("wsospolyinterp.jl")
 use_scaling(cone::Cone) = false
 use_3order_corr(cone::Cone) = false
 use_dual(cone::Cone) = cone.use_dual
-# load_point(cone::Cone, point::AbstractVector{T}, scal::T) where {T} = (@. cone.point = point / scal)
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
-# load_dual_point(cone::Cone, dual_point::AbstractVector{T}, scal::T) where {T} = (@. cone.dual_point = dual_point / scal)
-load_dual_point(cone::Cone, dual_point::AbstractVector) = nothing
+load_dual_point(cone::Cone, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 dimension(cone::Cone) = cone.dim
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
-# TODO come up with a tidy way to unify need for mu/no mu
-hess(cone::Cone, mu) = (cone.hess_updated ? cone.hess : update_hess(cone, mu))
-update_hess(cone::Cone, mu) = update_hess(cone)
-
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
 
 # fallbacks
 
-function update_scaling(cone::Cone{T}, mu::T) where {T}
-    @assert cone.grad_updated
-    @assert cone.hess_updated
+# TODO cleanup and make efficient
+function get_scaling(cone::Cone{T}, mu::T) where {T}
     s = cone.point
     z = cone.dual_point
-    grad = cone.grad
-    H = mu * cone.hess
-    dual_grad = cone.dual_grad .= conjugate_gradient(cone.barrier, cone.check_feas, cone.dual_point)
-    primal_gap = cone.primal_gap .= cone.point + mu * dual_grad
-    dual_gap = cone.dual_gap .= cone.dual_point + mu * grad
-    H1 = H + z * z' / dot(s, z) - H * s * (H * s)' / (s' * H * s)
-    H2 = H1 + dual_gap * dual_gap' / dot(primal_gap, dual_gap) - H1 * primal_gap * (H1 * primal_gap)' / (primal_gap' * H1 * primal_gap)
+
+    muH = mu * hess(cone)
+    dual_gap = cone.dual_point + mu * grad(cone)
+    primal_gap = cone.point + mu * conjugate_gradient(cone.barrier, cone.check_feas, cone.dual_point)
+
+    H1 = copy(muH)
+    denom = dot(s, z)
+    @show denom
+    @assert denom >= 0
+    if denom > 0
+        H1 += z * z' / denom
+    end
+
+    denom = dot(s, muH, s)
+    @show denom
+    @assert denom >= 0
+    if denom > 0
+        muHs = muH * s
+        H1 -= muHs * muHs' / denom
+    end
+
+    H2 = copy(H1)
+    denom = dot(primal_gap, dual_gap)
+    # TODO is it OK if this is negative?
+    @show denom
+    # @assert denom >= 0
+    # if denom > 0
+    if !iszero(denom)
+        H2 += dual_gap * dual_gap' / denom
+    end
+
+    denom = dot(primal_gap, H1, primal_gap)
+    @show denom
+    @assert denom >= 0
+    if denom > 0
+        H1prgap = H1 * primal_gap
+        H2 -= H1prgap * H1prgap' / denom
+    end
+
     cone.scaling_updated = true
     return H2
 end
@@ -142,25 +167,22 @@ end
 # utilities for conjugate barriers
 # may need a feas_check and return -Inf
 function conjugate_gradient(barrier::Function, check_feas::Function, z::Vector{T}) where {T}
-    function modified_legendre(x)
-        if !check_feas(x)
-            return Inf
-        else
-            return dot(z, x) + barrier(x)
-        end
-    end
-    grad(x) = ForwardDiff.gradient(modified_legendre, x)
-    hess(x) = ForwardDiff.hessian(modified_legendre, x)
-    dfc = TwiceDifferentiableConstraints(fill(-T(Inf), size(z)), fill(T(Inf), size(z)))
-    df = TwiceDifferentiable(modified_legendre, grad, hess, z, inplace = false)
-    res = optimize(df, dfc, z, IPNewton())
+    modified_legendre(x) = (check_feas(x) ? dot(z, x) + barrier(x) : T(Inf))
+    bar_grad(x) = ForwardDiff.gradient(modified_legendre, x)
+    bar_hess(x) = ForwardDiff.hessian(modified_legendre, x)
+
+    dfc = Optim.TwiceDifferentiableConstraints(fill(-T(Inf), size(z)), fill(T(Inf), size(z)))
+    df = Optim.TwiceDifferentiable(modified_legendre, bar_grad, bar_hess, z, inplace = false)
+    res = Optim.optimize(df, dfc, z, Optim.IPNewton())
     minimizer = Optim.minimizer(res)
+
+    @assert !any(isnan, minimizer)
+
     return -minimizer
 end
 
-update_hess(cone::Cone, mu) = update_scaling(cone)
-scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, mu, cone::Cone) = scalmat_prod!(prod, arr, cone)
-scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Cone) = nothing
+# scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, mu, cone::Cone) = scalmat_prod!(prod, arr, cone)
+# scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Cone) = nothing
 
 # utilities for converting between symmetric/Hermitian matrix and vector triangle forms
 

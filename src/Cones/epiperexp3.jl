@@ -25,7 +25,7 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     scaling_updated::Bool
     is_feas::Bool
     grad::Vector{T}
-    dual_grad::Vector{T}
+    # dual_grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
 
@@ -36,8 +36,8 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     vluvw::T
     g1a::T
     g2a::T
-    primal_gap::Vector{T}
-    dual_gap::Vector{T}
+    # primal_gap::Vector{T}
+    # dual_gap::Vector{T}
     correction::Vector{T}
 
     function EpiPerExp3{T}(
@@ -49,8 +49,7 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
         cone.use_dual = is_dual
         cone.use_scaling = use_scaling
         cone.use_3order_corr = use_3order_corr
-        barrier(x) = -log(x[2] * log(x[1] / x[2]) - x[3]) - log(x[1]) - log(x[2])
-        cone.barrier = barrier
+        cone.barrier = (x -> -log(x[2] * log(x[1] / x[2]) - x[3]) - log(x[1]) - log(x[2]))
         check_feas(x) = isfinite(cone.barrier(x))
         cone.check_feas = check_feas
         return cone
@@ -75,9 +74,9 @@ function setup_data(cone::EpiPerExp3{T}) where {T <: Real}
     cone.point = zeros(T, 3)
     cone.dual_point = zeros(T, 3)
     cone.grad = zeros(T, 3)
-    cone.dual_grad = zeros(T, 3)
-    cone.primal_gap = zeros(T, 3)
-    cone.dual_gap = zeros(T, 3)
+    # cone.dual_grad = zeros(T, 3)
+    # cone.primal_gap = zeros(T, 3)
+    # cone.dual_gap = zeros(T, 3)
     cone.hess = Symmetric(zeros(T, 3, 3), :U)
     cone.inv_hess = Symmetric(zeros(T, 3, 3), :U)
     cone.correction = zeros(T, 3)
@@ -112,8 +111,8 @@ function update_grad(cone::EpiPerExp3)
     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
     vluvw = cone.vluvw
 
-    cone.g1a = v / u / vluvw
-    cone.grad[1] = -inv(u) - cone.g1a
+    cone.g1a = -v / u / vluvw
+    cone.grad[1] = cone.g1a - inv(u)
     cone.g2a = (1 - cone.luv) / vluvw
     cone.grad[2] = cone.g2a - inv(v)
     cone.grad[3] = inv(vluvw)
@@ -122,7 +121,7 @@ function update_grad(cone::EpiPerExp3)
     return cone.grad
 end
 
-function update_hess(cone::EpiPerExp3{T}, mu::T) where {T}
+function update_hess(cone::EpiPerExp3)
     @assert cone.grad_updated
     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
     H = cone.hess.data
@@ -130,7 +129,7 @@ function update_hess(cone::EpiPerExp3{T}, mu::T) where {T}
     g1a = cone.g1a
     g2a = cone.g2a
 
-    H[1, 3] = -g1a / vluvw
+    H[1, 3] = g1a / vluvw
     H[2, 3] = g2a / vluvw
     H[3, 3] = abs2(cone.grad[3])
     H[1, 1] = abs2(g1a) - cone.grad[1] / u
@@ -138,9 +137,6 @@ function update_hess(cone::EpiPerExp3{T}, mu::T) where {T}
     H[2, 2] = abs2(g2a) + (inv(vluvw) + inv(v)) / v
 
     cone.hess_updated = true
-    if cone.use_scaling
-        H .= update_scaling(cone, mu)
-    end
 
     # TODO would we use this?
     # find an R factor for F''(point) = R(x) R(x)'
@@ -181,15 +177,8 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Epi
 end
 
 # TODO F''' without ForwardDiff
-import ForwardDiff
-
 function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVector)
-    function barrier(s)
-        (u, v, w) = (s[1], s[2], s[3])
-        return -log(v * log(u / v) - w) - log(u) - log(v)
-    end
-
-    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
+    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(cone.barrier, x), cone.point)
 
     Hinv_z_sol = similar(z_sol)
     update_inv_hess_prod(cone)
@@ -199,6 +188,9 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
 
 
     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+    vluvw = cone.vluvw
+    g1a = cone.g1a
+    g2a = cone.g2a
 
     a1 = s_sol
     a2 = Hinv_z_sol # TODO closed form
@@ -217,24 +209,24 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
     return cone.correction
 end
 
-function scalmat_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, mu::T, cone::EpiPerExp3{T}) where {T}
-    if !cone.scaling_updated
-        update_scaling(cone, mu)
-    end
-    point = cone.point
-    dual_point = cone.dual_point
-    H_bfgs = cone.hess
-    dual_gap = cone.dual_gap
-    primal_gap = cone.primal_gap
-    ZZt = H_bfgs - dual_point * dual_point' / dot(point, dual_point) - dual_gap * dual_gap' / dot(primal_gap, dual_gap)
-    # TODO work this out analytically rather than call eig
-    f = eigen(ZZt)
-    @assert f.values[1] ≈ 0 && f.values[2] ≈ 0
-    z = f.vectors[:, 3] * sqrt(f.values[3])
-    W = zeros(T, 3, 3)
-    W[:, 1] = dual_point / sqrt(dot(point, dual_point))
-    W[:, 2] = dual_gap / sqrt(dot(primal_gap, dual_gap))
-    W[:, 3] = z
-    prod = W * arr
-    return prod
-end
+# function scalmat_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, mu::T, cone::EpiPerExp3{T}) where {T}
+#     if !cone.scaling_updated
+#         update_scaling(cone, mu)
+#     end
+#     point = cone.point
+#     dual_point = cone.dual_point
+#     H_bfgs = cone.hess
+#     dual_gap = cone.dual_gap
+#     primal_gap = cone.primal_gap
+#     ZZt = H_bfgs - dual_point * dual_point' / dot(point, dual_point) - dual_gap * dual_gap' / dot(primal_gap, dual_gap)
+#     # TODO work this out analytically rather than call eig
+#     f = eigen(ZZt)
+#     @assert f.values[1] ≈ 0 && f.values[2] ≈ 0
+#     z = f.vectors[:, 3] * sqrt(f.values[3])
+#     W = zeros(T, 3, 3)
+#     W[:, 1] = dual_point / sqrt(dot(point, dual_point))
+#     W[:, 2] = dual_gap / sqrt(dot(primal_gap, dual_gap))
+#     W[:, 3] = z
+#     prod = W * arr
+#     return prod
+# end

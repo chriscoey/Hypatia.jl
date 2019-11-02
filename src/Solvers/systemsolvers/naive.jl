@@ -272,10 +272,11 @@ end
 
 function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
     for (cone_k, lhs_k) in zip(solver.model.cones, system_solver.lhs6_H_k)
-        copyto!(lhs_k, Cones.hess(cone_k))
-        if !Cones.use_scaling(cone_k)
-            lmul!(solver.mu, lhs_k)
-        end
+        # copyto!(lhs_k, Cones.hess(cone_k))
+        # if !Cones.use_scaling(cone_k)
+        #     lmul!(solver.mu, lhs_k)
+        # end
+        Cones.get_scaling(cone_k, solver.mu)
     end
     system_solver.lhs6[end, end] = solver.tau / solver.kap
 
