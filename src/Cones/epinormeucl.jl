@@ -387,7 +387,7 @@ function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     end
     @views prod[1, :] .-= arr[1, :]
     @views prod[2:end, :] .+= arr[2:end, :]
-    prod .*= (cone.dist / cone.dual_dist) ^ (1 / 4)
+    prod .*= sqrt(sqrt((cone.dist) / sqrt(cone.dual_dist)))
     return prod
 end
 #
@@ -425,7 +425,7 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
 
     @views prod[1, :] .-= arr[1, :]
     @views prod[2:end, :] .+= arr[2:end, :]
-    prod .*= (cone.dual_dist / cone.dist) ^ (1 / 4)
+    prod .*= sqrt(sqrt((cone.dual_dist) / sqrt(cone.dist)))
     return prod
 end
 
@@ -465,7 +465,7 @@ function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
     @views begin
         mul!(C[1, :], B[2:end, :]', A2m)
         @. C[2:end, :] = A2m * C[1, :]' / A1
-        axpby!(A1, B[1, :], -1.0, C[1, :])
+        axpby!(A1, B[1, :], -1, C[1, :])
         @. C[2:end, :] -= A2m * B[1, :]'
         C ./= schur
         @. C[2:end, :] += B[2:end, :] / A1
