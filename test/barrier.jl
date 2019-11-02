@@ -113,7 +113,7 @@ function test_barrier_scaling_oracles(
     grad = CO.grad(cone)
     cone.use_scaling = true # TODO update when it's an option, run these tests optionally
     # hess and inv_hess oracles, not the same as for non-scaling tests
-    hess = CO.hess(cone, 0.5)
+    hess = CO.hess(cone, 1.0)
     @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
     inv_hess = CO.inv_hess(cone)
     @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
@@ -156,7 +156,7 @@ function test_barrier_scaling_oracles(
     dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
     prev_primal = copy(cone.point)
     prev_dual = copy(cone.dual_point)
-
+    
     # λ \circ W * correction = actual Mehrotra term
     mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
     correction = CO.correction(cone, primal_dir, dual_dir)

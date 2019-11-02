@@ -73,7 +73,7 @@ function update_scaling(cone::Cone{T}, mu::T) where {T}
     primal_gap = cone.primal_gap .= cone.point + mu * dual_grad
     dual_gap = cone.dual_gap .= cone.dual_point + mu * grad
     H1 = H + z * z' / dot(s, z) - H * s * (H * s)' / (s' * H * s)
-    H2 = H1 + dual_gap * dual_gap' / dot(dual_gap, dual_gap) - H1 * primal_gap * (H1 * primal_gap)' / (primal_gap' * H1 * primal_gap)
+    H2 = H1 + dual_gap * dual_gap' / dot(primal_gap, dual_gap) - H1 * primal_gap * (H1 * primal_gap)' / (primal_gap' * H1 * primal_gap)
     cone.scaling_updated = true
     return H2
 end
