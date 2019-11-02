@@ -276,7 +276,7 @@ function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
         # if !Cones.use_scaling(cone_k)
         #     lmul!(solver.mu, lhs_k)
         # end
-        Cones.get_scaling(cone_k, solver.mu)
+        Cones.scal_hess(cone_k, solver.mu)
     end
     system_solver.lhs6[end, end] = solver.tau / solver.kap
 

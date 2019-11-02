@@ -53,16 +53,18 @@ is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
-
+scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
 # fallbacks
 
 # TODO cleanup and make efficient
-function get_scaling(cone::Cone{T}, mu::T) where {T}
+function update_scal_hess(cone::Cone{T}, mu::T) where {T}
+    @assert is_feas(cone)
+    @assert !cone.scal_hess_updated
     s = cone.point
     z = cone.dual_point
 
-    muH = mu * hess(cone)
     dual_gap = cone.dual_point + mu * grad(cone)
+    muH = mu * hess(cone)
     primal_gap = cone.point + mu * conjugate_gradient(cone.barrier, cone.check_feas, cone.dual_point)
 
     H1 = copy(muH)
@@ -83,11 +85,9 @@ function get_scaling(cone::Cone{T}, mu::T) where {T}
 
     H2 = copy(H1)
     denom = dot(primal_gap, dual_gap)
-    # TODO is it OK if this is negative?
     @show denom
-    # @assert denom >= 0
-    # if denom > 0
-    if !iszero(denom)
+    @assert denom >= 0
+    if denom > 0
         H2 += dual_gap * dual_gap' / denom
     end
 
@@ -99,8 +99,12 @@ function get_scaling(cone::Cone{T}, mu::T) where {T}
         H2 -= H1prgap * H1prgap' / denom
     end
 
-    cone.scaling_updated = true
-    return H2
+    @show eigvals(H2)
+
+    copyto!(cone.scal_hess.data, H2)
+
+    cone.scal_hess_updated = true
+    return cone.scal_hess
 end
 
 # number of nonzeros in the Hessian and inverse

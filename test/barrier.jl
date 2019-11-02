@@ -42,8 +42,8 @@ function test_barrier_oracles(
     CO.set_initial_point(point, cone)
     if !iszero(noise)
         point += T(noise) * (rand(T, dim) .- inv(T(2)))
-        point /= scale
     end
+    point /= scale
 
     CO.load_point(cone, point)
     @test cone.point == point
@@ -81,8 +81,16 @@ function test_barrier_oracles(
         @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
     end
 
-    scal_hess = CO.get_scaling(cone, one(T))
+    dual_point = -grad
+    if !iszero(noise)
+        dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
+    end
+    CO.load_dual_point(cone, dual_point)
+    @test cone.dual_point == dual_point
+    scal_hess = CO.scal_hess(cone, one(T))
     @show scal_hess
+    @show eigvals(scal_hess)
+    # TODO add tests for scal hess correctness
 
     return
 end

@@ -405,7 +405,7 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
         # end
 
         # TODO inefficient to recompute - make it a cone field
-        scalH = Cones.get_scaling(cone_k, solver.mu)
+        scalH = Cones.scal_hess(cone_k, solver.mu)
         mul!(s_res_k, scalH, Hzs_k)
 
         @. s_res_k += zs_k

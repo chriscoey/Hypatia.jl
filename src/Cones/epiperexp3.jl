@@ -22,12 +22,13 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
-    scaling_updated::Bool
+    scal_hess_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     # dual_grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
+    scal_hess::Symmetric{T, Matrix{T}}
 
     barrier::Function
     check_feas::Function
@@ -49,9 +50,9 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
         cone.use_dual = is_dual
         cone.use_scaling = use_scaling
         cone.use_3order_corr = use_3order_corr
+        # TODO delete below later
         cone.barrier = (x -> -log(x[2] * log(x[1] / x[2]) - x[3]) - log(x[1]) - log(x[2]))
-        check_feas(x) = isfinite(cone.barrier(x))
-        cone.check_feas = check_feas
+        cone.check_feas = (x -> isfinite(cone.barrier(x)))
         return cone
     end
 end
@@ -64,9 +65,9 @@ use_scaling(cone::EpiPerExp3) = cone.use_scaling # TODO remove from here and jus
 
 use_3order_corr(cone::EpiPerExp3) = cone.use_3order_corr # TODO remove from here and just use one in Cones.jl when all cones allow scaling
 
-load_dual_point(cone::EpiPerExp3, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
+# load_dual_point(cone::EpiPerExp3, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point) # TODO delete
 
-reset_data(cone::EpiPerExp3) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = scaling_updated = false)
+reset_data(cone::EpiPerExp3) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scal_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::EpiPerExp3{T}) where {T <: Real}
@@ -79,6 +80,7 @@ function setup_data(cone::EpiPerExp3{T}) where {T <: Real}
     # cone.dual_gap = zeros(T, 3)
     cone.hess = Symmetric(zeros(T, 3, 3), :U)
     cone.inv_hess = Symmetric(zeros(T, 3, 3), :U)
+    cone.scal_hess = Symmetric(zeros(T, 3, 3), :U)
     cone.correction = zeros(T, 3)
     return
 end
@@ -210,7 +212,7 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
 end
 
 # function scalmat_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, mu::T, cone::EpiPerExp3{T}) where {T}
-#     if !cone.scaling_updated
+#     if !cone.scal_hess_updated
 #         update_scaling(cone, mu)
 #     end
 #     point = cone.point
