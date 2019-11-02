@@ -54,9 +54,29 @@ dimension(cone::Cone) = cone.dim
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
+# TODO come up with a tidy way to unify need for mu/no mu
+hess(cone::Cone, mu) = (cone.hess_updated ? cone.hess : update_hess(cone, mu))
+update_hess(cone::Cone, mu) = update_hess(cone)
+
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
 
 # fallbacks
+
+function update_scaling(cone::Cone{T}, mu::T) where {T}
+    @assert cone.grad_updated
+    @assert cone.hess_updated
+    s = cone.point
+    z = cone.dual_point
+    grad = cone.grad
+    H = mu * cone.hess
+    dual_grad = cone.dual_grad .= conjugate_gradient(cone.barrier, cone.check_feas, cone.dual_point)
+    primal_gap = cone.primal_gap .= cone.point + mu * dual_grad
+    dual_gap = cone.dual_gap .= cone.dual_point + mu * grad
+    H1 = H + z * z' / dot(s, z) - H * s * (H * s)' / (s' * H * s)
+    H2 = H1 + dual_gap * dual_gap' / dot(dual_gap, dual_gap) - H1 * primal_gap * (H1 * primal_gap)' / (primal_gap' * H1 * primal_gap)
+    cone.scaling_updated = true
+    return H2
+end
 
 # number of nonzeros in the Hessian and inverse
 function hess_nz_count(cone::Cone, lower_only::Bool)

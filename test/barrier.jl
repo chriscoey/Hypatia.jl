@@ -113,7 +113,7 @@ function test_barrier_scaling_oracles(
     grad = CO.grad(cone)
     cone.use_scaling = true # TODO update when it's an option, run these tests optionally
     # hess and inv_hess oracles, not the same as for non-scaling tests
-    hess = CO.hess(cone)
+    hess = CO.hess(cone, 0.5)
     @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
     inv_hess = CO.inv_hess(cone)
     @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
