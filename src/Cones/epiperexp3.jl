@@ -205,6 +205,9 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
 
     cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hinv_z_sol / -2
 
+
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+
     a1 = s_sol
     a2 = Hinv_z_sol # TODO closed form
 
@@ -217,7 +220,7 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
     # corr_test[1] +=
     # TODO finish
 
-    @show corr_test
+    # @show corr_test
 
     return cone.correction
 end
