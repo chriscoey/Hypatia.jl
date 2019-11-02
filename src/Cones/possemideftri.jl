@@ -414,17 +414,17 @@ function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractV
     # n = cone.side
 
     # reuse inverse of point which was calculated for gradient
-    # inv_mat = Symmetric(cone.inv_mat)
-    # X = Symmetric(svec_to_smat!(zeros(T, n, n), cone.point, cone.rt2))
+    # inv_mat = Hermitian(cone.inv_mat)
+    # X = Hermitian(svec_to_smat!(zeros(T, n, n), cone.point, cone.rt2))
     # inv_mat = inv(X)
 
     # TODO prealloc
-    S = Symmetric(svec_to_smat!(similar(cone.inv_mat), s_sol, cone.rt2))
-    Z = Symmetric(svec_to_smat!(similar(cone.inv_mat), z_sol, cone.rt2))
+    S = Hermitian(svec_to_smat!(similar(cone.inv_mat), s_sol, cone.rt2))
+    Z = Hermitian(svec_to_smat!(similar(cone.inv_mat), z_sol, cone.rt2))
 
     # Xinv_S_Z = (inv_mat * S * Z + Z * S * inv_mat) / 2
     # is (inv_mat * S * Z)' == Z * S * inv_mat?
-    Xinv_S_Z = Symmetric(cone.inv_mat) * S * Z
+    Xinv_S_Z = Hermitian(cone.inv_mat) * S * Z
     @. Xinv_S_Z += Xinv_S_Z'
     Xinv_S_Z ./= 2
     smat_to_svec!(cone.correction, Xinv_S_Z, cone.rt2)
