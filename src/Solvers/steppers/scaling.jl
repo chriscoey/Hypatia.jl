@@ -206,7 +206,7 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
         end
 
         # iterate is outside the neighborhood: decrease alpha
-        alpha *= T(0.99) # TODO option for parameter
+        alpha *= T(0.9) # TODO option for parameter
     end
 
     return alpha

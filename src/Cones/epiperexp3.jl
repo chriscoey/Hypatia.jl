@@ -234,7 +234,7 @@ function scalmat_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, mu::
     H_bfgs = cone.hess
     dual_gap = cone.dual_gap
     primal_gap = cone.primal_gap
-    ZZt = H_bfgs - dual_point * zdual_point' / dot(point, dual_point) - dual_gap * dual_gap' / dot(primal_gap, dual_gap)
+    ZZt = H_bfgs - dual_point * dual_point' / dot(point, dual_point) - dual_gap * dual_gap' / dot(primal_gap, dual_gap)
     # TODO work this out analytically rather than call eig
     f = eigen(ZZt)
     @assert f.values[1] ≈ 0 && f.values[2] ≈ 0
