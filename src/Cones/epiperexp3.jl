@@ -22,11 +22,15 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
     grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
+    scaling_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     dual_grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
+
+    barrier::Function
+    check_feas::Function
 
     luv::T
     vluvw::T
@@ -45,6 +49,10 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
         cone.use_dual = is_dual
         cone.use_scaling = use_scaling
         cone.use_3order_corr = use_3order_corr
+        barrier(x) = -log(x[2] * log(x[1] / x[2]) - x[3]) - log(x[1]) - log(x[2])
+        cone.barrier = barrier
+        check_feas(x) = isfinite(cone.barrier(x))
+        cone.check_feas = check_feas
         return cone
     end
 end
@@ -59,7 +67,7 @@ use_3order_corr(cone::EpiPerExp3) = cone.use_3order_corr # TODO remove from here
 
 load_dual_point(cone::EpiPerExp3, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
-reset_data(cone::EpiPerExp3) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
+reset_data(cone::EpiPerExp3) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = scaling_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::EpiPerExp3{T}) where {T <: Real}
@@ -114,23 +122,7 @@ function update_grad(cone::EpiPerExp3)
     return cone.grad
 end
 
-function update_scaling(cone::EpiPerExp3{T}, mu::T) where {T}
-    @assert cone.grad_updated
-    @assert cone.hess_updated
-    s = cone.point
-    z = cone.dual_point
-    grad = cone.grad
-    H = mu * cone.hess
-    dual_grad = cone.dual_grad .= conjugate_gradient(cone.barrier, cone.check_feas, cone.dual_point)
-    primal_gap = cone.primal_gap .= cone.point + mu * dual_grad
-    dual_gap = cone.dual_gap .= cone.dual + mu * grad
-    H1 = H + z * z' / dot(s, z) - H * s * (H * s)' / (x' * H * x)
-    H2 = H1 + dual_gap * dual_gap' / dot(dual_gap, dual_gap) - H1 * primal_gap * (H1 * primal_gap)' / (primal_gap' * H1 * primal_gap)
-    cone.scaling_updated = true
-    return H2
-end
-
-function update_hess(cone::EpiPerExp3)
+function update_hess(cone::EpiPerExp3{T}, mu::T) where {T}
     @assert cone.grad_updated
     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
     H = cone.hess.data
@@ -145,8 +137,9 @@ function update_hess(cone::EpiPerExp3)
     H[1, 2] = -(v * cone.g2a + 1) / cone.vluvw / u
     H[2, 2] = abs2(g2a) + (inv(vluvw) + inv(v)) / v
 
+    cone.hess_updated = true
     if cone.use_scaling
-        H .= update_scaling(cone)
+        H .= update_scaling(cone, mu)
     end
 
     # TODO would we use this?
@@ -155,7 +148,6 @@ function update_hess(cone::EpiPerExp3)
     # R[1,1] = (1 - sqrt(1 + 2v)) / vluvw
     # etc
 
-    cone.hess_updated = true
     return cone.hess
 end
 
