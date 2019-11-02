@@ -462,7 +462,7 @@ function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVec
     cone.correction .= corr_1
 
     # TODO simplified version
-    # corr_2 = 
+    # corr_2 =
 
     return cone.correction
 end
