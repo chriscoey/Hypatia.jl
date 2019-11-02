@@ -429,18 +429,40 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiN
     return prod
 end
 
-# returns W_inv \circ lambda \diamond correction
+# # TODO refactor into Cones.jl
+# # returns W_inv \circ lambda \diamond correction
+# function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
+#     if !cone.scaling_updated
+#         update_scaling(cone)
+#     end
+#     tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
+#     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
+#
+#     mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
+#
+#     C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
+#     scalmat_ldiv!(cone.correction, C, cone)
+#
+#     return cone.correction
+# end
+
+# from MOSEK paper
 function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone)
-    tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
+    @assert cone.grad_updated
 
-    mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
+    z_p_Q = z_sol * cone.point'
+    z_p_Q[:, 2:end] .*= -1
+    z_p_Q_symm = z_p_Q + z_p_Q'
+    dot_p_z = dot(cone.point, z_sol)
+    z_p_Q_symm[1, 1] -= dot_p_z
+    z_p_Q_symm[2:end, 2:end] += dot_p_z * I
+    @assert cone.dist ≈ dot(cone.point, Diagonal(vcat(1, -ones(cone.dim - 1))), cone.point)
+    corr_1 = z_p_Q_symm * s_sol / cone.dist
 
-    C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
-    scalmat_ldiv!(cone.correction, C, cone)
+    cone.correction .= corr_1
+
+    # TODO simplified version
+    # corr_2 =
 
     return cone.correction
 end

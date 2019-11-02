@@ -223,8 +223,8 @@ function epinormeucl1(T; options...)
     Trt2 = sqrt(T(2))
     Tirt2 = inv(Trt2)
     c = T[0, -1, -1]
-    A = T[1 0 0; 0 1 0]
-    b = T[1, Tirt2]
+    A = T[10 0 0; 0 10 0]
+    b = T[10, 10Tirt2]
     G = Matrix{T}(-I, 3, 3)
     h = zeros(T, 3)
     cones = CO.Cone{T}[CO.EpiNormEucl{T}(3)]
@@ -233,7 +233,7 @@ function epinormeucl1(T; options...)
     @test r.status == :Optimal
     @test r.primal_obj ≈ -Trt2 atol=tol rtol=tol
     @test r.x ≈ [1, Tirt2, Tirt2] atol=tol rtol=tol
-    @test r.y ≈ [Trt2, 0] atol=tol rtol=tol
+    @test r.y ≈ [Trt2 / 10, 0] atol=tol rtol=tol
 end
 
 function epinormeucl2(T; options...)

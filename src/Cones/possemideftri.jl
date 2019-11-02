@@ -392,17 +392,37 @@ function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::Abstra
     return step_dist
 end
 
-# TODO refactor into Cones.jl
-function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone, trans = true)
-    tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
-    mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
+# # TODO refactor into Cones.jl
+# function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
+#     if !cone.scaling_updated
+#         update_scaling(cone)
+#     end
+#     tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone, trans = true)
+#     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
+#     mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
+#
+#     C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
+#     scalmat_ldiv!(cone.correction, C, cone)
+#
+#     return cone.correction
+# end
 
-    C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
-    scalmat_ldiv!(cone.correction, C, cone)
+# from MOSEK paper
+# Pinv = inv(smat(point))
+# smat correction = (Pinv * S * Z + Z * S * Pinv) / 2
+function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
+    @assert cone.grad_updated
+
+    S = copytri!(svec_to_smat!(cone.work_mat, s_sol, cone.rt2), 'U', cone.is_complex)
+    Z = Hermitian(svec_to_smat!(cone.work_mat2, z_sol, cone.rt2))
+
+    # TODO compare the following numerically
+    Pinv_S_Z = mul!(cone.work_mat3, ldiv!(cone.fact, S), Z)
+    # Pinv_S_Z = ldiv!(cone.fact, mul!(cone.work_mat3, S, Z))
+
+    Pinv_S_Z_symm = cone.work_mat
+    @. Pinv_S_Z_symm = (Pinv_S_Z + Pinv_S_Z') / 2
+    smat_to_svec!(cone.correction, Pinv_S_Z_symm, cone.rt2)
 
     return cone.correction
 end
