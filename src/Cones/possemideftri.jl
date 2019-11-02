@@ -1,13 +1,17 @@
 #=
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
-TODO describe hermitian complex PSD cone
-on-diagonal (real) elements have one slot in the vector and below diagonal (complex) elements have two consecutive slots in the vector
+
 row-wise lower triangle of positive semidefinite matrix cone
 W \in S^n : 0 >= eigmin(W)
 (see equivalent MathOptInterface PositiveSemidefiniteConeTriangle definition)
+NOTE on-diagonal (real) elements have one slot in the vector and below diagonal (complex) elements have two consecutive slots in the vector
+
 barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Programming" by Nesterov & Todd
 -logdet(W)
-TODO fix native and moi tests, and moi
+
+TODO
+describe hermitian complex PSD cone
+fix native and moi tests, and moi wrapper
 =#
 
 mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}

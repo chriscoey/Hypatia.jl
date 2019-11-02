@@ -188,25 +188,24 @@ function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVect
 
     cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hinv_z_sol / -2
 
-
-    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
-    vluvw = cone.vluvw
-    g1a = cone.g1a
-    g2a = cone.g2a
-
-    a1 = s_sol
-    a2 = Hinv_z_sol # TODO closed form
-
-    corr_test = similar(cone.correction)
-    # - log(u) - log(v) part
-    corr_test[1] = -2 / u * a1[1] / u * a2[1] / u
-    corr_test[2] = -2 / u * a1[2] / u * a2[2] / u
-    corr_test[3] = 0
-    # -log(v * log(u / v) - w) part
-    # corr_test[1] +=
     # TODO finish
-
-    # @show corr_test
+    # (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+    # vluvw = cone.vluvw
+    # g1a = cone.g1a
+    # g2a = cone.g2a
+    #
+    # a1 = s_sol
+    # a2 = Hinv_z_sol # TODO closed form
+    #
+    # corr_test = similar(cone.correction)
+    # # - log(u) - log(v) part
+    # corr_test[1] = -2 / u * a1[1] / u * a2[1] / u
+    # corr_test[2] = -2 / u * a1[2] / u * a2[2] / u
+    # corr_test[3] = 0
+    # # -log(v * log(u / v) - w) part
+    # # corr_test[1] +=
+    #
+    # # @show corr_test
 
     return cone.correction
 end

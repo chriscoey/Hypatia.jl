@@ -1,7 +1,9 @@
 #=
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
+
 nonnegative orthant cone
 w in R^n : w_i >= 0
+
 barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Programming" by Nesterov & Todd
 -sum_i(log(u_i))
 =#
