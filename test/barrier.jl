@@ -14,7 +14,7 @@ function test_barrier_oracles(
     cone::CO.Cone{T},
     barrier::Function;
     noise::Real = 0.2,
-    scale::Real = 10000,
+    scale::Real = 1000,
     tol::Real = 100eps(T),
     init_tol::Real = tol,
     init_only::Bool = false,
@@ -209,7 +209,7 @@ function test_nonnegative_barrier(T::Type{<:Real})
     barrier = (s -> -sum(log, s))
     for dim in [1, 3, 6]
         test_barrier_oracles(CO.Nonnegative{T}(dim, use_scaling = false), barrier)
-        test_barrier_scaling_oracles(CO.Nonnegative{T}(dim, use_scaling = true), barrier)
+        # test_barrier_scaling_oracles(CO.Nonnegative{T}(dim, use_scaling = true), barrier)
     end
     return
 end
@@ -232,7 +232,7 @@ function test_epinormeucl_barrier(T::Type{<:Real})
     end
     for dim in [2, 4, 6]
         test_barrier_oracles(CO.EpiNormEucl{T}(dim, use_scaling = false), barrier)
-        test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true), barrier)
+        # test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true), barrier)
     end
     return
 end
