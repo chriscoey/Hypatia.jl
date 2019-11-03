@@ -11,11 +11,12 @@ barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Program
 mutable struct Nonnegative{T <: Real} <: Cone{T}
     use_scaling::Bool
     use_3order_corr::Bool
-    scaled_updates::Bool
-    scaling_initialized::Bool
+    try_scaled_updates::Bool # experimental, run algorithm in scaled variables for numerical reasons. it may be too tricky to keep this boolean.
     dim::Int
-    point::Vector{T}
-    dual_point::Vector{T}
+    point::Vector{T} # for scaling stepper, old scaling applied to an updated primal iterate
+    dual_point::Vector{T} # for scaling stepper, old scaling applied to an updated dual iterate
+    scaled_point::Vector{T} # v in MOSEK
+    scaling_point::Vector{T} # the Nesterov-Todd scaling point
 
     feas_updated::Bool
     grad_updated::Bool
@@ -25,24 +26,22 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     grad::Vector{T}
     hess::Diagonal{T, Vector{T}}
     inv_hess::Diagonal{T, Vector{T}}
-    scaling_updated::Bool
+    scaling_updated::Bool # TODO not currently checked or relied on
 
-    scaling_point::Vector{T}
     correction::Vector{T}
 
     function Nonnegative{T}(
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
-        scaled_updates::Bool = true,
+        try_scaled_updates::Bool = false,
         ) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.dim = dim
         cone.use_scaling = use_scaling
         cone.use_3order_corr = use_3order_corr
-        cone.scaled_updates = scaled_updates
-        cone.scaling_initialized = false
+        cone.try_scaled_updates = try_scaled_updates
         return cone
     end
 end
@@ -66,9 +65,11 @@ function setup_data(cone::Nonnegative{T}) where {T <: Real}
     cone.grad = zeros(T, dim)
     cone.hess = Diagonal(zeros(T, dim))
     cone.inv_hess = Diagonal(zeros(T, dim))
-    cone.scaling_point = ones(T, dim)
+     # TODO initialize at the same time as the initial point
+    cone.scaling_point = zeros(T, dim)
+    set_initial_point(cone.scaling_point, cone)
     cone.correction = zeros(T, dim)
-    if cone.scaled_updates
+    if cone.try_scaled_updates
     end
     return
 end
@@ -79,30 +80,25 @@ set_initial_point(arr::AbstractVector, cone::Nonnegative) = (arr .= 1)
 
 function update_feas(cone::Nonnegative)
     @assert !cone.feas_updated
+    # for linesearch, this may work like
+    # point = (cone.try_scaled_updates ? cone.scaled_point : cone.point)
+    # cone.is_feas = all(u -> (u > 0), point)
     cone.is_feas = all(u -> (u > 0), cone.point)
     cone.feas_updated = true
     return cone.is_feas
 end
 
+# calculates the gradient at the true, unscaled primal point
 function update_grad(cone::Nonnegative)
     @assert cone.is_feas
-    @. cone.grad = -inv(cone.point)
+    if cone.try_scaled_updates
+        @. cone.grad = -inv(cone.point)
+    else
+        @. cone.grad = -inv(cone.scaled_point)
+        @. cone.grad *= sqrt(cone.dual_point) / sqrt(cone.point)
+    end
     cone.grad_updated = true
     return cone.grad
-end
-
-function update_scaling(cone::Nonnegative)
-    if cone.scaling_initialized && cone.scaled_updates
-        # s, z under the old scaling, in the future thses may already be calculated outside of this oracle
-        point2 = scalmat_ldiv!(similar(cone.point), cone.point, cone)
-        dual_point2 = scalmat_prod!(similar(cone.point), cone.dual_point, cone)
-        @. cone.scaling_point *= sqrt(point2) / sqrt(dual_point2)
-        cone.scaling_initialized = true
-    else
-        @. cone.scaling_point = sqrt(cone.point) / sqrt(cone.dual_point)
-    end
-    cone.scaling_updated = true
-    return cone.scaling_updated
 end
 
 function update_hess(cone::Nonnegative)
@@ -163,10 +159,14 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonn
     return prod
 end
 
-# divides arr by lambda, the scaled point
+# divides arr by the scaled point
 # TODO think better about whether this oracle is needed
 function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    @. div = arr / sqrt(cone.point * cone.dual_point)
+    if cone.try_scaled_updates
+        @. div = arr / cone.scaled_point
+    else
+        @. div = arr / sqrt(cone.point * cone.dual_point)
+    end
     return div
 end
 
@@ -181,26 +181,64 @@ function dist_to_bndry(cone::Nonnegative{T}, point::Vector{T}, dir::AbstractVect
 end
 
 # TODO optimize this
-function step_max_dist(cone::Nonnegative{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
+# TODO this could go in Cones.jl
+function step_max_dist(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.is_feas
-
-    # TODO this could go in Cones.jl
-    primal_dist = dist_to_bndry(cone, cone.point, s_sol)
-    dual_dist = dist_to_bndry(cone, cone.dual_point, z_sol)
+    if cone.try_scaled_updates
+        primal_dist = dist_to_bndry(cone, cone.scaled_point, s_sol)
+        dual_dist = dist_to_bndry(cone, cone.scaled_point, z_sol)
+    else
+        primal_dist = dist_to_bndry(cone, cone.point, s_sol)
+        dual_dist = dist_to_bndry(cone, cone.dual_point, z_sol)
+    end
     step_dist = min(primal_dist, dual_dist)
 
     return step_dist
 end
 
-# returns lambda_inv * W_inv * correction = grad * correction
+# returns scaled_point \ W_inv * correction = grad * correction
 function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector)
-    @. cone.correction = s_sol * z_sol / cone.point
+    if cone.try_scaled_updates
+        @. cone.correction = abs2(cone.scaled_point) / cone.point
+    else
+        @. cone.correction = s_sol * z_sol / cone.point
+    end
     return cone.correction
 end
 
 function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::Nonnegative)
     @. w = u * v
     return w
+end
+
+function update_scaling(cone::Nonnegative)
+    if cone.try_scaled_updates
+        @. cone.scaling_point *= sqrt(cone.point) / sqrt(cone.dual_point)
+        @. cone.scaled_point = sqrt(cone.point) / sqrt(cone.dual_point)
+    else
+        @. cone.scaling_point = sqrt(cone.point) / sqrt(cone.dual_point)
+    end
+    cone.scaling_updated = true
+    return cone.scaling_updated
+end
+
+# s_sol and z_sol are scaled by an old scaling
+# this needs to be an oracle because we get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific
+function step_and_update_scaling(cone::Nonnegative{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}, steps_size::T) where {T}
+    # get the next s, z but in the old scaling
+    if cone.try_scaled_updates
+        @. s_sol *= step_size
+        @. z_sol *= step_size
+        @. s_sol .+= one(T)
+        @. z_sol += one(T)
+        @. cone.point = s_sol / cone.scaled_point
+        @. cone.dual_point = z_sol / cone.scaled_point
+    else
+        @. cone.point += steps_size * s_sol
+        @. cone.dual_point += steps_size * z_sol
+    end
+    update_scaling(cone)
+    return
 end
 
 hess_nz_count(cone::Nonnegative, ::Bool) = cone.dim

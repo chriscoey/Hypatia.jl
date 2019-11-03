@@ -22,6 +22,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     is_complex::Bool
     point::Vector{T}
     dual_point::Vector{T}
+    scaled_point::Vector{T} # TODO deprecate dual_point, and reuse primal point as the scaled point if stepper is Scaling
     rt2::T
 
     feas_updated::Bool
@@ -47,7 +48,6 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
 
     scalmat_sqrt::Matrix{R}
     scalmat_sqrti::Matrix{R}
-    lambda::Vector{R}
     bndry_dists::Vector{T}
     correction::Vector{T}
 
@@ -91,7 +91,7 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     dim = cone.dim
     cone.point = zeros(T, dim)
     cone.dual_point = zeros(T, dim)
-    cone.lambda = zeros(T, cone.side)
+    cone.scaled_point = zeros(T, cone.side)
     cone.bndry_dists = zeros(T, cone.side)
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)

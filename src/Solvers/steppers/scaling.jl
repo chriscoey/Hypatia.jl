@@ -91,6 +91,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
 
     # TODO not needed for cones with last point already loaded
+    # if linear systems use scaled variables, none of this needs to happen. all data are updated at the end of the iteration in step_and_update_scaling
     Cones.load_point.(solver.model.cones, point.primal_views)
     Cones.load_dual_point.(solver.model.cones, point.dual_views)
     Cones.reset_data.(solver.model.cones)
@@ -112,6 +113,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     solver.prev_gamma = stepper.gamma = gamma
 
     # TODO needed?
+    # doesn't seem to be needed
     Cones.load_point.(solver.model.cones, point.primal_views)
     Cones.load_dual_point.(solver.model.cones, point.dual_views)
     Cones.reset_data.(solver.model.cones)
@@ -135,6 +137,17 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # TODO allow stepping different alphas in primal and dual cone directions? some solvers do
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
+
+    # TODO call step(cone_k) for each cone
+    # if cone_k.try_scaled_updates
+        # update  point.s and point.z by unscaling the scaled point in each cone
+        # Cones.scalmat_prod!(point.s, cone_k.scaled_point, cone_k)
+        # Cones.scalmat_ldiv!(point.z, cone_k.scaled_point, cone_k)
+    # else
+        # copyto!(point.s, cone_k.point)
+        # copyto!(point.z, cone_k.dual_point)
+    # end
+
     @. point.z += alpha * stepper.z_dir
     @. point.s += alpha * stepper.s_dir
     solver.tau += alpha * stepper.dir[stepper.tau_row]
@@ -164,6 +177,7 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     end
 
     # cones using scaling and max distance functions
+    # didn't we say that if we are going to use a linesearch, we do it either for all cones or no cones?
     for (k, cone_k) in enumerate(solver.model.cones)
         if Cones.use_scaling(cone_k)
             dist_k = Cones.step_max_dist(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
@@ -185,6 +199,11 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     tau_temp = kap_temp = taukap_temp = mu_temp = zero(T)
     while true
         # TODO only do nbhd checks for cones not using scaling
+        # this part I'm unsure about. I think we want
+        # if cone_k.try_scaled_updates
+        #   z_temp = cone_k.scaled_point + alpha * stepper.z_dir
+        #   s_temp = cone_k.scaled_point + alpha * stepper.s_dir
+        # and leave everything else the same
         @. z_temp = point.z + alpha * stepper.z_dir
         @. s_temp = point.s + alpha * stepper.s_dir
         tau_temp = solver.tau + alpha * tau_dir
@@ -212,6 +231,7 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     return alpha
 end
 
+# this part I'm unsure about. we want to replace all the s+delta_s and z+detla_z with cone.scaled_point + delta_s and cone.scaled_point + delta_z
 function check_nbhd(
     mu_temp::T,
     taukap_temp::T,
@@ -220,6 +240,7 @@ function check_nbhd(
     ) where {T <: Real}
     cones = solver.model.cones
 
+    # so here we would Cones.load_scaled_point.(cones, ) but I don't know how this will work
     Cones.load_point.(cones, solver.primal_views)
     Cones.load_dual_point.(cones, solver.dual_views)
 

@@ -109,22 +109,30 @@ function test_barrier_scaling_oracles(
     dim = CO.dimension(cone)
 
     point = Vector{T}(undef, dim)
-    dual_point = Vector{T}(undef, dim)
+    dual_point = similar(point)
+    point_unscaled = similar(point)
+    dual_point_unscaled = similar(point)
     CO.set_initial_point(point, cone)
     CO.set_initial_point(dual_point, cone)
+    CO.load_point(cone, point)
+    CO.load_dual_point(cone, dual_point)
 
-
-    for _ in 1:2
-        point += T(noise) * (rand(T, dim) .- inv(T(2)))
-        dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
-
-        CO.load_point(cone, point)
-        CO.load_dual_point(cone, dual_point)
+    # run twice, first time around scaling will be the identity
+    for _ in 1:1
         CO.reset_data(cone)
-        CO.update_scaling(cone)
-        @test cone.point == point
-        @test cone.dual_point == dual_point
-        @test CO.is_feas(cone)
+        # take a step from the initial point
+        s_step = rand(T, dim) .- inv(T(2))
+        z_step = rand(T, dim) .- inv(T(2))
+        # cone.point and cone.dual_point become scaled
+        CO.step_and_update_scaling(cone, s_step, z_step, T(noise))
+        # keep track of unscaled primal and dual points
+        if cone.try_scaled_updates
+            scalmat_ldiv!(uscaled_point, cone.point, cone)
+            scalmat_prod!(uscaled_dual_point, cone.dual_point, cone)
+        else
+            uscaled_point .= point
+            uscaled_dual_point .= dual_point
+        end
 
         grad = CO.grad(cone)
         # hess and inv_hess oracles, not the same as for non-scaling tests
@@ -173,10 +181,10 @@ function test_barrier_scaling_oracles(
         prev_dual = copy(cone.dual_point)
 
         # λ \circ W * correction = actual Mehrotra term
-        mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
-        correction = CO.correction(cone, primal_dir, dual_dir)
-        @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
-        @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ mehrotra_term atol=tol rtol=tol
+        # mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
+        # correction = CO.correction(cone, primal_dir, dual_dir)
+        # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
+        # @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ mehrotra_term atol=tol rtol=tol
 
     end
 
@@ -346,8 +354,8 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
-        # test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
+        # test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
         # complex PSD cone
         function C_barrier(s)
             S = zeros(Complex{eltype(s)}, side, side)
@@ -355,8 +363,8 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Hermitian(S, :U)))
         end
         dim = side^2
-        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
-        # test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true), C_barrier)
+        # test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true), C_barrier)
     end
     return
 end
