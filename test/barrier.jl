@@ -75,7 +75,7 @@ function test_barrier_oracles(
         # check log-homog property that F'''(point)[point] = -2F''(point)
         @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
         # check correction term agrees with directional 3rd derivative
-        (primal_dir, dual_dir) = (randn(dim), randn(dim))
+        (primal_dir, dual_dir) = (rand(T, dim), rand(T, dim))
         Hinv_dual_dir = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
         FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
         @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol

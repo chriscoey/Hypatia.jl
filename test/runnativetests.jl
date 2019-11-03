@@ -41,9 +41,9 @@ testfuns = [
     # epinorminf3,
     # epinorminf4,
     # epinorminf5,
-    epinormeucl1,
-    epinormeucl2,
-    epinormeucl3,
+    # epinormeucl1,
+    # epinormeucl2,
+    # epinormeucl3,
     # epipersquare1,
     # epipersquare2,
     # epipersquare3,
@@ -53,9 +53,9 @@ testfuns = [
     # hypoperlog4,
     # hypoperlog5,
     # hypoperlog6,
-    # epiperexp1,
-    # epiperexp2,
-    # epiperexp3,
+    epiperexp1,
+    epiperexp2,
+    epiperexp3,
     # epiperexp4,
     # power1,
     # power2,
@@ -81,8 +81,8 @@ testfuns = [
 
 generic_reals = [
     Float64,
-    Float32,
-    BigFloat,
+    # Float32,
+    # BigFloat,
     ]
 
 blas_reals = [
@@ -122,7 +122,7 @@ options = (verbose = true,)
 
     # # test each system solver
     @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
-        t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        t(T, solver = SO.Solver{T}(max_nbhd = 0.2, reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
         # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...)) # TODO delete
     end
     # @testset "NaiveSparse tests: $t" for t in testfuns

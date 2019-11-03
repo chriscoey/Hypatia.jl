@@ -178,36 +178,52 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Epi
     return prod
 end
 
-# TODO F''' without ForwardDiff
-function correction(cone::EpiPerExp3, s_sol::AbstractVector, z_sol::AbstractVector)
-    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(cone.barrier, x), cone.point)
+# from MOSEK paper: directional third derivative term
+# TODO make efficient and improve numerics
+function correction(cone::EpiPerExp3{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
+    # FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(cone.barrier, x), cone.point)
+    # Hi_z = similar(z_sol)
+    # update_inv_hess_prod(cone)
+    # inv_hess_prod!(Hi_z, z_sol, cone)
+    # cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hi_z / -2
 
-    Hinv_z_sol = similar(z_sol)
+    update_hess(cone)
     update_inv_hess_prod(cone)
-    inv_hess_prod!(Hinv_z_sol, z_sol, cone)
-
-    cone.correction .= reshape(FD_3deriv * s_sol, 3, 3) * Hinv_z_sol / -2
-
-    # TODO finish
-    # (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+    corr = cone.correction
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
     # vluvw = cone.vluvw
     # g1a = cone.g1a
     # g2a = cone.g2a
-    #
-    # a1 = s_sol
-    # a2 = Hinv_z_sol # TODO closed form
-    #
-    # corr_test = similar(cone.correction)
-    # # - log(u) - log(v) part
-    # corr_test[1] = -2 / u * a1[1] / u * a2[1] / u
-    # corr_test[2] = -2 / u * a1[2] / u * a2[2] / u
-    # corr_test[3] = 0
-    # # -log(v * log(u / v) - w) part
-    # # corr_test[1] +=
-    #
-    # # @show corr_test
 
-    return cone.correction
+    Hi_z = similar(z_sol) # TODO prealloc
+    inv_hess_prod!(Hi_z, z_sol, cone)
+
+    # -log(v * log(u / v) - w) part
+    ψ = cone.vluvw
+    ψp = T[v / u, cone.luv - 1, -one(T)]
+    gpp = Symmetric(cone.hess - Diagonal(T[abs2(inv(u)), abs2(inv(v)), zero(T)]), :U) # TODO improve
+    zz3ψp = (z_sol[1:2] + z_sol[3] * ψp[1:2]) / (ψ + 2 * v)
+    ψpp_Hi_z = T[v * (zz3ψp[2] * v / u - zz3ψp[1]), u * zz3ψp[1] - v * zz3ψp[2], zero(T)]
+
+    # term1
+    corr .= z_sol[3] * 2 * ψ * gpp * s_sol
+    # term2
+    corr[1] += z_sol[3] * (-v * s_sol[1] / u + s_sol[2]) / u
+    corr[2] += z_sol[3] * (s_sol[1] / u - s_sol[2] / v)
+    # term3
+    corr[1] += ((2 * v / u * Hi_z[1] - Hi_z[2]) / u * -s_sol[1] / u + Hi_z[1] / u * s_sol[2] / u) / ψ
+    corr[2] += (Hi_z[1] / u * s_sol[1] / u - Hi_z[2] / v * s_sol[2] / v) / ψ
+    # term4
+    corr += (ψpp_Hi_z * dot(ψp, s_sol) + ψp * dot(ψpp_Hi_z, s_sol)) / ψ
+
+    # scale
+    corr /= -2
+
+    # - log(u) - log(v) part
+    corr[1] += Hi_z[1] / u * s_sol[1] / u / u
+    corr[2] += Hi_z[2] / v * s_sol[2] / v / v
+
+    return corr
 end
 
 # function scalmat_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, mu::T, cone::EpiPerExp3{T}) where {T}
