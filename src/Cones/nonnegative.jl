@@ -34,7 +34,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
-        try_scaled_updates::Bool = true,
+        try_scaled_updates::Bool = false,
         ) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
@@ -51,6 +51,9 @@ use_dual(cone::Nonnegative) = false # self-dual
 use_scaling(cone::Nonnegative) = cone.use_scaling # TODO remove from here and just use one in Cones.jl when all cones allow scaling
 
 use_3order_corr(cone::Nonnegative) = cone.use_3order_corr
+
+# TODO this could replace load_point
+load_scaled_point(cone::Nonnegative, point::AbstractVector) = copyto!(cone.scaled_point, point)
 
 load_dual_point(cone::Nonnegative, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
@@ -82,10 +85,8 @@ set_initial_point(arr::AbstractVector, cone::Nonnegative) = (arr .= 1)
 
 function update_feas(cone::Nonnegative)
     @assert !cone.feas_updated
-    # for linesearch, this may work like
-    # point = (cone.try_scaled_updates ? cone.scaled_point : cone.point)
-    # cone.is_feas = all(u -> (u > 0), point)
-    cone.is_feas = all(u -> (u > 0), cone.point)
+    point = (cone.try_scaled_updates ? cone.scaled_point : cone.point)
+    cone.is_feas = all(u -> (u > 0), point)
     cone.feas_updated = true
     return cone.is_feas
 end

@@ -88,8 +88,6 @@ function test_barrier_oracles(
     # CO.load_dual_point(cone, dual_point)
     # @test cone.dual_point == dual_point
     # scal_hess = CO.scal_hess(cone, one(T))
-    # @show scal_hess
-    # @show eigvals(scal_hess)
     # TODO add tests for scal hess correctness
 
     return
@@ -114,11 +112,11 @@ function test_barrier_scaling_oracles(
     dual_point_unscaled = similar(point_unscaled)
     CO.set_initial_point(point_unscaled, cone)
     CO.set_initial_point(dual_point_unscaled, cone)
-    CO.load_point(cone, dual_point_unscaled)
-    CO.load_dual_point(cone, dual_point_unscaled)
 
     # run twice, first time around scaling will be the identity
     for _ in 1:2
+        CO.load_point(cone, point_unscaled)
+        CO.load_dual_point(cone, dual_point_unscaled)
         CO.reset_data(cone)
         # take a step from the initial point
         s_step = rand(T, dim) .- inv(T(2))
@@ -140,7 +138,6 @@ function test_barrier_scaling_oracles(
         grad = CO.grad(cone)
         # hess and inv_hess oracles, not the same as for non-scaling tests
         hess = CO.hess(cone)
-        @show hess, cone.dual_point ./ cone.point, dual_point_unscaled ./ point_unscaled
         @test hess * point_unscaled ≈ dual_point_unscaled atol=tol rtol=tol
         inv_hess = CO.inv_hess(cone)
         @test inv_hess * dual_point_unscaled ≈ point_unscaled atol=tol rtol=tol
@@ -179,10 +176,25 @@ function test_barrier_scaling_oracles(
         @test max_step ≈ T(Inf) atol=tol rtol=tol
 
         # max step elsewhere
+        # primal dir and dual dir should be interpreted as though they are scaled, if working with scaled directions
         primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
         dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-        prev_primal = copy(cone.point)
-        prev_dual = copy(cone.dual_point)
+
+        # max step tests for these new directions
+        prev_primal = (cone.try_scaled_updates ? copy(cone.scaled_point) : copy(point_unscaled))
+        prev_dual = (cone.try_scaled_updates ? copy(cone.scaled_point) : copy(dual_point_unscaled))
+        max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
+        # check smaller step returns feasible iterates
+        primal_feas = load_reset_and_check(cone, prev_primal + T(0.99) * max_step * primal_dir)
+        dual_feas = load_reset_and_check(cone, prev_dual + T(0.99) * max_step * dual_dir)
+        @test primal_feas && dual_feas
+        # check larger step returns infeasible iterates
+        primal_feas = load_reset_and_check(cone, prev_primal + T(1.01) * max_step * primal_dir)
+        dual_feas = load_reset_and_check(cone, prev_dual + T(1.01) * max_step * dual_dir)
+        @test !primal_feas || !dual_feas
+
+        # undo reloading of scaled point
+        CO.load_scaled_point(cone, prev_primal)
 
         # λ \circ W * correction = actual Mehrotra term
         # mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
@@ -192,18 +204,8 @@ function test_barrier_scaling_oracles(
 
     end
 
-    # # max step tests for these new directions
-    # max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
-    # # check smaller step returns feasible iterates
-    # primal_feas = load_reset_and_check(cone, prev_primal + T(0.99) * max_step * primal_dir)
-    # dual_feas = load_reset_and_check(cone, prev_dual + T(0.99) * max_step * dual_dir)
-    # @test primal_feas && dual_feas
-    # # check larger step returns infeasible iterates
-    # primal_feas = load_reset_and_check(cone, prev_primal + T(1.01) * max_step * primal_dir)
-    # dual_feas = load_reset_and_check(cone, prev_dual + T(1.01) * max_step * dual_dir)
-    # @test !primal_feas || !dual_feas
-    #
-    # # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
+
+    # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
     # check_feas(x) = (isfinite(barrier(x)) ? true : false)
     # @test load_reset_and_check(cone, prev_primal)
     # grad = CO.grad(cone)
@@ -217,7 +219,11 @@ function test_barrier_scaling_oracles(
 end
 
 function load_reset_and_check(cone, point)
-    CO.load_point(cone, point)
+    if cone.try_scaled_updates
+        CO.load_scaled_point(cone, point)
+    else
+        CO.load_point(cone, point)
+    end
     CO.reset_data(cone)
     return CO.is_feas(cone)
 end
