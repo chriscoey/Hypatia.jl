@@ -75,7 +75,7 @@ function test_barrier_oracles(
         # check log-homog property that F'''(point)[point] = -2F''(point)
         @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
         # check correction term agrees with directional 3rd derivative
-        (primal_dir, dual_dir) = (rand(T, dim), rand(T, dim))
+        (primal_dir, dual_dir) = (randn(dim), randn(dim))
         Hinv_dual_dir = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
         FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
         @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
@@ -108,55 +108,59 @@ function test_barrier_scaling_oracles(
     CO.reset_data(cone)
     dim = CO.dimension(cone)
 
-    point = Vector{T}(undef, dim)
-    dual_point = similar(point)
-    point_unscaled = similar(point)
-    dual_point_unscaled = similar(point)
-    CO.set_initial_point(point, cone)
-    CO.set_initial_point(dual_point, cone)
-    CO.load_point(cone, point)
-    CO.load_dual_point(cone, dual_point)
+    point_unscaled = Vector{T}(undef, dim)
+    dual_point = similar(point_unscaled)
+    point_unscaled = similar(point_unscaled)
+    dual_point_unscaled = similar(point_unscaled)
+    CO.set_initial_point(point_unscaled, cone)
+    CO.set_initial_point(dual_point_unscaled, cone)
+    CO.load_point(cone, dual_point_unscaled)
+    CO.load_dual_point(cone, dual_point_unscaled)
 
     # run twice, first time around scaling will be the identity
-    for _ in 1:1
+    for _ in 1:2
         CO.reset_data(cone)
         # take a step from the initial point
         s_step = rand(T, dim) .- inv(T(2))
         z_step = rand(T, dim) .- inv(T(2))
-        # cone.point and cone.dual_point become scaled
-        CO.step_and_update_scaling(cone, s_step, z_step, T(noise))
+        CO.step(cone, s_step, z_step, T(noise))
+
         # keep track of unscaled primal and dual points
         if cone.try_scaled_updates
-            scalmat_ldiv!(uscaled_point, cone.point, cone)
-            scalmat_prod!(uscaled_dual_point, cone.dual_point, cone)
+            CO.scalmat_prod!(point_unscaled, cone.point, cone)
+            CO.scalmat_ldiv!(dual_point_unscaled, cone.dual_point, cone)
         else
-            uscaled_point .= point
-            uscaled_dual_point .= dual_point
+            point_unscaled .= cone.point
+            dual_point_unscaled .= cone.dual_point
         end
+        # cone.point and cone.dual_point become scaled
+        CO.update_scaling(cone)
 
+        CO.is_feas(cone)
         grad = CO.grad(cone)
         # hess and inv_hess oracles, not the same as for non-scaling tests
         hess = CO.hess(cone)
-        @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
+        @show hess, cone.dual_point ./ cone.point, dual_point_unscaled ./ point_unscaled
+        @test hess * point_unscaled ≈ dual_point_unscaled atol=tol rtol=tol
         inv_hess = CO.inv_hess(cone)
-        @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
+        @test inv_hess * dual_point_unscaled ≈ point_unscaled atol=tol rtol=tol
         @test hess * inv_hess ≈ I atol=tol rtol=tol
         # hess and inv_hes product oracles
-        prod_mat = similar(point, dim, dim)
+        prod_mat = similar(cone.point, dim, dim)
         @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
         @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
         # multiplication and division by scaling matrix W
-        λ = CO.scalmat_prod!(similar(cone.point), cone.dual_point, cone)
-        W = CO.scalmat_prod!(similar(point, dim, dim), Matrix{T}(I, dim, dim), cone)
-        @test W' * λ ≈ cone.point atol=tol rtol=tol
-        prod = similar(point)
-        @test CO.scalmat_ldiv!(prod, cone.point, cone, trans = true) ≈ λ atol=tol rtol=tol
+        λ = CO.scalmat_prod!(similar(cone.point), dual_point_unscaled, cone)
+        W = CO.scalmat_prod!(similar(cone.point, dim, dim), Matrix{T}(I, dim, dim), cone)
+        @test W' * λ ≈ point_unscaled atol=tol rtol=tol
+        prod = similar(cone.point)
+        @test CO.scalmat_ldiv!(prod, point_unscaled, cone, trans = true) ≈ λ atol=tol rtol=tol
         @test CO.scalmat_ldiv!(prod_mat, W, cone, trans = false) ≈ I atol=tol rtol=tol
 
         # additional sanity checks
         @test W' * W ≈ inv_hess atol=tol rtol=tol
-        WWz = CO.inv_hess_prod!(prod, cone.dual_point, cone)
+        WWz = CO.inv_hess_prod!(prod, dual_point_unscaled, cone)
         Wλ = CO.scalmat_prod!(prod, λ, cone)
         @test WWz ≈ Wλ atol=tol rtol=tol
 
