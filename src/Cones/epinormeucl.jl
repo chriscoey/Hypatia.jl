@@ -449,22 +449,18 @@ end
 # from MOSEK paper
 function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.grad_updated
+    corr = cone.correction
+    point = cone.point
 
-    z_p_Q = z_sol * cone.point'
-    z_p_Q[:, 2:end] .*= -1
-    z_p_Q_symm = z_p_Q + z_p_Q'
-    dot_p_z = dot(cone.point, z_sol)
-    z_p_Q_symm[1, 1] -= dot_p_z
-    z_p_Q_symm[2:end, 2:end] += dot_p_z * I
-    @assert cone.dist ≈ dot(cone.point, Diagonal(vcat(1, -ones(cone.dim - 1))), cone.point)
-    corr_1 = z_p_Q_symm * s_sol / cone.dist
+    jdot_p_s = jdot(point, s_sol)
+    @. corr = jdot_p_s * z_sol
+    dot_s_z = dot(s_sol, z_sol)
+    dot_p_z = dot(point, z_sol)
+    corr[1] += dot_s_z * point[1] - dot_p_z * s_sol[1]
+    @. @views corr[2:end] += -dot_s_z * point[2:end] + dot_p_z * s_sol[2:end]
+    corr ./= cone.dist
 
-    cone.correction .= corr_1
-
-    # TODO simplified version
-    # corr_2 =
-
-    return cone.correction
+    return corr
 end
 
 # divides arr by lambda, the scaled point
