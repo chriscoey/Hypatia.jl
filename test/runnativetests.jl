@@ -33,9 +33,9 @@ testfuns_preproc = [
 testfuns_reduce = vcat(testfuns_no_preproc, testfuns_preproc)
 
 testfuns = [
-    nonnegative1,
-    nonnegative2,
-    nonnegative3,
+    # nonnegative1,
+    # nonnegative2,
+    # nonnegative3,
     # epinorminf1,
     # epinorminf2,
     # epinorminf3,
@@ -53,8 +53,8 @@ testfuns = [
     # hypoperlog4,
     # hypoperlog5,
     # hypoperlog6,
-    # epiperexp1,
-    # epiperexp2,
+    epiperexp1,
+    epiperexp2,
     # epiperexp3,
     # epiperexp4,
     # power1,
@@ -122,7 +122,7 @@ options = (verbose = true,)
 
     # # test each system solver
     @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
-        t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+        t(T, solver = SO.Solver{T}(reduce = true, tol_feas = eps(T), system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
         # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...)) # TODO delete
     end
     # @testset "NaiveSparse tests: $t" for t in testfuns
