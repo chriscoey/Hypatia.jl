@@ -14,7 +14,7 @@ function test_barrier_oracles(
     cone::CO.Cone{T},
     barrier::Function;
     noise::Real = 0.2,
-    scale::Real = 1000,
+    scale::Real = 10,
     tol::Real = 100eps(T),
     init_tol::Real = tol,
     init_only::Bool = false,
@@ -65,30 +65,60 @@ function test_barrier_oracles(
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
-    # compare to ForwardDiff
-    # check gradient and Hessian agree
-    @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
-    @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
-    if CO.use_3order_corr(cone)
-        # check 3rd order corrector agrees
-        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-        # check log-homog property that F'''(point)[point] = -2F''(point)
-        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
-        # check correction term agrees with directional 3rd derivative
-        (primal_dir, dual_dir) = (randn(dim), randn(dim))
-        Hinv_dual_dir = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
-        FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
-        @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
-    end
-
-    # dual_point = -grad
-    # if !iszero(noise)
-    #     dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
+    # # compare to ForwardDiff
+    # # check gradient and Hessian agree
+    # @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
+    # @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
+    # if CO.use_3order_corr(cone)
+    #     # check 3rd order corrector agrees
+    #     FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+    #     # check log-homog property that F'''(point)[point] = -2F''(point)
+    #     @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
+    #     # check correction term agrees with directional 3rd derivative
+    #     (primal_dir, dual_dir) = (randn(dim), randn(dim))
+    #     Hinv_dual_dir = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
+    #     FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
+    #     @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
     # end
-    # CO.load_dual_point(cone, dual_point)
-    # @test cone.dual_point == dual_point
-    # scal_hess = CO.scal_hess(cone, one(T))
+
+
+
+    # identities from page 7 of Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
+    CO.load_point(cone, point)
+    CO.reset_data(cone)
+    CO.is_feas(cone)
+    grad = CO.grad(cone)
+    pert_point = point + T(noise) * (rand(T, dim) .- inv(T(2)))
+    conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, pert_point, -grad)
+    @test conj_grad ≈ -point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+
+    dual_point = -grad + T(noise) * (rand(T, dim) .- inv(T(2)))
+    conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, point, dual_point)
+    CO.load_point(cone, -conj_grad)
+    CO.reset_data(cone)
+    @test CO.is_feas(cone)
+    grad = CO.grad(cone)
+    @test -grad ≈ dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+
+
+    CO.load_point(cone, point)
+    CO.load_dual_point(cone, dual_point)
+    CO.reset_data(cone)
+    CO.is_feas(cone)
+    grad = CO.grad(cone)
+    @show nu, dot(point, grad)
+    conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, point, dual_point)
+    @show dot(dual_point, conj_grad) + 3
+
+    mu = dot(point, dual_point) / nu
+    scal_hess = CO.scal_hess(cone, mu)
     # TODO add tests for scal hess correctness
+    println()
+    # @show scal_hess
+    # @show scal_hess - hess
+    # @show scal_hess * point - dual_point
+    # @show scal_hess * conj_grad - grad
+    # println()
 
     return
 end

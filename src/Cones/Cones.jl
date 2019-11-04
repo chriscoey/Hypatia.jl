@@ -63,11 +63,17 @@ function update_scal_hess(cone::Cone{T}, mu::T) where {T}
     s = cone.point
     z = cone.dual_point
 
-    dual_gap = cone.dual_point + mu * grad(cone)
-    muH = mu * hess(cone)
-    primal_gap = cone.point + mu * conjugate_gradient(cone.barrier, cone.check_feas, cone.dual_point)
+    @show s
+    @show z
+    println()
 
-    H1 = copy(muH)
+    g = grad(cone)
+    dual_gap = cone.dual_point + mu * g
+    muH = mu * hess(cone)
+    conj_g = conjugate_gradient(cone.barrier, cone.check_feas, cone.point, cone.dual_point)
+    primal_gap = cone.point + mu * conj_g
+
+    H1 = Matrix(muH)
     denom = dot(s, z)
     @show denom
     @assert denom >= 0
@@ -99,9 +105,38 @@ function update_scal_hess(cone::Cone{T}, mu::T) where {T}
         H2 -= H1prgap * H1prgap' / denom
     end
 
+
+    # H2 = copy(H1)
+    # denom = dot(g, conj_g)
+    # @show denom
+    # @assert denom >= 0
+    # if denom > 0
+    #     H2 += g * g' / denom
+    # end
+    #
+    # denom = dot(conj_g, H1, conj_g)
+    # @show denom
+    # @assert denom >= 0
+    # if denom > 0
+    #     H1prgap = H1 * conj_g
+    #     H2 -= H1prgap * H1prgap' / denom
+    # end
+
+
+
     @show eigvals(H2)
 
     copyto!(cone.scal_hess.data, H2)
+
+    println()
+    @show primal_gap, dual_gap
+    println()
+    @show H2 * s - z
+    println()
+    @show H2 * -conj_g + g
+    println()
+    @show H2 * primal_gap - dual_gap
+    println()
 
     cone.scal_hess_updated = true
     return cone.scal_hess
@@ -170,14 +205,19 @@ end
 
 # utilities for conjugate barriers
 # may need a feas_check and return -Inf
-function conjugate_gradient(barrier::Function, check_feas::Function, z::Vector{T}) where {T}
-    modified_legendre(x) = (check_feas(x) ? dot(z, x) + barrier(x) : T(Inf))
-    bar_grad(x) = ForwardDiff.gradient(modified_legendre, x)
-    bar_hess(x) = ForwardDiff.hessian(modified_legendre, x)
+function conjugate_gradient(barrier::Function, check_feas::Function, s::Vector{T}, z::Vector{T}) where {T}
+    # @show s, z
+    # modified_legendre(x) = (check_feas(x) ? dot(z, x) + barrier(x) : T(Inf))
+    # bar_grad(x) = ForwardDiff.gradient(modified_legendre, x)
+    # bar_hess(x) = ForwardDiff.hessian(modified_legendre, x)
+    #
+    # dfc = Optim.TwiceDifferentiableConstraints(T[0, 0, -Inf], T[Inf, Inf, Inf]) # TODO don't specialize for exp3, maybe remove
+    # df = Optim.TwiceDifferentiable(modified_legendre, bar_grad, bar_hess, -z, inplace = false) # TODO maybe -z?
+    # res = Optim.optimize(df, dfc, z, Optim.IPNewton())
 
-    dfc = Optim.TwiceDifferentiableConstraints(fill(-T(Inf), size(z)), fill(T(Inf), size(z)))
-    df = Optim.TwiceDifferentiable(modified_legendre, bar_grad, bar_hess, z, inplace = false)
-    res = Optim.optimize(df, dfc, z, Optim.IPNewton())
+    modified_legendre(x) = (check_feas(x) ? dot(z, x) + barrier(x) : Inf)
+    res = Optim.optimize(modified_legendre, s, Optim.Newton())
+    # @show res
     minimizer = Optim.minimizer(res)
 
     @assert !any(isnan, minimizer)

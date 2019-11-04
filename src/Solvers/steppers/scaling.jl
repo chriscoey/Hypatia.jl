@@ -304,34 +304,34 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     # use iterative refinement - note apply_LHS is different for affine vs combined phases
     iter_ref_steps = (stepper.in_affine_phase ? 1 : 3) # TODO handle, maybe change dynamically, try fewer for affine phase
 
-    copyto!(dir_temp, dir)
-    res = apply_LHS(stepper, solver) # modifies res
-    res .-= rhs
-    norm_inf = norm(res, Inf)
-    norm_2 = norm(res, 2)
-    for i in 1:iter_ref_steps
-        if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
-            break
-        end
-        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, res)
-        axpby!(true, dir_temp, -1, dir)
-        res = apply_LHS(stepper, solver) # modifies res
-        res .-= rhs
-
-        norm_inf_new = norm(res, Inf)
-        norm_2_new = norm(res, 2)
-        if norm_inf_new > norm_inf || norm_2_new > norm_2
-            # residual has not improved
-            copyto!(dir, dir_temp)
-            break
-        end
-
-        # residual has improved, so use the iterative refinement
-        solver.verbose && @printf("iter ref round %d norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", i, norm_inf, norm_inf_new, norm_2, norm_2_new)
-        copyto!(dir_temp, dir)
-        norm_inf = norm_inf_new
-        norm_2 = norm_2_new
-    end
+    # copyto!(dir_temp, dir)
+    # res = apply_LHS(stepper, solver) # modifies res
+    # res .-= rhs
+    # norm_inf = norm(res, Inf)
+    # norm_2 = norm(res, 2)
+    # for i in 1:iter_ref_steps
+    #     if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
+    #         break
+    #     end
+    #     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, res)
+    #     axpby!(true, dir_temp, -1, dir)
+    #     res = apply_LHS(stepper, solver) # modifies res
+    #     res .-= rhs
+    #
+    #     norm_inf_new = norm(res, Inf)
+    #     norm_2_new = norm(res, 2)
+    #     if norm_inf_new > norm_inf || norm_2_new > norm_2
+    #         # residual has not improved
+    #         copyto!(dir, dir_temp)
+    #         break
+    #     end
+    #
+    #     # residual has improved, so use the iterative refinement
+    #     solver.verbose && @printf("iter ref round %d norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", i, norm_inf, norm_inf_new, norm_2, norm_2_new)
+    #     copyto!(dir_temp, dir)
+    #     norm_inf = norm_inf_new
+    #     norm_2 = norm_2_new
+    # end
 
     return dir
 end

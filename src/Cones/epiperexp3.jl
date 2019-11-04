@@ -52,7 +52,7 @@ mutable struct EpiPerExp3{T <: Real} <: Cone{T}
         cone.use_3order_corr = use_3order_corr
         # TODO delete below later
         cone.barrier = (x -> -log(x[2] * log(x[1] / x[2]) - x[3]) - log(x[1]) - log(x[2]))
-        cone.check_feas = (x -> isfinite(cone.barrier(x)))
+        cone.check_feas = (x -> (x[1] > 0) && (x[2] > 0) && (x[2] * log(x[1] / x[2]) > x[3]))
         return cone
     end
 end
