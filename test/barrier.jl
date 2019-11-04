@@ -103,14 +103,15 @@ function test_barrier_oracles(
 
     CO.load_point(cone, point)
     CO.load_dual_point(cone, dual_point)
-    # CO.load_dual_point(cone, conj_grad)
     CO.reset_data(cone)
     CO.is_feas(cone)
     grad = CO.grad(cone)
+    @show nu, dot(point, grad)
     conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, point, dual_point)
-    # CO.hess(cone)
+    @show dot(dual_point, conj_grad) + 3
 
-    scal_hess = CO.scal_hess(cone, one(T))
+    mu = dot(point, dual_point) / nu
+    scal_hess = CO.scal_hess(cone, mu)
     # TODO add tests for scal hess correctness
     println()
     # @show scal_hess

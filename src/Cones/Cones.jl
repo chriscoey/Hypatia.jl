@@ -74,20 +74,20 @@ function update_scal_hess(cone::Cone{T}, mu::T) where {T}
     primal_gap = cone.point + mu * conj_g
 
     H1 = Matrix(muH)
-    # denom = dot(s, z)
-    # @show denom
-    # @assert denom >= 0
-    # if denom > 0
-    #     H1 += z * z' / denom
-    # end
-    #
-    # denom = dot(s, muH, s)
-    # @show denom
-    # @assert denom >= 0
-    # if denom > 0
-    #     muHs = muH * s
-    #     H1 -= muHs * muHs' / denom
-    # end
+    denom = dot(s, z)
+    @show denom
+    @assert denom >= 0
+    if denom > 0
+        H1 += z * z' / denom
+    end
+
+    denom = dot(s, muH, s)
+    @show denom
+    @assert denom >= 0
+    if denom > 0
+        muHs = muH * s
+        H1 -= muHs * muHs' / denom
+    end
 
     H2 = copy(H1)
     denom = dot(primal_gap, dual_gap)
@@ -104,6 +104,25 @@ function update_scal_hess(cone::Cone{T}, mu::T) where {T}
         H1prgap = H1 * primal_gap
         H2 -= H1prgap * H1prgap' / denom
     end
+
+
+    # H2 = copy(H1)
+    # denom = dot(g, conj_g)
+    # @show denom
+    # @assert denom >= 0
+    # if denom > 0
+    #     H2 += g * g' / denom
+    # end
+    #
+    # denom = dot(conj_g, H1, conj_g)
+    # @show denom
+    # @assert denom >= 0
+    # if denom > 0
+    #     H1prgap = H1 * conj_g
+    #     H2 -= H1prgap * H1prgap' / denom
+    # end
+
+
 
     @show eigvals(H2)
 
