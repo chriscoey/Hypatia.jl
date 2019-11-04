@@ -17,12 +17,14 @@ fix native and moi tests, and moi wrapper
 mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     use_scaling::Bool
     use_3order_corr::Bool
+    try_scaled_updates::Bool # experimental, run algorithm in scaled variables for numerical reasons. it may be too tricky to keep this boolean.
     dim::Int
     side::Int
     is_complex::Bool
     point::Vector{T}
     dual_point::Vector{T}
-    scaled_point::Vector{T} # TODO deprecate dual_point, and reuse primal point as the scaled point if stepper is Scaling
+    scaled_point::Vector{T} # v in MOSEK # TODO this is strong too much currently because smat(v) will always be diagonal
+    scaled_eigvals::Vector{T}
     rt2::T
 
     feas_updated::Bool
@@ -46,6 +48,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     fact
     dual_fact
 
+    # factorizations of the scaling matrix
     scalmat_sqrt::Matrix{R}
     scalmat_sqrti::Matrix{R}
     bndry_dists::Vector{T}
@@ -55,6 +58,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
+        try_scaled_updates::Bool = true,
         ) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
@@ -62,6 +66,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         cone.rt2 = sqrt(T(2))
         cone.use_scaling = use_scaling
         cone.use_3order_corr = use_3order_corr
+        cone.try_scaled_updates = try_scaled_updates
         if R <: Complex
             side = isqrt(dim) # real lower triangle and imaginary under diagonal
             @assert side^2 == dim
@@ -84,6 +89,8 @@ use_3order_corr(cone::PosSemidefTri) = cone.use_3order_corr
 
 load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
+load_scaled_point(cone::PosSemidefTri, point::AbstractVector) = copyto!(cone.scaled_point, point)
+
 reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
 
 function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
@@ -91,7 +98,6 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     dim = cone.dim
     cone.point = zeros(T, dim)
     cone.dual_point = zeros(T, dim)
-    cone.scaled_point = zeros(T, cone.side)
     cone.bndry_dists = zeros(T, cone.side)
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
@@ -103,6 +109,12 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     cone.work_mat = similar(cone.mat)
     cone.work_mat2 = similar(cone.mat)
     cone.work_mat3 = similar(cone.mat)
+    # TODO initialize at the same time as the initial point
+    cone.scaled_point = zeros(T, dim)
+    set_initial_point(cone.scaled_point, cone)
+    cone.scalmat_sqrt = Matrix{T}(I, cone.side, cone.side)
+    cone.scalmat_sqrti = Matrix{T}(I, cone.side, cone.side)
+    cone.scaled_eigvals = zeros(T, cone.side)
     cone.correction = zeros(T, dim)
     return
 end
@@ -122,7 +134,8 @@ end
 
 function update_feas(cone::PosSemidefTri)
     @assert !cone.feas_updated
-    svec_to_smat!(cone.mat, cone.point, cone.rt2)
+    point = (cone.try_scaled_updates ? cone.scaled_point : cone.point)
+    svec_to_smat!(cone.mat, point, cone.rt2)
     copyto!(cone.fact_mat, cone.mat)
     cone.fact = cholesky!(Hermitian(cone.fact_mat, :U), check = false)
     cone.is_feas = isposdef(cone.fact)
@@ -132,31 +145,20 @@ end
 
 function update_grad(cone::PosSemidefTri)
     @assert cone.is_feas
-    cone.inv_mat = inv(cone.fact)
-    smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
-    cone.grad .*= -1
-    copytri!(cone.mat, 'U', cone.is_complex)
+    if cone.try_scaled_updates
+        svec_to_smat!(cone.work_mat, cone.scaled_point, cone.rt2)
+        inv_mat = inv(Hermitian(cone.work_mat, :U))
+        tmp = smat_to_svec!(similar(cone.point), inv_mat, cone.rt2)
+        tmp .*= -1
+        scalmat_ldiv!(cone.grad, tmp, cone, trans = false)
+    else
+        cone.inv_mat = inv(cone.fact)
+        smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
+        cone.grad .*= -1
+        copytri!(cone.mat, 'U', cone.is_complex)
+    end
     cone.grad_updated = true
     return cone.grad
-end
-
-function update_scaling(cone::PosSemidefTri)
-    @assert !cone.scaling_updated
-    @assert cone.is_feas
-    fact = cone.fact
-    svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
-    copyto!(cone.dual_fact_mat, cone.dual_mat)
-    dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
-    @assert isposdef(cone.dual_fact)
-
-    # TODO preallocate
-    (U, lambda, V) = svd(dual_fact.U * fact.L)
-    cone.scalmat_sqrt = fact.L * V * Diagonal(sqrt.(inv.(lambda)))
-    cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
-    cone.lambda = lambda
-
-    cone.scaling_updated = true
-    return cone.scaling_updated
 end
 
 # TODO parallelize
@@ -237,9 +239,6 @@ end
 function update_hess(cone::PosSemidefTri)
     @assert cone.grad_updated
     if cone.use_scaling
-        if !cone.scaling_updated
-            update_scaling(cone)
-        end
         _build_hess(cone.hess.data, cone.scalmat_sqrti' * cone.scalmat_sqrti, cone.rt2)
     else
         _build_hess(cone.hess.data, cone.inv_mat, cone.rt2)
@@ -251,9 +250,6 @@ end
 function update_inv_hess(cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
-        if !cone.scaling_updated
-            update_scaling(cone)
-        end
         _build_hess(cone.inv_hess.data, cone.scalmat_sqrt * cone.scalmat_sqrt', cone.rt2)
     else
         _build_hess(cone.inv_hess.data, cone.mat, cone.rt2)
@@ -290,9 +286,6 @@ end
 function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
-        if !cone.scaling_updated
-            update_scaling(cone)
-        end
         mul!(cone.work_mat3, cone.scalmat_sqrti', cone.scalmat_sqrti)
         herm_congruence_prod!(prod, arr, cone.work_mat3, cone)
     else
@@ -310,9 +303,6 @@ end
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
-        if !cone.scaling_updated
-            update_scaling(cone)
-        end
         mul!(cone.work_mat3, cone.scalmat_sqrt, cone.scalmat_sqrt')
         herm_congruence_prod!(prod, arr, cone.work_mat3, cone)
     else
@@ -322,29 +312,21 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
 end
 
 # TODO think about whether transpose oracle is needed
-function scalmat_prod!(prod::AbstractVecOrMat{R}, arr::AbstractVecOrMat, cone::PosSemidefTri) where {R <: Real}
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    gen_congruence_prod!(prod, arr, cone.scalmat_sqrt, cone)
+function scalmat_prod!(prod::AbstractVecOrMat{R}, arr::AbstractVecOrMat, cone::PosSemidefTri; trans::Bool = false) where {R <: Real}
+    outer_term = (trans ? cone.scalmat_sqrt' : cone.scalmat_sqrt)
+    gen_congruence_prod!(prod, arr, outer_term, cone)
     return prod
 end
 
 # TODO think about whether transpose oracle is needed in the future (it is now)
 function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri; trans::Bool = false)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
     outer_term = (trans ? cone.scalmat_sqrti' : cone.scalmat_sqrti)
     gen_congruence_prod!(prod, arr, outer_term, cone)
     return prod
 end
 
 function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    @. cone.work_mat = cone.lambda
+    @. cone.work_mat = cone.scaled_eigvals
     @. cone.work_mat += cone.work_mat'
     @. cone.work_mat = 2 / cone.work_mat
     svec_to_smat!(cone.work_mat2, arr, cone.rt2)
@@ -380,32 +362,21 @@ function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) 
 end
 
 function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
-    # TODO only need this for dual_fact, here and in other cones cones maybe break up update_scaling
     @assert cone.is_feas
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
     # TODO this could go in Cones.jl
-    primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
-    dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
+    if cone.try_scaled_updates
+        svec_to_smat!(cone.work_mat, cone.scaled_point, cone.rt2)
+        scaled_fact = cholesky(Hermitian(cone.work_mat, :U))
+        primal_dist = dist_to_bndry(cone, scaled_fact, s_sol)
+        dual_dist = dist_to_bndry(cone, scaled_fact, z_sol)
+    else
+        primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
+        dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
+    end
+
     step_dist = min(primal_dist, dual_dist)
     return step_dist
 end
-
-# # TODO refactor into Cones.jl
-# function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
-#     if !cone.scaling_updated
-#         update_scaling(cone)
-#     end
-#     tmp_s = scalmat_ldiv!(similar(s_sol), s_sol, cone, trans = true)
-#     tmp_z = scalmat_prod!(similar(z_sol), z_sol, cone)
-#     mehrotra_term = conic_prod!(similar(cone.point), tmp_s, tmp_z, cone)
-#
-#     C = scalvec_ldiv!(similar(cone.point), mehrotra_term, cone)
-#     scalmat_ldiv!(cone.correction, C, cone)
-#
-#     return cone.correction
-# end
 
 # from MOSEK paper
 # Pinv = inv(smat(point))
@@ -425,6 +396,57 @@ function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractV
     smat_to_svec!(cone.correction, Pinv_S_Z_symm, cone.rt2)
 
     return cone.correction
+end
+
+function update_scaling(cone::PosSemidefTri)
+    if cone.try_scaled_updates
+        svec_to_smat!(cone.mat, cone.point, cone.rt2)
+        svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
+        copyto!(cone.fact_mat, cone.mat)
+        copyto!(cone.dual_fact_mat, cone.dual_mat)
+        fact = cholesky!(Hermitian(cone.fact_mat, :U))
+        dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
+        (U, lambda, V) = svd(dual_fact.U * fact.L)
+        cone.scaled_point .= 0
+        k = 1
+        incr = (cone.is_complex ? 2 : 1)
+        @inbounds for i in 1:cone.side
+            cone.scaled_point[k] = lambda[i]
+            k += incr * i + 1
+        end
+        cone.scaled_eigvals .= lambda
+        cone.scalmat_sqrt = cone.scalmat_sqrt * fact.L * V * Diagonal(sqrt.(inv.(lambda)))
+        cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * inv(fact.L) * cone.scalmat_sqrti
+    else
+        fact = cone.fact
+        svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
+        copyto!(cone.dual_fact_mat, cone.dual_mat)
+        dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
+        @assert isposdef(cone.dual_fact)
+
+        # TODO preallocate
+        (U, lambda, V) = svd(dual_fact.U * fact.L)
+        cone.scalmat_sqrt = fact.L * V * Diagonal(sqrt.(inv.(lambda)))
+        cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
+        cone.scaled_eigvals = lambda
+    end
+    cone.scaling_updated = true
+    return cone.scaling_updated
+end
+
+# this is an oracle for now because we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific
+function step(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
+    # get the next s, z but in the old scaling
+    @. cone.point += step_size * s_sol
+    @. cone.dual_point += step_size * z_sol
+    return
+end
+
+# s_sol and z_sol are scaled by an old scaling
+function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
+    step(cone, s_sol, z_sol, step_size)
+    update_scaling(cone)
+    return
 end
 
 # TODO fix later, rt2::T doesn't work with tests using ForwardDiff

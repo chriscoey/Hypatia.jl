@@ -34,7 +34,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
-        try_scaled_updates::Bool = false,
+        try_scaled_updates::Bool = true,
         ) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
@@ -166,29 +166,6 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Non
     return prod
 end
 
-# multiplies arr by W, the squareroot of the scaling matrix
-function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    @. prod = arr * cone.scaling_point
-    return prod
-end
-
-# scaling is symmetric, trans kwarg ignored TODO factor as another function?
-function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative; trans::Bool = false)
-    @. prod = arr / cone.scaling_point
-    return prod
-end
-
-# divides arr by the scaled point
-# TODO think better about whether this oracle is needed
-function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    if cone.try_scaled_updates
-        @. div = arr / cone.scaled_point
-    else
-        @. div = arr / sqrt(cone.point * cone.dual_point)
-    end
-    return div
-end
-
 function dist_to_bndry(cone::Nonnegative{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
     dist = T(Inf)
     @inbounds for i in eachindex(point)
@@ -241,20 +218,24 @@ function update_scaling(cone::Nonnegative)
     return cone.scaling_updated
 end
 
-# this needs to be an oracle because we get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific
+# this is an oracle for now because we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific
 function step(cone::Nonnegative{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}, step_size::T) where {T}
     # get the next s, z but in the old scaling
-    if cone.try_scaled_updates
-        @. s_sol *= step_size
-        @. z_sol *= step_size
-        @. s_sol .+= one(T)
-        @. z_sol += one(T)
-        @. cone.point = s_sol / cone.scaled_point
-        @. cone.dual_point = z_sol / cone.scaled_point
-    else
+    # if cone.try_scaled_updates
+        # s_next = cone.point
+        # z_next = cone.dual_point
+        # copyto!(s_next, s_sol)
+        # copyto!(z_next, z_sol)
+        # @. s_next *= step_size
+        # @. z_next *= step_size
+        # @. s_next += one(T)
+        # @. z_next += one(T)
+        # @. s_next *= cone.scaled_point
+        # @. z_next *= cone.scaled_point
+    # else
         @. cone.point += step_size * s_sol
         @. cone.dual_point += step_size * z_sol
-    end
+    # end
     return
 end
 
@@ -270,3 +251,26 @@ inv_hess_nz_count(cone::Nonnegative, lower_only::Bool) = hess_nz_count(cone, low
 
 hess_nz_idxs_col(cone::Nonnegative, j::Int, ::Bool) = j:j
 inv_hess_nz_idxs_col(cone::Nonnegative, j::Int, lower_only::Bool) = hess_nz_idxs_col(cone, j, lower_only)
+
+# multiplies arr by W, the squareroot of the scaling matrix
+function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+    @. prod = arr * cone.scaling_point
+    return prod
+end
+
+# scaling is symmetric, trans kwarg ignored TODO factor as another function?
+function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative; trans::Bool = false)
+    @. prod = arr / cone.scaling_point
+    return prod
+end
+
+# divides arr by the scaled point
+# TODO think better about whether this oracle is needed
+function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+    if cone.try_scaled_updates
+        @. div = arr / cone.scaled_point
+    else
+        @. div = arr / sqrt(cone.point * cone.dual_point)
+    end
+    return div
+end
