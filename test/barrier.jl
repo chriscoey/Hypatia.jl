@@ -208,7 +208,7 @@ function test_barrier_scaling_oracles(
         @test max_step ≈ T(Inf) atol=tol rtol=tol
 
         # max step elsewhere
-        # primal dir and dual dir should be interpreted as though they are scaled, if working with scaled directions
+        # primal dir and dual dir are not scaled
         primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
         dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
 
@@ -217,12 +217,12 @@ function test_barrier_scaling_oracles(
         prev_dual = (cone.try_scaled_updates ? copy(cone.scaled_point) : copy(dual_point_unscaled))
         max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
         # check smaller step returns feasible iterates
-        primal_feas = load_reset_and_check(cone, prev_primal + T(0.99) * max_step * primal_dir)
-        dual_feas = load_reset_and_check(cone, prev_dual + T(0.99) * max_step * dual_dir)
+        primal_feas = load_reset_and_check(cone, point_unscaled + T(0.99) * max_step * primal_dir)
+        dual_feas = load_reset_and_check(cone, dual_point_unscaled + T(0.99) * max_step * dual_dir)
         @test primal_feas && dual_feas
         # check larger step returns infeasible iterates
-        primal_feas = load_reset_and_check(cone, prev_primal + T(1.01) * max_step * primal_dir)
-        dual_feas = load_reset_and_check(cone, prev_dual + T(1.01) * max_step * dual_dir)
+        primal_feas = load_reset_and_check(cone, point_unscaled + T(1.01) * max_step * primal_dir)
+        dual_feas = load_reset_and_check(cone, dual_point_unscaled + T(1.01) * max_step * dual_dir)
         @test !primal_feas || !dual_feas
 
         # undo reloading of scaled point

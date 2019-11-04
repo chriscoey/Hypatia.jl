@@ -92,8 +92,12 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
 
     # TODO not needed for cones with last point already loaded
     # if linear systems use scaled variables, none of this needs to happen. all data are updated at the end of the iteration in step_and_update_scaling
-    Cones.load_point.(solver.model.cones, point.primal_views)
-    Cones.load_dual_point.(solver.model.cones, point.dual_views)
+    for (k, cone_k) in enumerate(solver.model.cones)
+        if !cone_k.try_scaled_updates
+            Cones.load_point(cone_k, point.primal_views[k])
+            Cones.load_dual_point(cone_k, point.dual_views[k])
+        end
+    end
     Cones.reset_data.(solver.model.cones)
     Cones.is_feas.(solver.model.cones)
     Cones.grad.(solver.model.cones)
@@ -112,20 +116,12 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     gamma = (1 - aff_alpha) * min(abs2(1 - aff_alpha), T(0.25)) # from MOSEK paper
     solver.prev_gamma = stepper.gamma = gamma
 
-    # TODO needed?
-    # doesn't seem to be needed
-    Cones.load_point.(solver.model.cones, point.primal_views)
-    Cones.load_dual_point.(solver.model.cones, point.dual_views)
-    Cones.reset_data.(solver.model.cones)
-    Cones.is_feas.(solver.model.cones)
-    Cones.grad.(solver.model.cones)
-
     # calculate combined directions
     stepper.in_affine_phase = false
     @timeit solver.timer "comb_dir" get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
-    solver.prev_alpha = alpha = 0.99 * find_max_alpha(stepper, solver) # TODO make the constant an option, depends on eps(T)?
+    solver.prev_alpha = alpha = T(0.99) * find_max_alpha(stepper, solver) # TODO make the constant an option, depends on eps(T)?
     if iszero(alpha)
         @warn("numerical failure: could not step in combined direction; terminating")
         solver.status = :NumericalFailure
@@ -138,15 +134,9 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
 
-    # TODO call step(cone_k) for each cone
-    # if cone_k.try_scaled_updates
-        # update  point.s and point.z by unscaling the scaled point in each cone
-        # Cones.scalmat_prod!(point.s, cone_k.scaled_point, cone_k)
-        # Cones.scalmat_ldiv!(point.z, cone_k.scaled_point, cone_k)
-    # else
-        # copyto!(point.s, cone_k.point)
-        # copyto!(point.z, cone_k.dual_point)
-    # end
+    for (k, cone_k) in enumerate(solver.model.cones)
+        Cones.step_and_update_scaling(cone_k, alpha)
+    end
 
     @. point.z += alpha * stepper.z_dir
     @. point.s += alpha * stepper.s_dir
