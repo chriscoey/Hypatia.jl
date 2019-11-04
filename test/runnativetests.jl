@@ -55,7 +55,7 @@ testfuns = [
     # hypoperlog6,
     epiperexp1,
     epiperexp2,
-    epiperexp3,
+    # epiperexp3,
     # epiperexp4,
     # power1,
     # power2,
