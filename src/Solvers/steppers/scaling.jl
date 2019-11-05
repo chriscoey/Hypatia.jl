@@ -121,6 +121,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit solver.timer "comb_dir" get_directions(stepper, solver)
 
     # find distance alpha for stepping in combined direction
+    @show solver.model.cones[1].point
     solver.prev_alpha = alpha = T(0.99) * find_max_alpha(stepper, solver) # TODO make the constant an option, depends on eps(T)?
     if iszero(alpha)
         @warn("numerical failure: could not step in combined direction; terminating")
@@ -134,6 +135,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
 
+    @show solver.model.cones[1].point
     for (k, cone_k) in enumerate(solver.model.cones)
         Cones.step_and_update_scaling(cone_k, alpha)
     end
@@ -294,35 +296,34 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     # use iterative refinement - note apply_LHS is different for affine vs combined phases
     iter_ref_steps = (stepper.in_affine_phase ? 1 : 3) # TODO handle, maybe change dynamically, try fewer for affine phase
 
-    copyto!(dir_temp, dir)
-    res = apply_LHS(stepper, solver) # modifies res
-    res .-= rhs
-    norm_inf = norm(res, Inf)
-    norm_2 = norm(res, 2)
-    @show norm_inf, norm_2
-    for i in 1:iter_ref_steps
-        if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
-            break
-        end
-        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, res)
-        axpby!(true, dir_temp, -1, dir)
-        res = apply_LHS(stepper, solver) # modifies res
-        res .-= rhs
-
-        norm_inf_new = norm(res, Inf)
-        norm_2_new = norm(res, 2)
-        if norm_inf_new > norm_inf || norm_2_new > norm_2
-            # residual has not improved
-            copyto!(dir, dir_temp)
-            break
-        end
-
-        # residual has improved, so use the iterative refinement
-        solver.verbose && @printf("iter ref round %d norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", i, norm_inf, norm_inf_new, norm_2, norm_2_new)
-        copyto!(dir_temp, dir)
-        norm_inf = norm_inf_new
-        norm_2 = norm_2_new
-    end
+    # copyto!(dir_temp, dir)
+    # res = apply_LHS(stepper, solver) # modifies res
+    # res .-= rhs
+    # norm_inf = norm(res, Inf)
+    # norm_2 = norm(res, 2)
+    # for i in 1:iter_ref_steps
+    #     if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
+    #         break
+    #     end
+    #     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, res)
+    #     axpby!(true, dir_temp, -1, dir)
+    #     res = apply_LHS(stepper, solver) # modifies res
+    #     res .-= rhs
+    #
+    #     norm_inf_new = norm(res, Inf)
+    #     norm_2_new = norm(res, 2)
+    #     if norm_inf_new > norm_inf || norm_2_new > norm_2
+    #         # residual has not improved
+    #         copyto!(dir, dir_temp)
+    #         break
+    #     end
+    #
+    #     # residual has improved, so use the iterative refinement
+    #     solver.verbose && @printf("iter ref round %d norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", i, norm_inf, norm_inf_new, norm_2, norm_2_new)
+    #     copyto!(dir_temp, dir)
+    #     norm_inf = norm_inf_new
+    #     norm_2 = norm_2_new
+    # end
 
     return dir
 end
@@ -363,7 +364,8 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
 
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
             if Cones.use_3order_corr(cone_k)
-                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
+                # TODO bring this back, still deciding what to do in the oracle if using scaled updates
+                # stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
             end
         end
 
@@ -411,14 +413,14 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
             zs_k = stepper.z_dir_k[k]
         end
         s_res_k = stepper.s_res_k[k]
+        Cones.hess_prod!(s_res_k, Hzs_k, cone_k)
+        if !Cones.use_scaling(cone_k)
+            lmul!(solver.mu, s_res_k)
+        end
 
-        # Cones.hess_prod!(s_res_k, Hzs_k, cone_k)
-        # if !Cones.use_scaling(cone_k)
-        #     lmul!(solver.mu, s_res_k)
-        # end
-
-        scalH = Cones.scal_hess(cone_k, solver.mu)
-        mul!(s_res_k, scalH, Hzs_k)
+        # # TODO inefficient to recompute - make it a cone field
+        # scalH = Cones.scal_hess(cone_k, solver.mu)
+        # mul!(s_res_k, scalH, Hzs_k)
 
         @. s_res_k += zs_k
     end

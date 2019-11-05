@@ -149,10 +149,10 @@ function test_barrier_scaling_oracles(
         CO.load_dual_point(cone, dual_point_unscaled)
         CO.reset_data(cone)
         # take a step from the initial point
-        s_step = rand(T, dim) .- inv(T(2))
-        z_step = rand(T, dim) .- inv(T(2))
+        cone.s_dir = rand(T, dim) .- inv(T(2))
+        cone.z_dir = rand(T, dim) .- inv(T(2))
         # everything is in the old scaling (first time around this is the identity)
-        CO.step(cone, s_step, z_step, T(noise))
+        CO.step(cone, T(noise))
         CO.is_feas(cone)
 
         # keep track of unscaled primal and dual points
