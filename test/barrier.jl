@@ -124,6 +124,132 @@ function test_barrier_oracles(
 end
 
 # TODO cleanup, cover all scaling oracles, comment in some places
+# function test_barrier_scaling_oracles(
+#     cone::CO.Cone{T},
+#     barrier::Function;
+#     noise::Real = 0.2,
+#     tol::Real = 100eps(T),
+#     ) where {T <: Real}
+#     Random.seed!(1)
+#     @test CO.use_scaling(cone)
+#     CO.setup_data(cone)
+#     CO.reset_data(cone)
+#     dim = CO.dimension(cone)
+#
+#     point_unscaled = Vector{T}(undef, dim)
+#     dual_point = similar(point_unscaled)
+#     point_unscaled = similar(point_unscaled)
+#     dual_point_unscaled = similar(point_unscaled)
+#     CO.set_initial_point(point_unscaled, cone)
+#     CO.set_initial_point(dual_point_unscaled, cone)
+#
+#     # run twice, first time around scaling will be the identity
+#     for _ in 1:2
+#         CO.load_point(cone, point_unscaled)
+#         CO.load_dual_point(cone, dual_point_unscaled)
+#         CO.reset_data(cone)
+#         # take a step from the initial point
+#         cone.s_dir = rand(T, dim) .- inv(T(2))
+#         cone.z_dir = rand(T, dim) .- inv(T(2))
+#         # everything is in the old scaling (first time around this is the identity)
+#         CO.step(cone, T(noise))
+#         CO.is_feas(cone)
+#
+#         # keep track of unscaled primal and dual points
+#         if cone.try_scaled_updates
+#             CO.scalmat_prod!(point_unscaled, cone.point, cone, trans = true)
+#             CO.scalmat_ldiv!(dual_point_unscaled, cone.dual_point, cone, trans = false)
+#         else
+#             point_unscaled .= cone.point
+#             dual_point_unscaled .= cone.dual_point
+#         end
+#         # cone.point and cone.dual_point become scaled
+#         CO.update_scaling(cone)
+#
+#         CO.is_feas(cone)
+#         grad = CO.grad(cone)
+#         # hess and inv_hess oracles, not the same as for non-scaling tests
+#         hess = CO.hess(cone)
+#         @test hess * point_unscaled ≈ dual_point_unscaled atol=tol rtol=tol
+#         inv_hess = CO.inv_hess(cone)
+#         @test inv_hess * dual_point_unscaled ≈ point_unscaled atol=tol rtol=tol
+#         @test hess * inv_hess ≈ I atol=tol rtol=tol
+#         # hess and inv_hes product oracles
+#         prod_mat = similar(cone.point, dim, dim)
+#         @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
+#         @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
+#
+#         # multiplication and division by scaling matrix W
+#         λ = CO.scalmat_prod!(similar(cone.point), dual_point_unscaled, cone)
+#         W = CO.scalmat_prod!(similar(cone.point, dim, dim), Matrix{T}(I, dim, dim), cone)
+#         @test W' * λ ≈ point_unscaled atol=tol rtol=tol
+#         prod = similar(cone.point)
+#         @test CO.scalmat_ldiv!(prod, point_unscaled, cone, trans = true) ≈ λ atol=tol rtol=tol
+#         @test CO.scalmat_ldiv!(prod_mat, W, cone, trans = false) ≈ I atol=tol rtol=tol
+#
+#         # additional sanity checks
+#         @test W' * W ≈ inv_hess atol=tol rtol=tol
+#         WWz = CO.inv_hess_prod!(prod, dual_point_unscaled, cone)
+#         Wλ = CO.scalmat_prod!(prod, λ, cone)
+#         @test WWz ≈ Wλ atol=tol rtol=tol
+#
+#         # conic product oracle and conic division by the scaled point λ
+#         e1 = CO.set_initial_point(zeros(T, dim), cone)
+#         λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
+#         @test CO.conic_prod!(similar(e1), λinv, λ, cone) ≈ e1 atol=tol rtol=tol
+#
+#         # e1 = λ \circ W * -grad tested in different ways
+#         @test e1 ≈ CO.conic_prod!(prod, λ, -W * grad, cone) atol=tol rtol=tol
+#         @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
+#         @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone, trans = false) atol=tol rtol=tol
+#
+#         # max step in a recession direction
+#         max_step = CO.step_max_dist(cone, e1, e1)
+#         @test max_step ≈ T(Inf) atol=tol rtol=tol
+#
+#         # max step elsewhere
+#         # primal dir and dual dir are not scaled
+#         primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
+#         dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
+#
+#         # max step tests for these new directions
+#         prev_primal = (cone.try_scaled_updates ? copy(cone.scaled_point) : copy(point_unscaled))
+#         prev_dual = (cone.try_scaled_updates ? copy(cone.scaled_point) : copy(dual_point_unscaled))
+#         max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
+#         # check smaller step returns feasible iterates
+#         primal_feas = load_reset_check(cone, point_unscaled + T(0.99) * max_step * primal_dir)
+#         dual_feas = load_reset_check(cone, dual_point_unscaled + T(0.99) * max_step * dual_dir)
+#         @test primal_feas && dual_feas
+#         # check larger step returns infeasible iterates
+#         primal_feas = load_reset_check(cone, point_unscaled + T(1.01) * max_step * primal_dir)
+#         dual_feas = load_reset_check(cone, dual_point_unscaled + T(1.01) * max_step * dual_dir)
+#         @test !primal_feas || !dual_feas
+#
+#         # undo reloading of scaled point
+#         CO.load_scaled_point(cone, prev_primal)
+#
+#         # λ \circ W * correction = actual Mehrotra term
+#         # mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
+#         # correction = CO.correction(cone, primal_dir, dual_dir)
+#         # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
+#         # @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ mehrotra_term atol=tol rtol=tol
+#
+#     end
+#
+#
+#     # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
+#     # check_feas(x) = (isfinite(barrier(x)) ? true : false)
+#     # @test load_reset_check(cone, prev_primal)
+#     # grad = CO.grad(cone)
+#     # @test -CO.conjugate_gradient(barrier, check_feas, -grad) ≈ cone.point atol=tol rtol=tol
+#     # conj_grad = CO.conjugate_gradient(barrier, check_feas, cone.dual_point)
+#     # @test load_reset_check(cone, -conj_grad)
+#     # grad = CO.grad(cone)
+#     # @test -grad ≈ cone.dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+#
+#     return
+# end
+
 function test_barrier_scaling_oracles(
     cone::CO.Cone{T},
     barrier::Function;
@@ -133,129 +259,57 @@ function test_barrier_scaling_oracles(
     Random.seed!(1)
     @test CO.use_scaling(cone)
     CO.setup_data(cone)
-    CO.reset_data(cone)
     dim = CO.dimension(cone)
 
-    point_unscaled = Vector{T}(undef, dim)
-    dual_point = similar(point_unscaled)
-    point_unscaled = similar(point_unscaled)
-    dual_point_unscaled = similar(point_unscaled)
-    CO.set_initial_point(point_unscaled, cone)
-    CO.set_initial_point(dual_point_unscaled, cone)
-
-    # run twice, first time around scaling will be the identity
-    for _ in 1:2
-        CO.load_point(cone, point_unscaled)
-        CO.load_dual_point(cone, dual_point_unscaled)
-        CO.reset_data(cone)
-        # take a step from the initial point
-        cone.s_dir = rand(T, dim) .- inv(T(2))
-        cone.z_dir = rand(T, dim) .- inv(T(2))
-        # everything is in the old scaling (first time around this is the identity)
-        CO.step(cone, T(noise))
-        CO.is_feas(cone)
-
-        # keep track of unscaled primal and dual points
-        if cone.try_scaled_updates
-            CO.scalmat_prod!(point_unscaled, cone.point, cone, trans = true)
-            CO.scalmat_ldiv!(dual_point_unscaled, cone.dual_point, cone, trans = false)
-        else
-            point_unscaled .= cone.point
-            dual_point_unscaled .= cone.dual_point
-        end
-        # cone.point and cone.dual_point become scaled
-        CO.update_scaling(cone)
-
-        CO.is_feas(cone)
-        grad = CO.grad(cone)
-        # hess and inv_hess oracles, not the same as for non-scaling tests
-        hess = CO.hess(cone)
-        @test hess * point_unscaled ≈ dual_point_unscaled atol=tol rtol=tol
-        inv_hess = CO.inv_hess(cone)
-        @test inv_hess * dual_point_unscaled ≈ point_unscaled atol=tol rtol=tol
-        @test hess * inv_hess ≈ I atol=tol rtol=tol
-        # hess and inv_hes product oracles
-        prod_mat = similar(cone.point, dim, dim)
-        @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
-        @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
-
-        # multiplication and division by scaling matrix W
-        λ = CO.scalmat_prod!(similar(cone.point), dual_point_unscaled, cone)
-        W = CO.scalmat_prod!(similar(cone.point, dim, dim), Matrix{T}(I, dim, dim), cone)
-        @test W' * λ ≈ point_unscaled atol=tol rtol=tol
-        prod = similar(cone.point)
-        @test CO.scalmat_ldiv!(prod, point_unscaled, cone, trans = true) ≈ λ atol=tol rtol=tol
-        @test CO.scalmat_ldiv!(prod_mat, W, cone, trans = false) ≈ I atol=tol rtol=tol
-
-        # additional sanity checks
-        @test W' * W ≈ inv_hess atol=tol rtol=tol
-        WWz = CO.inv_hess_prod!(prod, dual_point_unscaled, cone)
-        Wλ = CO.scalmat_prod!(prod, λ, cone)
-        @test WWz ≈ Wλ atol=tol rtol=tol
-
-        # conic product oracle and conic division by the scaled point λ
-        e1 = CO.set_initial_point(zeros(T, dim), cone)
-        λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
-        @test CO.conic_prod!(similar(e1), λinv, λ, cone) ≈ e1 atol=tol rtol=tol
-
-        # e1 = λ \circ W * -grad tested in different ways
-        @test e1 ≈ CO.conic_prod!(prod, λ, -W * grad, cone) atol=tol rtol=tol
-        @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
-        @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone, trans = false) atol=tol rtol=tol
-
-        # max step in a recession direction
-        max_step = CO.step_max_dist(cone, e1, e1)
-        @test max_step ≈ T(Inf) atol=tol rtol=tol
-
-        # max step elsewhere
-        # primal dir and dual dir are not scaled
-        primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-        dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-
-        # max step tests for these new directions
-        prev_primal = (cone.try_scaled_updates ? copy(cone.scaled_point) : copy(point_unscaled))
-        prev_dual = (cone.try_scaled_updates ? copy(cone.scaled_point) : copy(dual_point_unscaled))
-        max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
-        # check smaller step returns feasible iterates
-        primal_feas = load_reset_and_check(cone, point_unscaled + T(0.99) * max_step * primal_dir)
-        dual_feas = load_reset_and_check(cone, dual_point_unscaled + T(0.99) * max_step * dual_dir)
-        @test primal_feas && dual_feas
-        # check larger step returns infeasible iterates
-        primal_feas = load_reset_and_check(cone, point_unscaled + T(1.01) * max_step * primal_dir)
-        dual_feas = load_reset_and_check(cone, dual_point_unscaled + T(1.01) * max_step * dual_dir)
-        @test !primal_feas || !dual_feas
-
-        # undo reloading of scaled point
-        CO.load_scaled_point(cone, prev_primal)
-
-        # λ \circ W * correction = actual Mehrotra term
-        # mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
-        # correction = CO.correction(cone, primal_dir, dual_dir)
-        # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
-        # @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ mehrotra_term atol=tol rtol=tol
-
+    point = Vector{T}(undef, dim)
+    dual_point = similar(point)
+    CO.set_initial_point(point, cone)
+    CO.set_initial_point(dual_point, cone)
+    if !iszero(noise)
+        point += T(noise) * (rand(T, dim) .- inv(T(2)))
+        dual_point += T(noise) * (rand(T, dim) .- inv(T(2)))
     end
+    CO.load_point(cone, point)
+    CO.load_dual_point(cone, dual_point)
+    CO.reset_data(cone)
+    CO.is_feas(cone)
+    CO.compute_scaling(cone)
 
+    # hess and inv_hess oracles, not the same as for non-scaling tests
+    hess = CO.hess(cone)
+    @test hess * point ≈ dual_point atol=tol rtol=tol
+    inv_hess = CO.inv_hess(cone)
+    @test inv_hess * dual_point ≈ point atol=tol rtol=tol
+    @test hess * inv_hess ≈ I atol=tol rtol=tol
+    # hess and inv_hes product oracles
+    prod_mat = similar(cone.point, dim, dim)
+    @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
+    @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
-    # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
-    # check_feas(x) = (isfinite(barrier(x)) ? true : false)
-    # @test load_reset_and_check(cone, prev_primal)
-    # grad = CO.grad(cone)
-    # @test -CO.conjugate_gradient(barrier, check_feas, -grad) ≈ cone.point atol=tol rtol=tol
-    # conj_grad = CO.conjugate_gradient(barrier, check_feas, cone.dual_point)
-    # @test load_reset_and_check(cone, -conj_grad)
-    # grad = CO.grad(cone)
-    # @test -grad ≈ cone.dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+    # max step in a recession direction
+    e1 = CO.set_initial_point(zeros(T, dim), cone)
+    max_step = CO.step_max_dist(cone, e1, e1)
+    @test max_step ≈ T(Inf) atol=tol rtol=tol
+
+    # max step elsewhere
+    primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
+    dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
+    # max step tests for these new directions
+    max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
+    # check smaller step returns feasible iterates
+    primal_feas = load_reset_check(cone, point + T(0.99) * max_step * primal_dir)
+    dual_feas = load_reset_check(cone, dual_point + T(0.99) * max_step * dual_dir)
+    @test primal_feas && dual_feas
+    # check larger step returns infeasible iterates
+    primal_feas = load_reset_check(cone, point + T(1.01) * max_step * primal_dir)
+    dual_feas = load_reset_check(cone, dual_point + T(1.01) * max_step * dual_dir)
+    @test !primal_feas || !dual_feas
 
     return
 end
 
-function load_reset_and_check(cone, point)
-    if cone.try_scaled_updates
-        CO.load_scaled_point(cone, point)
-    else
-        CO.load_point(cone, point)
-    end
+function load_reset_check(cone, point)
+    CO.load_point(cone, point)
     CO.reset_data(cone)
     return CO.is_feas(cone)
 end

@@ -33,9 +33,9 @@ testfuns_preproc = [
 testfuns_reduce = vcat(testfuns_no_preproc, testfuns_preproc)
 
 testfuns = [
-    # nonnegative1,
-    # nonnegative2,
-    # nonnegative3,
+    nonnegative1,
+    nonnegative2,
+    nonnegative3,
     # epinorminf1,
     # epinorminf2,
     # epinorminf3,
@@ -68,6 +68,9 @@ testfuns = [
     possemideftri1,
     possemideftri2,
     possemideftricomplex1,
+    # possemideftri3,
+    # possemideftri4,
+    # possemideftri5,
     # hypoperlogdettri1,
     # hypoperlogdettri2,
     # hypoperlogdettri3,
@@ -90,7 +93,37 @@ blas_reals = [
     # Float32,
     ]
 
-options = (verbose = true,)
+tol = 1e-11
+options = (verbose = true, tol_rel_opt = tol, tol_abs_opt = tol, tol_feas = tol)
+
+
+
+T = Float64
+# d = polyminreal(T, :heart, 2, use_wsos = false, use_primal = false)
+# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+# @test r.status == :Optimal
+#
+# d = polyminreal(T, :schwefel, 2, use_wsos = false, use_primal = false)
+# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+# @test r.status == :Optimal
+#
+# d = polyminreal(T, :magnetism7_ball, 2, use_wsos = false, use_primal = false)
+# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+# @test r.status == :Optimal
+
+# something weird going on, answers inconsistent
+# d = polyminreal(T, :motzkin_ellipsoid, 2, use_wsos = false, use_primal = false)
+# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+# @test r.status == :Optimal
+
+# d = polyminreal(T, :caprasse, 2, use_wsos = false, use_primal = false)
+# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+# @test r.status == :Optimal
+#
+# d = polyminreal(T, :goldsteinprice, 2, use_wsos = false, use_primal = false)
+# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
+# @test r.status == :Optimal
+
 
 @info("starting native tests")
 @testset "native tests" begin
