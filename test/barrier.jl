@@ -1,5 +1,8 @@
 #=
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
+
+TODO
+- add optional heuristic tests for log-homogeneity and self-concordancy of barrier function
 =#
 
 using Test

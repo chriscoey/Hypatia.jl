@@ -417,6 +417,7 @@ function epiperexp4(T; options...)
     G = SparseMatrixCSC(-one(T) * I, 3, 3)
     h = zeros(T, 3)
     cones = CO.Cone{T}[CO.EpiPerExp3{T}(true)]
+    @warn "not sure if use_dual should work for EpiPerExp3 now"
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
