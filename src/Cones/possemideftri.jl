@@ -142,8 +142,7 @@ end
 
 function update_feas(cone::PosSemidefTri)
     @assert !cone.feas_updated
-    point = (cone.try_scaled_updates ? cone.new_scal_point : cone.point)
-    svec_to_smat!(cone.mat, point, cone.rt2)
+    svec_to_smat!(cone.mat, cone.point, cone.rt2)
     copyto!(cone.fact_mat, cone.mat)
     cone.fact = cholesky!(Hermitian(cone.fact_mat, :U), check = false)
     cone.is_feas = isposdef(cone.fact)
