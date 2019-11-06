@@ -214,11 +214,6 @@ function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVec
     return cone.correction
 end
 
-function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::Nonnegative)
-    @. w = u * v
-    return w
-end
-
 function update_scaling(cone::Nonnegative)
     if cone.try_scaled_updates
         @. cone.scaling_point *= sqrt(cone.point) / sqrt(cone.dual_point)
@@ -265,26 +260,3 @@ inv_hess_nz_count(cone::Nonnegative, lower_only::Bool) = hess_nz_count(cone, low
 
 hess_nz_idxs_col(cone::Nonnegative, j::Int, ::Bool) = j:j
 inv_hess_nz_idxs_col(cone::Nonnegative, j::Int, lower_only::Bool) = hess_nz_idxs_col(cone, j, lower_only)
-
-# multiplies arr by W, the squareroot of the scaling matrix
-function scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative; trans::Bool = true)
-    @. prod = arr * cone.scaling_point
-    return prod
-end
-
-# scaling is symmetric, trans kwarg ignored TODO factor as another function?
-function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative; trans::Bool = false)
-    @. prod = arr / cone.scaling_point
-    return prod
-end
-
-# divides arr by the scaled point
-# TODO think better about whether this oracle is needed
-function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    if cone.try_scaled_updates
-        @. div = arr / cone.scaled_point
-    else
-        @. div = arr / sqrt(cone.point * cone.dual_point)
-    end
-    return div
-end

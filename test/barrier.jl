@@ -179,31 +179,8 @@ function test_barrier_scaling_oracles(
         @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
         @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
-        # multiplication and division by scaling matrix W
-        λ = CO.scalmat_prod!(similar(cone.point), dual_point_unscaled, cone)
-        W = CO.scalmat_prod!(similar(cone.point, dim, dim), Matrix{T}(I, dim, dim), cone)
-        @test W' * λ ≈ point_unscaled atol=tol rtol=tol
-        prod = similar(cone.point)
-        @test CO.scalmat_ldiv!(prod, point_unscaled, cone, trans = true) ≈ λ atol=tol rtol=tol
-        @test CO.scalmat_ldiv!(prod_mat, W, cone, trans = false) ≈ I atol=tol rtol=tol
-
-        # additional sanity checks
-        @test W' * W ≈ inv_hess atol=tol rtol=tol
-        WWz = CO.inv_hess_prod!(prod, dual_point_unscaled, cone)
-        Wλ = CO.scalmat_prod!(prod, λ, cone)
-        @test WWz ≈ Wλ atol=tol rtol=tol
-
-        # conic product oracle and conic division by the scaled point λ
-        e1 = CO.set_initial_point(zeros(T, dim), cone)
-        λinv = CO.scalvec_ldiv!(similar(e1), e1, cone)
-        @test CO.conic_prod!(similar(e1), λinv, λ, cone) ≈ e1 atol=tol rtol=tol
-
-        # e1 = λ \circ W * -grad tested in different ways
-        @test e1 ≈ CO.conic_prod!(prod, λ, -W * grad, cone) atol=tol rtol=tol
-        @test -grad ≈ W \ CO.scalvec_ldiv!(prod, e1, cone) atol=tol rtol=tol
-        @test -grad ≈ CO.scalmat_ldiv!(similar(e1), CO.scalvec_ldiv!(prod, e1, cone), cone, trans = false) atol=tol rtol=tol
-
         # max step in a recession direction
+        e1 = CO.set_initial_point(zeros(T, dim), cone)
         max_step = CO.step_max_dist(cone, e1, e1)
         @test max_step ≈ T(Inf) atol=tol rtol=tol
 
@@ -227,13 +204,6 @@ function test_barrier_scaling_oracles(
 
         # undo reloading of scaled point
         CO.load_scaled_point(cone, prev_primal)
-
-        # λ \circ W * correction = actual Mehrotra term
-        # mehrotra_term = CO.conic_prod!(similar(prod), W' \ primal_dir, W * dual_dir, cone)
-        # correction = CO.correction(cone, primal_dir, dual_dir)
-        # @test correction ≈ W \ CO.scalvec_ldiv!(similar(prod), mehrotra_term, cone)
-        # @test CO.conic_prod!(similar(e1), λ, W * correction, cone) ≈ mehrotra_term atol=tol rtol=tol
-
     end
 
 
