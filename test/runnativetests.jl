@@ -81,48 +81,16 @@ testfuns = [
 
 generic_reals = [
     Float64,
-    # Float32,
-    # BigFloat,
+    Float32,
+    BigFloat,
     ]
 
 blas_reals = [
     Float64,
-    # Float32,
+    Float32,
     ]
 
-
-# TODO delete unused code
-# tol = 1e-11
-# options = (verbose = true, tol_rel_opt = tol, tol_abs_opt = tol, tol_feas = tol)
-
-# T = Float64
-# d = polyminreal(T, :heart, 2, use_wsos = false, use_primal = false)
-# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-# @test r.status == :Optimal
-#
-# d = polyminreal(T, :schwefel, 2, use_wsos = false, use_primal = false)
-# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-# @test r.status == :Optimal
-#
-# d = polyminreal(T, :magnetism7_ball, 2, use_wsos = false, use_primal = false)
-# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-# @test r.status == :Optimal
-
-# something weird going on, answers inconsistent
-# d = polyminreal(T, :motzkin_ellipsoid, 2, use_wsos = false, use_primal = false)
-# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-# @test r.status == :Optimal
-
-# d = polyminreal(T, :caprasse, 2, use_wsos = false, use_primal = false)
-# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-# @test r.status == :Optimal
-#
-# d = polyminreal(T, :goldsteinprice, 2, use_wsos = false, use_primal = false)
-# r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-# @test r.status == :Optimal
-
-
-options = (verbose = true,)
+options = (verbose = false,)
 
 @info("starting native tests")
 @testset "native tests" begin
@@ -156,25 +124,25 @@ options = (verbose = true,)
     @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
         t(T, solver = SO.Solver{T}(system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
     end
-    # @testset "NaiveSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
-    # end
-    # @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
-    # end
-    # @testset "NaiveElimSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
-    # end
-    # @testset "SymIndefDense tests: $t, $T" for t in testfuns, T in generic_reals
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefDenseSystemSolver{T}(); options...))
-    # end
-    # @testset "SymIndefSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
-    # end
-    # @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache,]#, Hypatia.DensePosDefCache]
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
-    # end
+    @testset "NaiveSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
+    end
+    @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
+    end
+    @testset "NaiveElimSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
+    end
+    @testset "SymIndefDense tests: $t, $T" for t in testfuns, T in generic_reals
+        t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefDenseSystemSolver{T}(); options...))
+    end
+    @testset "SymIndefSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
+    end
+    @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache,]#, Hypatia.DensePosDefCache]
+        t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
+    end
 end
