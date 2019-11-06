@@ -331,27 +331,6 @@ function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosS
     return prod
 end
 
-function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
-    @. cone.work_mat = cone.scaled_eigvals
-    @. cone.work_mat += cone.work_mat'
-    @. cone.work_mat = 2 / cone.work_mat
-    svec_to_smat!(cone.work_mat2, arr, cone.rt2)
-    # only upper triangle of cone.work_mat is updated, but that is enough (wrapping in UpperTriangular is slower)
-    @. cone.work_mat3 = cone.work_mat * cone.work_mat2
-    smat_to_svec!(div, cone.work_mat3, cone.rt2)
-    return div
-end
-
-function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::PosSemidefTri)
-    U = Hermitian(svec_to_smat!(cone.work_mat, u, cone.rt2), :U)
-    V = Hermitian(svec_to_smat!(cone.work_mat2, v, cone.rt2), :U)
-    W = cone.work_mat3
-    mul!(W, U, V)
-    @. W = (W + W') / 2
-    smat_to_svec!(w, W, cone.rt2)
-    return w
-end
-
 function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
     svec_to_smat!(cone.work_mat2, dir, cone.rt2)
     mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.U))
@@ -408,6 +387,7 @@ function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractV
     # TODO compare the following numerically
     # Pinv_S_Z = mul!(cone.work_mat3, ldiv!(cone.fact, S), Z)
     # Pinv_S_Z = ldiv!(cone.fact, mul!(cone.work_mat3, S, Z))
+    # TODO reuse factorization if useful
     fact = cholesky(Hermitian(svec_to_smat!(cone.work_mat3, primal_point, cone.rt2), :U))
     Pinv_S_Z = mul!(cone.work_mat3, ldiv!(fact, S), Z)
 
