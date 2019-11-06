@@ -92,6 +92,8 @@ use_3order_corr(cone::PosSemidefTri) = cone.use_3order_corr
 
 try_scaled_updates(cone::PosSemidefTri) = cone.try_scaled_updates # TODO
 
+load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
+
 load_scaled_point(cone::PosSemidefTri, point::AbstractVector) = copyto!(cone.new_scal_point, point)
 
 reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
