@@ -178,8 +178,6 @@ function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVec
     return cone.correction
 end
 
-step_and_update_scaling(::Nonnegative{T}, ::AbstractVector{T}, ::AbstractVector{T}, ::T) where {T} = nothing
-
 hess_nz_count(cone::Nonnegative, ::Bool) = cone.dim
 inv_hess_nz_count(cone::Nonnegative, lower_only::Bool) = hess_nz_count(cone, lower_only)
 

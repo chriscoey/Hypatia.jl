@@ -52,8 +52,8 @@ is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
-scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
 # fallbacks
+step_and_update_scaling(::Cone{T}, ::AbstractVector{T}, ::AbstractVector{T}, ::T) where {T} = nothing
 
 # number of nonzeros in the Hessian and inverse
 function hess_nz_count(cone::Cone, lower_only::Bool)
@@ -233,6 +233,8 @@ function vec_to_mat_U!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVector{T}) 
 end
 
 # TODO apply scaling updates per MOSEK and Tuncel papers
+# scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
+#
 # import Optim
 # import ForwardDiff
 #

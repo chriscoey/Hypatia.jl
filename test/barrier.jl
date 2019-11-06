@@ -37,29 +37,16 @@ function test_barrier_oracles(
 
     # tests for perturbed point
     perturb_scale(point, noise, scale)
-    @test load_reset_check(cone, point)
+    test_grad_hess(cone, point, tol = tol)
 
+    # check gradient and Hessian agree with ForwardDiff
     grad = CO.grad(cone)
-    nu = CO.get_nu(cone)
-    @test dot(point, grad) ≈ -nu atol=tol rtol=tol
     hess = CO.hess(cone)
-    @test hess * point ≈ -grad atol=tol rtol=tol
-    inv_hess = CO.inv_hess(cone)
-    @test hess * inv_hess ≈ I atol=tol rtol=tol
-
-    prod = similar(point)
-    @test CO.hess_prod!(prod, point, cone) ≈ -grad atol=tol rtol=tol
-    @test CO.inv_hess_prod!(prod, grad, cone) ≈ -point atol=tol rtol=tol
-    prod_mat = similar(point, dim, dim)
-    @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
-    @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
-
-    # compare to ForwardDiff
-    # check gradient and Hessian agree
     @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
     @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
+
+    # check 3rd order corrector agrees with ForwardDiff
     if CO.use_3order_corr(cone)
-        # check 3rd order corrector agrees
         FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
         # check log-homog property that F'''(point)[point] = -2F''(point)
         @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
@@ -69,6 +56,30 @@ function test_barrier_oracles(
         FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
         @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
     end
+
+    # TODO add alpha oracles for all cones
+
+    # # max step in a recession direction
+    # e1 = CO.set_initial_point(zeros(T, dim), cone)
+    # max_step = CO.step_max_dist(cone, e1, e1)
+    # @test max_step ≈ T(Inf) atol=tol rtol=tol
+    #
+    # # max step elsewhere
+    # # primal dir and dual dir are not scaled
+    # primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
+    # dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
+    #
+    # # max step tests for these new directions
+    # prev_primal = copy(cone.point)
+    # max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
+    # # check smaller step returns feasible iterates
+    # primal_feas = load_reset_check(cone, cone.point + T(0.99) * max_step * primal_dir)
+    # dual_feas = load_reset_check(cone, cone.dual_point + T(0.99) * max_step * dual_dir)
+    # @test primal_feas && dual_feas
+    # # check larger step returns infeasible iterates
+    # primal_feas = load_reset_check(cone, cone.point + T(1.01) * max_step * primal_dir)
+    # dual_feas = load_reset_check(cone, cone.dual_point + T(1.01) * max_step * dual_dir)
+    # @test !primal_feas || !dual_feas
 
     return
 end
@@ -90,64 +101,21 @@ function test_barrier_scaling_oracles(
     dual_point = similar(point)
     CO.set_initial_point(point, cone)
     CO.set_initial_point(dual_point, cone)
-    perturb_scale(point, noise, scale)
-    perturb_scale(dual_point, noise, scale)
     @test load_reset_check(cone, point, dual_point)
 
-    s_dir = zeros(T, dim)
-    perturb_scale(s_dir, one(T), scale)
-    z_dir = zeros(T, dim)
-    perturb_scale(z_dir, one(T), scale)
-    alpha = T(0.1)
-
-    # run twice, first time around scaling will be the identity
+    # run twice: first run scaling will be the identity
+    # take a step from the initial point
     for _ in 1:2
-        # take a step from the initial point
-        @show cone.point
-        @show cone.dual_point
+        s_dir = zeros(T, dim)
+        perturb_scale(s_dir, one(T), scale)
+        z_dir = zeros(T, dim)
+        perturb_scale(z_dir, one(T), scale)
+        alpha = T(0.1)
+
         CO.step_and_update_scaling(cone, s_dir, z_dir, alpha)
-        @. cone.point += s_dir * alpha
-        @. cone.dual_point += z_dir * alpha
-        @show cone.point
-        @show cone.dual_point
-        @test CO.is_feas(cone)
-        grad = CO.grad(cone)
-
-        # hess and inv_hess oracles, not the same as for non-scaling tests
-        hess = CO.hess(cone)
-        @test hess * cone.point ≈ cone.dual_point atol=tol rtol=tol
-        inv_hess = CO.inv_hess(cone)
-        @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
-        @test hess * inv_hess ≈ I atol=tol rtol=tol
-        # hess and inv_hess product oracles
-        prod_mat = similar(cone.point, dim, dim)
-        @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
-        @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
-
-        # max step in a recession direction
-        e1 = CO.set_initial_point(zeros(T, dim), cone)
-        max_step = CO.step_max_dist(cone, e1, e1)
-        @test max_step ≈ T(Inf) atol=tol rtol=tol
-
-        # max step elsewhere
-        # primal dir and dual dir are not scaled
-        primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-        dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-
-        # max step tests for these new directions
-        prev_primal = copy(cone.point)
-        max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
-        # check smaller step returns feasible iterates
-        primal_feas = load_reset_check(cone, cone.point + T(0.99) * max_step * primal_dir)
-        dual_feas = load_reset_check(cone, cone.dual_point + T(0.99) * max_step * dual_dir)
-        @test primal_feas && dual_feas
-        # check larger step returns infeasible iterates
-        primal_feas = load_reset_check(cone, cone.point + T(1.01) * max_step * primal_dir)
-        dual_feas = load_reset_check(cone, cone.dual_point + T(1.01) * max_step * dual_dir)
-        @test !primal_feas || !dual_feas
-
-        # undo reloading of scaled point
-        CO.load_point(cone, prev_primal)
+        @. point += s_dir * alpha
+        @. dual_point += z_dir * alpha
+        test_grad_hess(cone, point, dual_point, tol = tol)
     end
 
     # TODO scaling for nonsymmetric cones
@@ -165,6 +133,42 @@ function test_barrier_scaling_oracles(
     # @test CO.is_feas(cone)
     # grad = CO.grad(cone)
     # @test -grad ≈ dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+
+    return
+end
+
+function test_grad_hess(
+    cone::CO.Cone{T},
+    point::Vector{T},
+    dual_point::Vector{T} = T[];
+    tol::T = 100eps(T),
+    ) where {T <: Real}
+    @test load_reset_check(cone, point, dual_point)
+
+    nu = CO.get_nu(cone)
+    grad = CO.grad(cone)
+    hess = CO.hess(cone)
+    inv_hess = CO.inv_hess(cone)
+
+    @test dot(point, grad) ≈ -nu atol=tol rtol=tol
+    @test hess * inv_hess ≈ I atol=tol rtol=tol
+
+    dim = length(point)
+    prod_mat = similar(point, dim, dim)
+    @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
+    @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
+
+    # if !CO.use_scaling(cone)
+        prod = similar(point)
+        @test hess * point ≈ -grad atol=tol rtol=tol
+        @test CO.hess_prod!(prod, point, cone) ≈ -grad atol=tol rtol=tol
+        @test CO.inv_hess_prod!(prod, grad, cone) ≈ -point atol=tol rtol=tol
+    # end
+
+    if !isempty(dual_point)
+        @test hess * point ≈ dual_point atol=tol rtol=tol
+        @test inv_hess * dual_point ≈ point atol=tol rtol=tol
+    end
 
     return
 end
