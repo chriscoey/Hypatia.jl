@@ -14,23 +14,23 @@ function test_barrier_oracles(
     cone::CO.Cone{T},
     barrier::Function;
     noise::Real = 0.2,
-    scale::Real = 10,
+    scale::Real = 1000,
     tol::Real = 100eps(T),
     init_tol::Real = tol,
     init_only::Bool = false,
     ) where {T <: Real}
     Random.seed!(1)
+
     @test !CO.use_scaling(cone)
     CO.setup_data(cone)
     dim = CO.dimension(cone)
     point = Vector{T}(undef, dim)
+    CO.set_initial_point(point, cone)
 
     if isfinite(init_tol)
         # tests for centrality of initial point
-        CO.set_initial_point(point, cone)
-        CO.load_point(cone, point)
+        @test load_reset_check(cone, point)
         @test cone.point == point
-        @test CO.is_feas(cone)
         grad = CO.grad(cone)
         @test dot(point, -grad) ≈ norm(point) * norm(grad) atol=init_tol rtol=init_tol
         @test point ≈ -grad atol=init_tol rtol=init_tol
@@ -39,22 +39,17 @@ function test_barrier_oracles(
 
     # tests for perturbed point
     CO.reset_data(cone)
-    CO.set_initial_point(point, cone)
     if !iszero(noise)
         point += T(noise) * (rand(T, dim) .- inv(T(2)))
     end
     point /= scale
-
-    CO.load_point(cone, point)
-    @test cone.point == point
-    @test CO.is_feas(cone)
+    @test load_reset_check(cone, point)
 
     grad = CO.grad(cone)
     nu = CO.get_nu(cone)
     @test dot(point, grad) ≈ -nu atol=tol rtol=tol
     hess = CO.hess(cone)
     @test hess * point ≈ -grad atol=tol rtol=tol
-
     inv_hess = CO.inv_hess(cone)
     @test hess * inv_hess ≈ I atol=tol rtol=tol
 
@@ -65,60 +60,21 @@ function test_barrier_oracles(
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
-    # # compare to ForwardDiff
-    # # check gradient and Hessian agree
-    # @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
-    # @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
-    # if CO.use_3order_corr(cone)
-    #     # check 3rd order corrector agrees
-    #     FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-    #     # check log-homog property that F'''(point)[point] = -2F''(point)
-    #     @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
-    #     # check correction term agrees with directional 3rd derivative
-    #     (primal_dir, dual_dir) = (randn(dim), randn(dim))
-    #     Hinv_dual_dir = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
-    #     FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
-    #     @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
-    # end
-
-
-
-    # identities from page 7 of Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
-    CO.load_point(cone, point)
-    CO.reset_data(cone)
-    CO.is_feas(cone)
-    grad = CO.grad(cone)
-    pert_point = point + T(noise) * (rand(T, dim) .- inv(T(2)))
-    conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, pert_point, -grad)
-    @test conj_grad ≈ -point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
-
-    dual_point = -grad + T(noise) * (rand(T, dim) .- inv(T(2)))
-    conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, point, dual_point)
-    CO.load_point(cone, -conj_grad)
-    CO.reset_data(cone)
-    @test CO.is_feas(cone)
-    grad = CO.grad(cone)
-    @test -grad ≈ dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
-
-
-    CO.load_point(cone, point)
-    CO.load_dual_point(cone, dual_point)
-    CO.reset_data(cone)
-    CO.is_feas(cone)
-    grad = CO.grad(cone)
-    @show nu, dot(point, grad)
-    conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, point, dual_point)
-    @show dot(dual_point, conj_grad) + 3
-
-    mu = dot(point, dual_point) / nu
-    scal_hess = CO.scal_hess(cone, mu)
-    # TODO add tests for scal hess correctness
-    println()
-    # @show scal_hess
-    # @show scal_hess - hess
-    # @show scal_hess * point - dual_point
-    # @show scal_hess * conj_grad - grad
-    # println()
+    # compare to ForwardDiff
+    # check gradient and Hessian agree
+    @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
+    @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
+    if CO.use_3order_corr(cone)
+        # check 3rd order corrector agrees
+        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+        # check log-homog property that F'''(point)[point] = -2F''(point)
+        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
+        # check correction term agrees with directional 3rd derivative
+        (primal_dir, dual_dir) = (randn(dim), randn(dim))
+        Hinv_dual_dir = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
+        FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
+        @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
+    end
 
     return
 end
@@ -192,22 +148,26 @@ function test_barrier_scaling_oracles(
         CO.load_point(cone, prev_primal)
     end
 
-
-    # identities from page 7 Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
-    # check_feas(x) = (isfinite(barrier(x)) ? true : false)
-    # @test load_reset_check(cone, prev_primal)
+    # TODO scaling for nonsymmetric cones
+    # # identities from page 7 of Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
+    # load_reset_check(cone, point)
     # grad = CO.grad(cone)
-    # @test -CO.conjugate_gradient(barrier, check_feas, -grad) ≈ cone.point atol=tol rtol=tol
-    # conj_grad = CO.conjugate_gradient(barrier, check_feas, cone.dual_point)
-    # @test load_reset_check(cone, -conj_grad)
+    # pert_point = point + T(noise) * (rand(T, dim) .- inv(T(2)))
+    # conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, pert_point, -grad)
+    # @test conj_grad ≈ -point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+    #
+    # dual_point = -grad + T(noise) * (rand(T, dim) .- inv(T(2)))
+    # conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, point, dual_point)
+    # CO.load_point(cone, -conj_grad)
+    # CO.reset_data(cone)
+    # @test CO.is_feas(cone)
     # grad = CO.grad(cone)
-    # @test -grad ≈ cone.dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+    # @test -grad ≈ dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
 
     return
 end
 
 function load_reset_check(cone, point)
-    CO.load_point(cone, point)
     CO.load_point(cone, point)
     CO.reset_data(cone)
     return CO.is_feas(cone)
@@ -216,7 +176,7 @@ end
 function test_nonnegative_barrier(T::Type{<:Real})
     barrier = (s -> -sum(log, s))
     for dim in [1, 3, 6]
-        # test_barrier_oracles(CO.Nonnegative{T}(dim, use_scaling = false), barrier)
+        test_barrier_oracles(CO.Nonnegative{T}(dim, use_scaling = false), barrier)
         test_barrier_scaling_oracles(CO.Nonnegative{T}(dim, use_scaling = true), barrier)
     end
     return
@@ -240,7 +200,7 @@ function test_epinormeucl_barrier(T::Type{<:Real})
     end
     for dim in [2, 4, 6]
         test_barrier_oracles(CO.EpiNormEucl{T}(dim, use_scaling = false), barrier)
-        # test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true), barrier)
+        test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true), barrier)
     end
     return
 end
@@ -276,8 +236,7 @@ function test_epiperexp3_barrier(T::Type{<:Real})
         return -log(v * log(u / v) - w) - log(u) - log(v)
     end
     test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = 1e-6)
-    # CO.EpiPerExp3{T}(false, use_scaling = true)
-    # test_barrier_scaling_oracles(CO.EpiPerExp3{T}(false, use_scaling = true), barrier)
+    test_barrier_scaling_oracles(CO.EpiPerExp3{T}(false, use_scaling = true), barrier)
     return
 end
 
@@ -349,7 +308,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(S, :U)))
         end
         dim = div(side * (side + 1), 2)
-        # test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
         test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
         # complex PSD cone
         function C_barrier(s)
@@ -358,7 +317,7 @@ function test_possemideftri_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Hermitian(S, :U)))
         end
         dim = side^2
-        # test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
+        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
         test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true), C_barrier)
     end
     return
