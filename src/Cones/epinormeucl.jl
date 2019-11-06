@@ -67,6 +67,8 @@ use_scaling(cone::EpiNormEucl) = cone.use_scaling
 
 use_3order_corr(cone::EpiNormEucl) = cone.use_3order_corr
 
+# try_scaled_updates(cone::EpiNormEucl) = cone.try_scaled_updates # TODO
+
 load_dual_point(cone::EpiNormEucl, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
 reset_data(cone::EpiNormEucl) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
@@ -447,6 +449,7 @@ end
 # end
 
 # from MOSEK paper
+# TODO cleanup
 function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.grad_updated
     corr = cone.correction

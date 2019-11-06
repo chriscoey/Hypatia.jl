@@ -18,9 +18,6 @@ import Hypatia.update_fact
 import Hypatia.solve_system
 import Hypatia.invert
 
-import Optim
-import ForwardDiff
-
 hessian_cache(T::Type{<:LinearAlgebra.BlasReal}) = DenseSymCache{T}() # use BunchKaufman for BlasReals
 hessian_cache(T::Type{<:Real}) = DensePosDefCache{T}() # use Cholesky for generic reals
 
@@ -44,9 +41,11 @@ include("wsospolyinterp.jl")
 
 use_scaling(cone::Cone) = false
 use_3order_corr(cone::Cone) = false
+try_scaled_updates(cone::Cone) = false
+
 use_dual(cone::Cone) = cone.use_dual
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
-load_dual_point(cone::Cone, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
+load_dual_point(cone::Cone, dual_point::AbstractVector) = nothing
 dimension(cone::Cone) = cone.dim
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
@@ -55,71 +54,6 @@ hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
 scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
 # fallbacks
-
-# TODO cleanup and make efficient
-function update_scal_hess(
-    cone::Cone{T},
-    mu::T;
-    use_update_1::Bool = true,
-    use_update_2::Bool = false,
-    ) where {T}
-    @assert is_feas(cone)
-    @assert !cone.scal_hess_updated
-    s = cone.point
-    z = cone.dual_point
-
-    scal_hess = mu * hess(cone)
-
-    if use_update_1
-        # first update
-        denom_a = dot(s, z)
-        muHs = scal_hess * s
-        denom_b = dot(s, muHs)
-
-        if denom_a > 0
-            scal_hess += Symmetric(z * z') / denom_a
-        end
-        if denom_b > 0
-            scal_hess -= Symmetric(muHs * muHs') / denom_b
-        end
-
-        @show norm(scal_hess * s - z)
-    end
-
-    if use_update_2
-        # second update
-        g = grad(cone)
-        conj_g = conjugate_gradient(cone.barrier, cone.check_feas, s, z)
-
-        mu_cone = dot(s, z) / get_nu(cone)
-        # @show mu_cone
-        dual_gap = z + mu_cone * g
-        primal_gap = s + mu_cone * conj_g
-        # dual_gap = z + mu * g
-        # primal_gap = s + mu * conj_g
-
-        denom_a = dot(primal_gap, dual_gap)
-        H1prgap = scal_hess * primal_gap
-        denom_b = dot(primal_gap, H1prgap)
-
-        if denom_a > 0
-            scal_hess += Symmetric(dual_gap * dual_gap') / denom_a
-        end
-        if denom_b > 0
-            scal_hess -= Symmetric(H1prgap * H1prgap') / denom_b
-        end
-
-        # @show primal_gap, dual_gap
-        @show norm(scal_hess * s - z)
-        @show norm(scal_hess * -conj_g + g)
-        @show norm(scal_hess * primal_gap - dual_gap)
-    end
-
-    copyto!(cone.scal_hess, scal_hess)
-
-    cone.scal_hess_updated = true
-    return cone.scal_hess
-end
 
 # number of nonzeros in the Hessian and inverse
 function hess_nz_count(cone::Cone, lower_only::Bool)
@@ -182,24 +116,8 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Con
     return prod
 end
 
-# utilities for conjugate barriers
-# may need a feas_check and return -Inf
-function conjugate_gradient(barrier::Function, check_feas::Function, s::Vector{T}, z::Vector{T}) where {T}
-    modified_legendre(x) = (check_feas(x) ? dot(z, x) + barrier(x) : Inf)
-    res = Optim.optimize(modified_legendre, s, Optim.Newton())
-    # @show res
-    minimizer = Optim.minimizer(res)
-
-    @assert !any(isnan, minimizer)
-
-    return -minimizer
-end
-
-# scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, mu, cone::Cone) = scalmat_prod!(prod, arr, cone)
-# scalmat_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Cone) = nothing
-
 # utilities for converting between symmetric/Hermitian matrix and vector triangle forms
-
+# TODO remove what isn't used
 function mat_U_to_vec_scaled!(vec::AbstractVector{T}, mat::AbstractMatrix{T}) where {T}
     k = 1
     m = size(mat, 1)
@@ -313,5 +231,82 @@ function vec_to_mat_U!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVector{T}) 
     end
     return mat
 end
+
+# TODO apply scaling updates per MOSEK and Tuncel papers
+# import Optim
+# import ForwardDiff
+#
+# function update_scal_hess(
+#     cone::Cone{T},
+#     mu::T;
+#     use_update_1::Bool = true,
+#     use_update_2::Bool = false,
+#     ) where {T}
+#     @assert is_feas(cone)
+#     @assert !cone.scal_hess_updated
+#     s = cone.point
+#     z = cone.dual_point
+#
+#     scal_hess = mu * hess(cone)
+#
+#     if use_update_1
+#         # first update
+#         denom_a = dot(s, z)
+#         muHs = scal_hess * s
+#         denom_b = dot(s, muHs)
+#
+#         if denom_a > 0
+#             scal_hess += Symmetric(z * z') / denom_a
+#         end
+#         if denom_b > 0
+#             scal_hess -= Symmetric(muHs * muHs') / denom_b
+#         end
+#
+#         @show norm(scal_hess * s - z)
+#     end
+#
+#     if use_update_2
+#         # second update
+#         g = grad(cone)
+#         conj_g = conjugate_gradient(cone.barrier, cone.check_feas, s, z)
+#
+#         mu_cone = dot(s, z) / get_nu(cone)
+#         # @show mu_cone
+#         dual_gap = z + mu_cone * g
+#         primal_gap = s + mu_cone * conj_g
+#         # dual_gap = z + mu * g
+#         # primal_gap = s + mu * conj_g
+#
+#         denom_a = dot(primal_gap, dual_gap)
+#         H1prgap = scal_hess * primal_gap
+#         denom_b = dot(primal_gap, H1prgap)
+#
+#         if denom_a > 0
+#             scal_hess += Symmetric(dual_gap * dual_gap') / denom_a
+#         end
+#         if denom_b > 0
+#             scal_hess -= Symmetric(H1prgap * H1prgap') / denom_b
+#         end
+#
+#         # @show primal_gap, dual_gap
+#         @show norm(scal_hess * s - z)
+#         @show norm(scal_hess * -conj_g + g)
+#         @show norm(scal_hess * primal_gap - dual_gap)
+#     end
+#
+#     copyto!(cone.scal_hess, scal_hess)
+#
+#     cone.scal_hess_updated = true
+#     return cone.scal_hess
+# end
+#
+# # TODO use domain constraints properly
+# function conjugate_gradient(barrier::Function, check_feas::Function, s::Vector{T}, z::Vector{T}) where {T}
+#     modified_legendre(x) = (check_feas(x) ? dot(z, x) + barrier(x) : Inf)
+#     res = Optim.optimize(modified_legendre, s, Optim.Newton())
+#     minimizer = Optim.minimizer(res)
+#     @assert !any(isnan, minimizer)
+#     return -minimizer
+# end
 
 end

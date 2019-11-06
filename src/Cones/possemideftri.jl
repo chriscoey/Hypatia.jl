@@ -91,6 +91,8 @@ use_scaling(cone::PosSemidefTri) = cone.use_scaling
 
 use_3order_corr(cone::PosSemidefTri) = cone.use_3order_corr
 
+try_scaled_updates(cone::PosSemidefTri) = cone.try_scaled_updates
+
 load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
 load_scaled_point(cone::PosSemidefTri, point::AbstractVector) = copyto!(cone.new_scal_point, point)
@@ -381,8 +383,8 @@ end
 # from MOSEK paper
 # Pinv = inv(smat(point))
 # smat correction = (Pinv * S * Z + Z * S * Pinv) / 2
-# TODO
-function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector, primal_point)
+# TODO cleanup
+function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)#, primal_point)
     @assert cone.grad_updated
 
     S = copytri!(svec_to_smat!(cone.work_mat, s_sol, cone.rt2), 'U', cone.is_complex)
@@ -392,7 +394,8 @@ function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractV
     # Pinv_S_Z = mul!(cone.work_mat3, ldiv!(cone.fact, S), Z)
     # Pinv_S_Z = ldiv!(cone.fact, mul!(cone.work_mat3, S, Z))
     # TODO reuse factorization if useful
-    fact = cholesky(Hermitian(svec_to_smat!(cone.work_mat3, primal_point, cone.rt2), :U))
+    # fact = cholesky(Hermitian(svec_to_smat!(cone.work_mat3, primal_point, cone.rt2), :U))
+    fact = cholesky(Hermitian(svec_to_smat!(cone.work_mat3, cone.point, cone.rt2), :U))
     Pinv_S_Z = mul!(cone.work_mat3, ldiv!(fact, S), Z)
 
     Pinv_S_Z_symm = cone.work_mat

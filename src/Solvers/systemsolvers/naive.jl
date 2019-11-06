@@ -16,95 +16,6 @@ tau + taubar/kapbar*kap = kaprhs # Nesterov-Todd
 abstract type NaiveSystemSolver{T <: Real} <: SystemSolver{T} end
 
 #=
-indirect
-TODO
-- precondition
-- optimize operations
-- tune number of restarts and tolerances etc, ensure initial point in sol helps
-- fix IterativeSolvers so that methods can take matrix RHS
-
-not working because hessian needs to be multiplied by mu
-need to use linearmaps here with the apply_LHS function, not blockmatrix
-=#
-
-# mutable struct NaiveIndirectSystemSolver{T <: Real} <: NaiveSystemSolver{T}
-#     lhs6::BlockMatrix{T}
-#     NaiveIndirectSystemSolver{T}() where {T <: Real} = new{T}()
-# end
-#
-# function load(system_solver::NaiveIndirectSystemSolver{T}, solver::Solver{T}) where {T <: Real}
-#     model = solver.model
-#     (n, p, q) = (model.n, model.p, model.q)
-#     cones = model.cones
-#     cone_idxs = model.cone_idxs
-#     tau_row = n + p + q + 1
-#     dim = tau_row + q + 1
-#
-#     # setup block LHS
-#     x_idxs = 1:n
-#     y_idxs = n .+ (1:p)
-#     z_idxs = (n + p) .+ (1:q)
-#     tau_idxs = tau_row:tau_row
-#     s_idxs = tau_row .+ (1:q)
-#     kap_idxs = dim:dim
-#
-#     k_len = 2 * length(cones)
-#     cone_rows = Vector{UnitRange{Int}}(undef, k_len)
-#     cone_cols = Vector{UnitRange{Int}}(undef, k_len)
-#     cone_blocks = Vector{Any}(undef, k_len)
-#     for (k, cone_k) in enumerate(cones)
-#         idxs_k = model.cone_idxs[k]
-#         rows = tau_row .+ idxs_k
-#         k1 = 2k - 1
-#         k2 = 2k
-#         cone_rows[k1] = cone_rows[k2] = rows
-#         cone_cols[k1] = (n + p) .+ idxs_k
-#         cone_cols[k2] = rows
-#         if Cones.use_dual(cone_k)
-#             cone_blocks[k1] = cone_k
-#             cone_blocks[k2] = I
-#         else
-#             cone_blocks[k1] = I
-#             cone_blocks[k2] = cone_k
-#         end
-#     end
-#
-#     system_solver.lhs6 = BlockMatrix{T}(dim, dim,
-#         [cone_blocks...,
-#             model.A', model.G', reshape(model.c, :, 1),
-#             -model.A, reshape(model.b, :, 1),
-#             -model.G, reshape(model.h, :, 1), -I,
-#             -model.c', -model.b', -model.h', -ones(T, 1, 1),
-#             ones(T, 1, 1), solver],
-#         [cone_rows...,
-#             x_idxs, x_idxs, x_idxs,
-#             y_idxs, y_idxs,
-#             z_idxs, z_idxs, z_idxs,
-#             tau_idxs, tau_idxs, tau_idxs, tau_idxs,
-#             kap_idxs, kap_idxs],
-#         [cone_cols...,
-#             y_idxs, z_idxs, tau_idxs,
-#             x_idxs, tau_idxs,
-#             x_idxs, tau_idxs, s_idxs,
-#             x_idxs, y_idxs, z_idxs, kap_idxs,
-#             tau_idxs, kap_idxs],
-#         )
-#
-#     return system_solver
-# end
-#
-# update_fact(system_solver::NaiveIndirectSystemSolver, solver::Solver) = system_solver
-#
-# function solve_system(system_solver::NaiveIndirectSystemSolver, solver::Solver, sol6::Vector, rhs6::Vector)
-#     for j in 1:size(rhs6, 2)
-#         rhs_j = view(rhs6, :, j)
-#         sol_j = view(sol6, :, j)
-#         IterativeSolvers.gmres!(sol_j, system_solver.lhs6, rhs_j, restart = size(rhs6, 1))
-#     end
-#     return sol6
-# end
-
-#=
 direct sparse
 =#
 
@@ -272,11 +183,10 @@ end
 
 function update_fact(system_solver::NaiveDenseSystemSolver, solver::Solver)
     for (cone_k, lhs_k) in zip(solver.model.cones, system_solver.lhs6_H_k)
-        # copyto!(lhs_k, Cones.hess(cone_k))
-        # if !Cones.use_scaling(cone_k)
-        #     lmul!(solver.mu, lhs_k)
-        # end
-        copyto!(lhs_k, Cones.scal_hess(cone_k, solver.mu))
+        copyto!(lhs_k, Cones.hess(cone_k))
+        if !Cones.use_scaling(cone_k)
+            lmul!(solver.mu, lhs_k)
+        end
     end
     system_solver.lhs6[end, end] = solver.tau / solver.kap
 

@@ -2,6 +2,8 @@
 Copyright 2019, Chris Coey and contributors
 
 combined directions stepping routine
+
+TODO delete and just use scaling stepper? rename that too maybe
 =#
 
 mutable struct CombinedStepper{T <: Real} <: Stepper{T}
