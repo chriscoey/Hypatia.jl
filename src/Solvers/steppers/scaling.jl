@@ -139,15 +139,10 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
 
-<<<<<<< HEAD
-    for (k, cone_k) in enumerate(solver.model.cones)
-        Cones.step_and_update_scaling(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k], alpha)
-=======
     for cone_k in solver.model.cones
         if Cones.try_scaled_updates(cone_k)
             Cones.step_and_update_scaling(cone_k, alpha) # TODO make this consistent across cones
         end
->>>>>>> 3e885b4166daf799adf45601239a8a34be1a2adc
     end
 
     @. point.z += alpha * stepper.z_dir
