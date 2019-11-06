@@ -138,14 +138,19 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # TODO allow stepping different alphas in primal and dual cone directions? some solvers do
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
-
-    Cones.step_and_update_scaling.(solver.model.cones, stepper.s_dir_k, stepper.z_dir_k, alpha)
-
     @. point.z += alpha * stepper.z_dir
     @. point.s += alpha * stepper.s_dir
     solver.tau += alpha * stepper.dir[stepper.tau_row]
     solver.kap += alpha * stepper.dir[stepper.kap_row]
     calc_mu(solver)
+
+    # TODO remove when not needed
+    Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(solver.model.cones, point.dual_views)
+    Cones.reset_data.(solver.model.cones)
+    Cones.is_feas.(solver.model.cones)
+    Cones.grad.(solver.model.cones)
+    Cones.step_and_update_scaling.(solver.model.cones, stepper.s_dir_k, stepper.z_dir_k, alpha)
 
     if solver.tau <= zero(T) || solver.kap <= zero(T) || solver.mu <= zero(T)
         @warn("numerical failure: tau is $(solver.tau), kappa is $(solver.kap), mu is $(solver.mu); terminating")

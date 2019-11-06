@@ -61,7 +61,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
-        try_scaled_updates::Bool = true,
+        try_scaled_updates::Bool = false,
         ) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
@@ -435,9 +435,6 @@ function step(cone::PosSemidefTri{T, R}, s_sol::AbstractVector, z_sol::AbstractV
         scalmat_prod!(cone.z_dir, z_sol, cone)
         @. cone.prev_scal_point = cone.new_scal_point + step_size * cone.s_dir
         @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * cone.z_dir
-    else
-        @. cone.point += step_size * s_sol
-        @. cone.dual_point += step_size * z_sol
     end
     return
 end
