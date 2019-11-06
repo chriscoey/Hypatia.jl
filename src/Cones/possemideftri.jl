@@ -23,7 +23,9 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     is_complex::Bool
     point::Vector{T}
     dual_point::Vector{T}
-    scaled_point::Vector{T} # v in MOSEK # TODO this is strong too much currently because smat(v) will always be diagonal
+    prev_scal_point::Vector{T}
+    prev_scal_dual_point::Vector{T}
+    new_scal_point::Vector{T} # v in MOSEK # TODO this is strong too much currently because smat(v) will always be diagonal
     scaled_eigvals::Vector{T}
     s_dir::Vector{T}
     z_dir::Vector{T}
@@ -91,7 +93,7 @@ use_3order_corr(cone::PosSemidefTri) = cone.use_3order_corr
 
 load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
-load_scaled_point(cone::PosSemidefTri, point::AbstractVector) = copyto!(cone.scaled_point, point)
+load_scaled_point(cone::PosSemidefTri, point::AbstractVector) = copyto!(cone.new_scal_point, point)
 
 reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
 
@@ -100,6 +102,9 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     dim = cone.dim
     cone.point = zeros(T, dim)
     cone.dual_point = zeros(T, dim)
+    cone.prev_scal_point = zeros(T, dim)
+    cone.prev_scal_dual_point = zeros(T, dim)
+    cone.new_scal_point = zeros(T, dim)
     cone.bndry_dists = zeros(T, cone.side)
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
@@ -111,9 +116,8 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     cone.work_mat = similar(cone.mat)
     cone.work_mat2 = similar(cone.mat)
     cone.work_mat3 = similar(cone.mat)
-    # TODO initialize at the same time as the initial point
-    cone.scaled_point = zeros(T, dim)
-    set_initial_point(cone.scaled_point, cone)
+    # TODO initialize at the same time as the initial point as well as factorizations
+    set_initial_point(cone.new_scal_point, cone)
     cone.s_dir = similar(cone.point)
     cone.z_dir = similar(cone.point)
     cone.scalmat_sqrt = Matrix{T}(I, cone.side, cone.side)
@@ -138,7 +142,7 @@ end
 
 function update_feas(cone::PosSemidefTri)
     @assert !cone.feas_updated
-    point = (cone.try_scaled_updates ? cone.scaled_point : cone.point)
+    point = (cone.try_scaled_updates ? cone.new_scal_point : cone.point)
     svec_to_smat!(cone.mat, point, cone.rt2)
     copyto!(cone.fact_mat, cone.mat)
     cone.fact = cholesky!(Hermitian(cone.fact_mat, :U), check = false)
@@ -150,7 +154,7 @@ end
 function update_grad(cone::PosSemidefTri)
     @assert cone.is_feas
     if cone.try_scaled_updates
-        svec_to_smat!(cone.work_mat, cone.scaled_point, cone.rt2)
+        svec_to_smat!(cone.work_mat, cone.new_scal_point, cone.rt2)
         inv_mat = inv(Hermitian(cone.work_mat, :U))
         tmp = smat_to_svec!(similar(cone.point), inv_mat, cone.rt2)
         tmp .*= -1
@@ -352,7 +356,7 @@ function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::Abstra
     if cone.try_scaled_updates
         scalmat_ldiv!(cone.s_dir, s_sol, cone, trans = true)
         scalmat_prod!(cone.z_dir, z_sol, cone)
-        svec_to_smat!(cone.work_mat, cone.scaled_point, cone.rt2)
+        svec_to_smat!(cone.work_mat, cone.new_scal_point, cone.rt2)
         # TODO don't repeat factorization, add a field and a flag
         scaled_fact = cholesky(Hermitian(cone.work_mat, :U))
         primal_dist = dist_to_bndry(cone, scaled_fact, cone.s_dir)
@@ -361,7 +365,7 @@ function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::Abstra
         @. cone.s_dir = s_sol
         @. cone.z_dir = z_sol
         svec_to_smat!(cone.mat, cone.point, cone.rt2)
-        svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
+        svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
         copyto!(cone.fact_mat, cone.mat)
         copyto!(cone.dual_fact_mat, cone.dual_mat)
         cone.fact = cholesky!(Hermitian(cone.fact_mat, :U))
@@ -400,18 +404,18 @@ end
 
 function update_scaling(cone::PosSemidefTri)
     if cone.try_scaled_updates
-        svec_to_smat!(cone.mat, cone.point, cone.rt2)
-        svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
+        svec_to_smat!(cone.mat, cone.prev_scal_point, cone.rt2)
+        svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
         copyto!(cone.fact_mat, cone.mat)
         copyto!(cone.dual_fact_mat, cone.dual_mat)
         fact = cholesky!(Hermitian(cone.fact_mat, :U))
         dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
         (U, lambda, V) = svd(dual_fact.U * fact.L)
-        cone.scaled_point .= 0
+        cone.new_scal_point .= 0
         k = 1
         incr = (cone.is_complex ? 2 : 1)
         @inbounds for i in 1:cone.side
-            cone.scaled_point[k] = lambda[i]
+            cone.new_scal_point[k] = lambda[i]
             k += incr * i + 1
         end
         cone.scaled_eigvals .= lambda
@@ -420,7 +424,7 @@ function update_scaling(cone::PosSemidefTri)
     else
         # fact = cone.fact
         # dual_fact = cone.dual_fact
-        svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
+        svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
         copyto!(cone.dual_fact_mat, cone.dual_mat)
         dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
         svec_to_smat!(cone.mat, cone.point, cone.rt2)
@@ -440,8 +444,8 @@ end
 function step(cone::PosSemidefTri{T, R}, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
     # get the next s, z but in the old scaling
     if cone.try_scaled_updates
-        @. cone.point = cone.scaled_point + step_size * cone.s_dir
-        @. cone.dual_point = cone.scaled_point + step_size * cone.z_dir
+        @. cone.prev_scal_point = cone.new_scal_point + step_size * cone.s_dir
+        @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * cone.z_dir
     else
         @. cone.point += step_size * cone.s_dir
         @. cone.dual_point += step_size * cone.z_dir
