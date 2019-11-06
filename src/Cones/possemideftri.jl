@@ -418,8 +418,6 @@ function update_scaling(cone::PosSemidefTri)
         dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
         svec_to_smat!(cone.mat, cone.point, cone.rt2)
         fact = cholesky(Hermitian(cone.mat, :U))
-        # @assert isposdef(cone.dual_fact)
-
 
         # TODO preallocate
         (U, lambda, V) = svd(dual_fact.U * fact.L)
