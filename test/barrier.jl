@@ -35,9 +35,11 @@ function test_barrier_oracles(
     @test point ≈ -grad atol=init_tol rtol=init_tol
     init_only && return
 
-    # tests for perturbed point
+    # perturb and scale the initial point and check feasible
     perturb_scale(point, noise, scale)
     @test load_reset_check(cone, point)
+
+    # test gradient and Hessian oracles
     test_grad_hess(cone, point, tol = tol)
 
     # check gradient and Hessian agree with ForwardDiff
@@ -47,15 +49,17 @@ function test_barrier_oracles(
     @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
 
     # check 3rd order corrector agrees with ForwardDiff
-    if CO.use_3order_corr(cone)
+    # too slow if cone is too large or not using BlasReals
+    if CO.use_3order_corr(cone) && dim < 8 && T in (Float32, Float64)
         FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
         # check log-homog property that F'''(point)[point] = -2F''(point)
         @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
         # check correction term agrees with directional 3rd derivative
-        (primal_dir, dual_dir) = (randn(dim), randn(dim))
-        Hinv_dual_dir = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
-        FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_dual_dir / -2
-        @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
+        s_dir = perturb_scale(zeros(T, dim), noise, one(T))
+        z_dir = perturb_scale(zeros(T, dim), noise, one(T))
+        Hinv_z = CO.inv_hess_prod!(similar(z_dir), z_dir, cone)
+        FD_corr = reshape(FD_3deriv * s_dir, dim, dim) * Hinv_z / -2
+        @test FD_corr ≈ CO.correction(cone, s_dir, z_dir) atol=tol rtol=tol
     end
 
     # TODO add alpha oracles for all cones
@@ -110,7 +114,6 @@ function test_barrier_scaling_oracles(
         s_dir = perturb_scale(zeros(T, dim), noise, one(T))
         z_dir = perturb_scale(zeros(T, dim), noise, one(T))
         alpha = T(0.1)
-
         @. point += s_dir * alpha
         @. dual_point += z_dir * alpha
         @test load_reset_check(cone, point, dual_point)
@@ -264,10 +267,10 @@ function test_hypoperlog_barrier(T::Type{<:Real})
         return -log(v * sum(log(wj / v) for wj in w) - u) - sum(log, w) - log(v)
     end
     for dim in [3, 5, 10]
-        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = 1e-5)
+        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = T(1e-5))
     end
     for dim in [15, 65, 75, 100, 500]
-        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = 1e-1, init_only = true)
+        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = T(1e-1), init_only = true)
     end
     return
 end
@@ -277,7 +280,7 @@ function test_epiperexp3_barrier(T::Type{<:Real})
         (u, v, w) = (s[1], s[2], s[3])
         return -log(v * log(u / v) - w) - log(u) - log(v)
     end
-    test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = 1e-6)
+    test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = T(1e-6))
     return
 end
 
@@ -287,11 +290,11 @@ function test_epiperexp_barrier(T::Type{<:Real})
         return -log(v * log(u / v) - v * log(sum(wi -> exp(wi / v), w))) - log(u) - log(v)
     end
     for dim in [3, 5, 10]
-        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = 1e-5)
+        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = T(1e-5))
     end
     # NOTE when initial point improved, take tests up to dim=500 and tighten tolerance
     for dim in [15, 35 , 45, 100, 120, 200]
-        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = 7e-1, init_only = true)
+        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = T(7e-1), init_only = true)
     end
     return
 end
@@ -321,9 +324,9 @@ function test_hypogeomean_barrier(T::Type{<:Real})
         end
         cone = CO.HypoGeomean{T}(alpha)
         if dim <= 3
-            test_barrier_oracles(cone, barrier, init_tol = 1e-2)
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-2))
         else
-            test_barrier_oracles(cone, barrier, init_tol = 3e-1, init_only = true)
+            test_barrier_oracles(cone, barrier, init_tol = T(3e-1), init_only = true)
         end
     end
     return
@@ -350,9 +353,9 @@ function test_hypoperlogdettri_barrier(T::Type{<:Real})
         dim = 2 + div(side * (side + 1), 2)
         cone = CO.HypoPerLogdetTri{T}(dim)
         if side <= 5
-            test_barrier_oracles(cone, barrier, init_tol = 1e-5)
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-5))
         else
-            test_barrier_oracles(cone, barrier, init_tol = 1e-1, init_only = true)
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-1), init_only = true)
         end
     end
     return
@@ -369,7 +372,7 @@ function test_wsospolyinterp_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Lambda))
         end
         cone = CO.WSOSPolyInterp{T, T}(U, [P0], true)
-        test_barrier_oracles(cone, barrier, init_tol = Inf) # TODO center and test initial points
+        test_barrier_oracles(cone, barrier, init_tol = T(100)) # TODO center and test initial points
     end
     # TODO also test complex case CO.WSOSPolyInterp{T, Complex{T}} - need complex MU interp functions first
     return
