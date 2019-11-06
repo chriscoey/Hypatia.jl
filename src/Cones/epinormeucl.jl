@@ -33,9 +33,9 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
 
     scaled_point::Vector{T}
     scaled_dual_point::Vector{T}
-    w::Vector{T} #think about naming, it's w_bar in cvxopt paper
+    w::Vector{T} # TODO think about naming, it's w_bar in cvxopt paper
     # experimental
-    lambda::Vector{T} #think about naming, it's w_bar in cvxopt paper
+    lambda::Vector{T} # TODO think about naming, it's w_bar in cvxopt paper
     v::Vector{T}
     q::Vector{T}
 

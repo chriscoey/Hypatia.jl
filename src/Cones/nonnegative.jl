@@ -11,7 +11,6 @@ barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Program
 mutable struct Nonnegative{T <: Real} <: Cone{T}
     use_scaling::Bool
     use_3order_corr::Bool
-    try_scaled_updates::Bool # experimental, run algorithm in scaled variables for numerical reasons. it may be too tricky to keep this boolean.
     dim::Int
     point::Vector{T}
     dual_point::Vector{T}
@@ -38,14 +37,12 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
-        try_scaled_updates::Bool = true,
         ) where {T <: Real}
         @assert dim >= 1
         cone = new{T}()
         cone.dim = dim
         cone.use_scaling = use_scaling
         cone.use_3order_corr = use_3order_corr
-        cone.try_scaled_updates = try_scaled_updates
         return cone
     end
 end
@@ -55,8 +52,6 @@ use_dual(cone::Nonnegative) = false # self-dual
 use_scaling(cone::Nonnegative) = cone.use_scaling # TODO remove from here and just use one in Cones.jl when all cones allow scaling
 
 use_3order_corr(cone::Nonnegative) = cone.use_3order_corr
-
-try_scaled_updates(cone::Nonnegative) = cone.try_scaled_updates # TODO
 
 load_dual_point(cone::Nonnegative, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
@@ -81,8 +76,6 @@ function setup_data(cone::Nonnegative{T}) where {T <: Real}
     cone.scaling_point = similar(cone.point)
     set_initial_point(cone.scaling_point, cone)
     cone.correction = zeros(T, dim)
-    if cone.try_scaled_updates
-    end
     return
 end
 

@@ -173,7 +173,7 @@ end
 
 function load_reset_check(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T} = T[]) where {T <: Real}
     CO.load_point(cone, point)
-    !isempty(dual_point) && CO.load_dual_point(cone, point)
+    !isempty(dual_point) && CO.load_dual_point(cone, dual_point)
     CO.reset_data(cone)
     return CO.is_feas(cone)
 end
@@ -197,17 +197,6 @@ function test_nonnegative_barrier(T::Type{<:Real})
     return
 end
 
-function test_epinorminf_barrier(T::Type{<:Real})
-    function barrier(s)
-        (u, w) = (s[1], s[2:end])
-        return -sum(log(u - abs2(wj) / u) for wj in w) - log(u)
-    end
-    for dim in [2, 4]
-        test_barrier_oracles(CO.EpiNormInf{T}(dim), barrier)
-    end
-    return
-end
-
 function test_epinormeucl_barrier(T::Type{<:Real})
     function barrier(s)
         (u, w) = (s[1], s[2:end])
@@ -216,6 +205,44 @@ function test_epinormeucl_barrier(T::Type{<:Real})
     for dim in [2, 4, 6]
         test_barrier_oracles(CO.EpiNormEucl{T}(dim, use_scaling = false), barrier)
         test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true), barrier)
+    end
+    return
+end
+
+function test_possemideftri_barrier(T::Type{<:Real})
+    for side in [1, 2, 4]
+        # real PSD cone
+        function R_barrier(s)
+            S = similar(s, side, side)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
+            return -logdet(cholesky!(Symmetric(S, :U)))
+        end
+        dim = div(side * (side + 1), 2)
+        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true, try_scaled_updates = false), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true, try_scaled_updates = true), R_barrier)
+
+        # complex PSD cone
+        function C_barrier(s)
+            S = zeros(Complex{eltype(s)}, side, side)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
+            return -logdet(cholesky!(Hermitian(S, :U)))
+        end
+        dim = abs2(side)
+        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true, try_scaled_updates = false), C_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true, try_scaled_updates = true), C_barrier)
+    end
+    return
+end
+
+function test_epinorminf_barrier(T::Type{<:Real})
+    function barrier(s)
+        (u, w) = (s[1], s[2:end])
+        return -sum(log(u - abs2(wj) / u) for wj in w) - log(u)
+    end
+    for dim in [2, 4]
+        test_barrier_oracles(CO.EpiNormInf{T}(dim), barrier)
     end
     return
 end
@@ -309,30 +336,6 @@ function test_epinormspectral_barrier(T::Type{<:Real})
             return -logdet(cholesky!(Symmetric(u * I - W * W' / u))) - log(u)
         end
         test_barrier_oracles(CO.EpiNormSpectral{T}(n, m), barrier)
-    end
-    return
-end
-
-function test_possemideftri_barrier(T::Type{<:Real})
-    for side in [1, 2, 5]
-        # real PSD cone
-        function R_barrier(s)
-            S = similar(s, side, side)
-            CO.svec_to_smat!(S, s, sqrt(T(2)))
-            return -logdet(cholesky!(Symmetric(S, :U)))
-        end
-        dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
-        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true), R_barrier)
-        # complex PSD cone
-        function C_barrier(s)
-            S = zeros(Complex{eltype(s)}, side, side)
-            CO.svec_to_smat!(S, s, sqrt(T(2)))
-            return -logdet(cholesky!(Hermitian(S, :U)))
-        end
-        dim = side^2
-        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
-        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true), C_barrier)
     end
     return
 end
