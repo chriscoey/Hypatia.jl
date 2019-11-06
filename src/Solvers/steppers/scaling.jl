@@ -90,14 +90,8 @@ end
 function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
 
-    # TODO not needed for cones with last point already loaded
-    # if linear systems use scaled variables, none of this needs to happen. all data are updated at the end of the iteration in step_and_update_scaling
-    for (k, cone_k) in enumerate(solver.model.cones)
-        if !cone_k.try_scaled_updates
-            Cones.load_point(cone_k, point.primal_views[k])
-            Cones.load_dual_point(cone_k, point.dual_views[k])
-        end
-    end
+    Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(solver.model.cones, point.dual_views)
     Cones.reset_data.(solver.model.cones)
     Cones.is_feas.(solver.model.cones)
     Cones.grad.(solver.model.cones)
@@ -135,7 +129,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.y += alpha * stepper.y_dir
 
     for (k, cone_k) in enumerate(solver.model.cones)
-        Cones.step_and_update_scaling(cone_k, alpha)
+        Cones.step_and_update_scaling(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k], alpha)
     end
 
     @. point.z += alpha * stepper.z_dir

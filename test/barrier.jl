@@ -147,6 +147,10 @@ function test_barrier_scaling_oracles(
     for _ in 1:2
         CO.load_point(cone, point_unscaled)
         CO.load_dual_point(cone, dual_point_unscaled)
+        if cone.try_scaled_updates
+            copyto!(cone.prev_scal_point, cone.point)
+            copyto!(cone.prev_scal_dual_point, cone.dual_point)
+        end
         CO.reset_data(cone)
         # take a step from the initial point
         cone.s_dir = rand(T, dim) .- inv(T(2))
