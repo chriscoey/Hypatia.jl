@@ -236,7 +236,6 @@ function test_epiperexp3_barrier(T::Type{<:Real})
         return -log(v * log(u / v) - w) - log(u) - log(v)
     end
     test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = 1e-6)
-    test_barrier_scaling_oracles(CO.EpiPerExp3{T}(false, use_scaling = true), barrier)
     return
 end
 
