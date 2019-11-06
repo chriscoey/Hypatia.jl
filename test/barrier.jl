@@ -37,6 +37,7 @@ function test_barrier_oracles(
 
     # tests for perturbed point
     perturb_scale(point, noise, scale)
+    @test load_reset_check(cone, point)
     test_grad_hess(cone, point, tol = tol)
 
     # check gradient and Hessian agree with ForwardDiff
@@ -106,15 +107,14 @@ function test_barrier_scaling_oracles(
     # run twice: first run scaling will be the identity
     # take a step from the initial point
     for _ in 1:2
-        s_dir = zeros(T, dim)
-        perturb_scale(s_dir, one(T), scale)
-        z_dir = zeros(T, dim)
-        perturb_scale(z_dir, one(T), scale)
+        s_dir = perturb_scale(zeros(T, dim), noise, one(T))
+        z_dir = perturb_scale(zeros(T, dim), noise, one(T))
         alpha = T(0.1)
 
-        CO.step_and_update_scaling(cone, s_dir, z_dir, alpha)
         @. point += s_dir * alpha
         @. dual_point += z_dir * alpha
+        @test load_reset_check(cone, point, dual_point)
+        CO.step_and_update_scaling(cone, s_dir, z_dir, alpha)
         test_grad_hess(cone, point, dual_point, tol = tol)
     end
 
@@ -143,8 +143,6 @@ function test_grad_hess(
     dual_point::Vector{T} = T[];
     tol::T = 100eps(T),
     ) where {T <: Real}
-    @test load_reset_check(cone, point, dual_point)
-
     nu = CO.get_nu(cone)
     grad = CO.grad(cone)
     hess = CO.hess(cone)
@@ -158,12 +156,12 @@ function test_grad_hess(
     @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
 
-    # if !CO.use_scaling(cone)
+    if !CO.use_scaling(cone)
         prod = similar(point)
         @test hess * point ≈ -grad atol=tol rtol=tol
         @test CO.hess_prod!(prod, point, cone) ≈ -grad atol=tol rtol=tol
         @test CO.inv_hess_prod!(prod, grad, cone) ≈ -point atol=tol rtol=tol
-    # end
+    end
 
     if !isempty(dual_point)
         @test hess * point ≈ dual_point atol=tol rtol=tol
