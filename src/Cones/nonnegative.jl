@@ -124,8 +124,6 @@ end
 update_hess_prod(cone::Nonnegative) = nothing
 update_inv_hess_prod(cone::Nonnegative) = nothing
 
-scal_hess(cone::Nonnegative{T}, mu::T) where {T} = hess(cone)
-
 function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
     @assert cone.is_feas
     if cone.use_scaling
@@ -146,27 +144,22 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Non
     return prod
 end
 
-function dist_to_bndry(cone::Nonnegative{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
-    dist = T(Inf)
-    @inbounds for i in eachindex(point)
-        if dir[i] < 0
-            dist = min(dist, -point[i] / dir[i])
-        end
-    end
-    return dist
-end
-
-# TODO optimize this
 function step_max_dist(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.is_feas
-    primal_dist = dist_to_bndry(cone, cone.point, s_sol)
-    dual_dist = dist_to_bndry(cone, cone.dual_point, z_sol)
-    step_dist = min(primal_dist, dual_dist)
+    point = cone.point
+    dist = T(Inf)
+    @inbounds for i in eachindex(point)
+        if s_sol[i] < 0
+            dist = min(dist, -point[i] / s_sol[i])
+        end
+        if z_sol[i] < 0
+            dist = min(dist, -point[i] / z_sol[i])
+        end
+    end
     return step_dist
 end
 
-# TODO cleanup
-function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector)#, primal_point)
+function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector)
     @. cone.correction = s_sol * z_sol / cone.point
     return cone.correction
 end

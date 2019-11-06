@@ -255,8 +255,6 @@ function update_hess(cone::PosSemidefTri)
     return cone.hess
 end
 
-scal_hess(cone::PosSemidefTri{T, R}, mu::T) where {R <: RealOrComplex{T}} where {T <: Real} = hess(cone)
-
 function update_inv_hess(cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
