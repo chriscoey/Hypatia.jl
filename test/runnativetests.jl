@@ -1,5 +1,9 @@
 #=
 Copyright 2019, Chris Coey and contributors
+
+TODO
+- add native test problems for WSOS cones
+- add at least 3 test problems per cone
 =#
 
 include(joinpath(@__DIR__, "native.jl"))
@@ -142,7 +146,7 @@ options = (verbose = false,)
         T = Float64
         t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
     end
-    @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache,]#, Hypatia.DensePosDefCache]
+    @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache, Hypatia.DensePosDefCache]
         t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
     end
 end
