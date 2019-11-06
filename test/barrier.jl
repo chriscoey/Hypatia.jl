@@ -13,36 +13,30 @@ const MU = Hypatia.ModelUtilities
 function test_barrier_oracles(
     cone::CO.Cone{T},
     barrier::Function;
-    noise::Real = 0.2,
-    scale::Real = 1000,
-    tol::Real = 100eps(T),
-    init_tol::Real = tol,
+    noise::T = T(0.1),
+    scale::T = T(1e-3),
+    tol::T = 100eps(T),
+    init_tol::T = tol,
     init_only::Bool = false,
     ) where {T <: Real}
-    Random.seed!(1)
+    Random.seed!(2)
 
     @test !CO.use_scaling(cone)
     CO.setup_data(cone)
     dim = CO.dimension(cone)
     point = Vector{T}(undef, dim)
     CO.set_initial_point(point, cone)
+    @test load_reset_check(cone, point)
+    @test cone.point == point
 
-    if isfinite(init_tol)
-        # tests for centrality of initial point
-        @test load_reset_check(cone, point)
-        @test cone.point == point
-        grad = CO.grad(cone)
-        @test dot(point, -grad) ≈ norm(point) * norm(grad) atol=init_tol rtol=init_tol
-        @test point ≈ -grad atol=init_tol rtol=init_tol
-    end
+    # tests for centrality of initial point
+    grad = CO.grad(cone)
+    @test dot(point, -grad) ≈ norm(point) * norm(grad) atol=init_tol rtol=init_tol
+    @test point ≈ -grad atol=init_tol rtol=init_tol
     init_only && return
 
     # tests for perturbed point
-    CO.reset_data(cone)
-    if !iszero(noise)
-        point += T(noise) * (rand(T, dim) .- inv(T(2)))
-    end
-    point /= scale
+    perturb_scale(point, noise, scale)
     @test load_reset_check(cone, point)
 
     grad = CO.grad(cone)
@@ -83,31 +77,39 @@ end
 function test_barrier_scaling_oracles(
     cone::CO.Cone{T},
     barrier::Function;
-    noise::Real = 0.2,
-    tol::Real = 100eps(T),
+    noise::T = T(0.1),
+    scale::T = T(1e-3),
+    tol::T = 100eps(T),
     ) where {T <: Real}
     Random.seed!(1)
+
     @test CO.use_scaling(cone)
     CO.setup_data(cone)
-    CO.reset_data(cone)
     dim = CO.dimension(cone)
-
     point = Vector{T}(undef, dim)
     dual_point = similar(point)
     CO.set_initial_point(point, cone)
     CO.set_initial_point(dual_point, cone)
-    CO.load_point(cone, point)
-    CO.load_dual_point(cone, dual_point)
+    perturb_scale(point, noise, scale)
+    perturb_scale(dual_point, noise, scale)
+    @test load_reset_check(cone, point, dual_point)
+
+    s_dir = zeros(T, dim)
+    perturb_scale(s_dir, one(T), scale)
+    z_dir = zeros(T, dim)
+    perturb_scale(z_dir, one(T), scale)
+    alpha = T(0.1)
 
     # run twice, first time around scaling will be the identity
     for _ in 1:2
-        CO.reset_data(cone)
         # take a step from the initial point
-        s_dir = rand(T, dim) .- inv(T(2))
-        z_dir = rand(T, dim) .- inv(T(2))
-        CO.step_and_update_scaling(cone, s_dir, z_dir, T(noise))
-        @. cone.point += s_dir * T(noise)
-        @. cone.dual_point += z_dir * T(noise)
+        @show cone.point
+        @show cone.dual_point
+        CO.step_and_update_scaling(cone, s_dir, z_dir, alpha)
+        @. cone.point += s_dir * alpha
+        @. cone.dual_point += z_dir * alpha
+        @show cone.point
+        @show cone.dual_point
         @test CO.is_feas(cone)
         grad = CO.grad(cone)
 
@@ -117,7 +119,7 @@ function test_barrier_scaling_oracles(
         inv_hess = CO.inv_hess(cone)
         @test inv_hess * cone.dual_point ≈ cone.point atol=tol rtol=tol
         @test hess * inv_hess ≈ I atol=tol rtol=tol
-        # hess and inv_hes product oracles
+        # hess and inv_hess product oracles
         prod_mat = similar(cone.point, dim, dim)
         @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
         @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
@@ -167,10 +169,21 @@ function test_barrier_scaling_oracles(
     return
 end
 
-function load_reset_check(cone, point)
+function load_reset_check(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T} = T[]) where {T <: Real}
     CO.load_point(cone, point)
+    !isempty(dual_point) && CO.load_dual_point(cone, point)
     CO.reset_data(cone)
     return CO.is_feas(cone)
+end
+
+function perturb_scale(point::Vector{T}, noise::T, scale::T) where {T <: Real}
+    if !iszero(noise)
+        @. point += 2 * noise * rand(T) - noise
+    end
+    if !isone(scale)
+        point .*= scale
+    end
+    return point
 end
 
 function test_nonnegative_barrier(T::Type{<:Real})
@@ -236,7 +249,6 @@ function test_epiperexp3_barrier(T::Type{<:Real})
         return -log(v * log(u / v) - w) - log(u) - log(v)
     end
     test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = 1e-6)
-    test_barrier_scaling_oracles(CO.EpiPerExp3{T}(false, use_scaling = true), barrier)
     return
 end
 
