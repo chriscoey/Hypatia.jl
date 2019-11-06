@@ -53,6 +53,8 @@ use_scaling(cone::Nonnegative) = cone.use_scaling # TODO remove from here and ju
 
 use_3order_corr(cone::Nonnegative) = cone.use_3order_corr
 
+try_scaled_updates(cone::Nonnegative) = cone.try_scaled_updates # TODO
+
 # TODO this could replace load_point
 load_scaled_point(cone::Nonnegative, point::AbstractVector) = copyto!(cone.scaled_point, point)
 
@@ -196,13 +198,14 @@ function step_max_dist(cone::Nonnegative, s_sol::AbstractVector, z_sol::Abstract
 end
 
 # returns scaled_point \ W_inv * correction = grad * correction
-function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector, primal_point)
-    if cone.try_scaled_updates
-        # TODO pass unscaled point into this oracle, can see differences in number of iters here
-        @. cone.correction = s_sol * z_sol / primal_point
-    else
+# TODO cleanup
+function correction(cone::Nonnegative, s_sol::AbstractVector, z_sol::AbstractVector)#, primal_point)
+    # if cone.try_scaled_updates
+    #     # TODO pass unscaled point into this oracle, can see differences in number of iters here
+    #     @. cone.correction = s_sol * z_sol / primal_point
+    # else
         @. cone.correction = s_sol * z_sol / cone.point
-    end
+    # end
     return cone.correction
 end
 

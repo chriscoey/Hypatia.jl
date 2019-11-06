@@ -589,8 +589,7 @@ end
 
 include("initialize.jl")
 
-include("stepper.jl")
-include("steppers/combined.jl")
+# include("steppers/combined.jl") # TODO remove?
 include("steppers/scaling.jl")
 
 include("systemsolvers/naive.jl")

@@ -2,6 +2,9 @@
 Copyright 2019, Chris Coey and contributors
 
 advanced scaling point based stepping routine
+
+TODO describe here
+TODO rename
 =#
 
 mutable struct ScalingStepper{T <: Real} <: Stepper{T}
@@ -90,6 +93,7 @@ end
 function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
 
+    # TODO remove when not needed
     Cones.load_point.(solver.model.cones, point.primal_views)
     Cones.load_dual_point.(solver.model.cones, point.dual_views)
     Cones.reset_data.(solver.model.cones)
@@ -110,6 +114,13 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     gamma = (1 - aff_alpha) * min(abs2(1 - aff_alpha), T(0.25)) # from MOSEK paper
     solver.prev_gamma = stepper.gamma = gamma
 
+    # TODO remove when not needed
+    Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(solver.model.cones, point.dual_views)
+    Cones.reset_data.(solver.model.cones)
+    Cones.is_feas.(solver.model.cones)
+    Cones.grad.(solver.model.cones)
+
     # calculate combined directions
     stepper.in_affine_phase = false
     @timeit solver.timer "comb_dir" get_directions(stepper, solver)
@@ -128,8 +139,15 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
 
+<<<<<<< HEAD
     for (k, cone_k) in enumerate(solver.model.cones)
         Cones.step_and_update_scaling(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k], alpha)
+=======
+    for cone_k in solver.model.cones
+        if Cones.try_scaled_updates(cone_k)
+            Cones.step_and_update_scaling(cone_k, alpha) # TODO make this consistent across cones
+        end
+>>>>>>> 3e885b4166daf799adf45601239a8a34be1a2adc
     end
 
     @. point.z += alpha * stepper.z_dir
@@ -184,7 +202,7 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     while true
         # TODO only do nbhd checks for cones not using scaling
         # this part I'm unsure about. I think we want
-        # if cone_k.try_scaled_updates
+        # if Cones.try_scaled_updates(cone_k)
         #   z_temp = cone_k.scaled_point + alpha * stepper.z_dir
         #   s_temp = cone_k.scaled_point + alpha * stepper.s_dir
         # and leave everything else the same
@@ -288,34 +306,34 @@ function get_directions(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     # use iterative refinement - note apply_LHS is different for affine vs combined phases
     iter_ref_steps = (stepper.in_affine_phase ? 1 : 3) # TODO handle, maybe change dynamically, try fewer for affine phase
 
-    # copyto!(dir_temp, dir)
-    # res = apply_LHS(stepper, solver) # modifies res
-    # res .-= rhs
-    # norm_inf = norm(res, Inf)
-    # norm_2 = norm(res, 2)
-    # for i in 1:iter_ref_steps
-    #     if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
-    #         break
-    #     end
-    #     @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, res)
-    #     axpby!(true, dir_temp, -1, dir)
-    #     res = apply_LHS(stepper, solver) # modifies res
-    #     res .-= rhs
-    #
-    #     norm_inf_new = norm(res, Inf)
-    #     norm_2_new = norm(res, 2)
-    #     if norm_inf_new > norm_inf || norm_2_new > norm_2
-    #         # residual has not improved
-    #         copyto!(dir, dir_temp)
-    #         break
-    #     end
-    #
-    #     # residual has improved, so use the iterative refinement
-    #     solver.verbose && @printf("iter ref round %d norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", i, norm_inf, norm_inf_new, norm_2, norm_2_new)
-    #     copyto!(dir_temp, dir)
-    #     norm_inf = norm_inf_new
-    #     norm_2 = norm_2_new
-    # end
+    copyto!(dir_temp, dir)
+    res = apply_LHS(stepper, solver) # modifies res
+    res .-= rhs
+    norm_inf = norm(res, Inf)
+    norm_2 = norm(res, 2)
+    for i in 1:iter_ref_steps
+        if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
+            break
+        end
+        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dir, res)
+        axpby!(true, dir_temp, -1, dir)
+        res = apply_LHS(stepper, solver) # modifies res
+        res .-= rhs
+
+        norm_inf_new = norm(res, Inf)
+        norm_2_new = norm(res, 2)
+        if norm_inf_new > norm_inf || norm_2_new > norm_2
+            # residual has not improved
+            copyto!(dir, dir_temp)
+            break
+        end
+
+        # residual has improved, so use the iterative refinement
+        solver.verbose && @printf("iter ref round %d norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", i, norm_inf, norm_inf_new, norm_2, norm_2_new)
+        copyto!(dir_temp, dir)
+        norm_inf = norm_inf_new
+        norm_2 = norm_2_new
+    end
 
     return dir
 end
@@ -353,10 +371,9 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
         for (k, cone_k) in enumerate(solver.model.cones)
             # TODO store this if doing line search so don't need to reload the point right before combined phase
             grad_k = Cones.grad(cone_k)
-
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
             if Cones.use_3order_corr(cone_k)
-                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k], solver.point.primal_views[k])
+                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])#, solver.point.primal_views[k])
             end
         end
 
@@ -408,11 +425,6 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
         if !Cones.use_scaling(cone_k)
             lmul!(solver.mu, s_res_k)
         end
-
-        # # TODO inefficient to recompute - make it a cone field
-        # scalH = Cones.scal_hess(cone_k, solver.mu)
-        # mul!(s_res_k, scalH, Hzs_k)
-
         @. s_res_k += zs_k
     end
 
@@ -421,23 +433,3 @@ function apply_LHS(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Re
 
     return stepper.res
 end
-
-# # TODO experimental for BlockMatrix LHS: if block is a Cone then define mul as hessian product, if block is solver then define mul by mu/tau/tau
-# # TODO optimize... maybe need for each cone a 5-arg hess prod
-# import LinearAlgebra.mul!
-#
-# TODO not working because hessian needs to be multiplied by mu
-# function mul!(y::AbstractVecOrMat{T}, A::Cones.Cone{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-#     # TODO in-place
-#     ytemp = y * beta
-#     Cones.hess_prod!(y, x, A)
-#     rmul!(y, alpha)
-#     y .+= ytemp
-#     return y
-# end
-#
-# function mul!(y::AbstractVecOrMat{T}, solver::Solvers.Solver{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-#     rmul!(y, beta)
-#     @. y += alpha * x * solver.tau / solver.kap
-#     return y
-# end

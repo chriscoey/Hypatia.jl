@@ -36,50 +36,47 @@ testfuns = [
     nonnegative1,
     nonnegative2,
     nonnegative3,
-    # epinorminf1,
-    # epinorminf2,
-    # epinorminf3,
-    # epinorminf4,
-    # epinorminf5,
-    # epinormeucl1,
-    # epinormeucl2,
-    # epinormeucl3,
-    # epipersquare1,
-    # epipersquare2,
-    # epipersquare3,
-    # hypoperlog1,
-    # hypoperlog2,
-    # hypoperlog3,
-    # hypoperlog4,
-    # hypoperlog5,
-    # hypoperlog6,
-    # epiperexp1,
-    # epiperexp2,
-    # epiperexp3,
-    # epiperexp4,
-    # power1,
-    # power2,
-    # power3,
-    # power4,
-    # hypogeomean1,
-    # hypogeomean2,
-    # hypogeomean3,
-    # epinormspectral1,
+    epinorminf1,
+    epinorminf2,
+    epinorminf3,
+    epinorminf4,
+    epinorminf5,
+    epinormeucl1,
+    epinormeucl2,
+    epinormeucl3,
+    epipersquare1,
+    epipersquare2,
+    epipersquare3,
+    hypoperlog1,
+    hypoperlog2,
+    hypoperlog3,
+    hypoperlog4,
+    hypoperlog5,
+    hypoperlog6,
+    epiperexp1,
+    epiperexp2,
+    epiperexp3,
+    epiperexp4,
+    power1,
+    power2,
+    power3,
+    power4,
+    hypogeomean1,
+    hypogeomean2,
+    hypogeomean3,
+    epinormspectral1,
     possemideftri1,
     possemideftri2,
     possemideftricomplex1,
-    # possemideftri3,
-    # possemideftri4,
-    # possemideftri5,
-    # hypoperlogdettri1,
-    # hypoperlogdettri2,
-    # hypoperlogdettri3,
-    # primalinfeas1,
-    # primalinfeas2,
-    # primalinfeas3,
-    # dualinfeas1,
-    # dualinfeas2,
-    # dualinfeas3,
+    hypoperlogdettri1,
+    hypoperlogdettri2,
+    hypoperlogdettri3,
+    primalinfeas1,
+    primalinfeas2,
+    primalinfeas3,
+    dualinfeas1,
+    dualinfeas2,
+    dualinfeas3,
     ]
 
 generic_reals = [
@@ -93,12 +90,12 @@ blas_reals = [
     # Float32,
     ]
 
-tol = 1e-11
-options = (verbose = true, tol_rel_opt = tol, tol_abs_opt = tol, tol_feas = tol)
 
+# TODO delete unused code
+# tol = 1e-11
+# options = (verbose = true, tol_rel_opt = tol, tol_abs_opt = tol, tol_feas = tol)
 
-
-T = Float64
+# T = Float64
 # d = polyminreal(T, :heart, 2, use_wsos = false, use_primal = false)
 # r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
 # @test r.status == :Optimal
@@ -124,6 +121,8 @@ T = Float64
 # r = Hypatia.Solvers.build_solve_check(d.c, d.A, d.b, d.G, d.h, d.cones; solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
 # @test r.status == :Optimal
 
+
+options = (verbose = false,)
 
 @info("starting native tests")
 @testset "native tests" begin
@@ -155,32 +154,27 @@ T = Float64
 
     # # test each system solver
     @testset "NaiveDense tests: $t, $T" for t in testfuns, T in generic_reals
-        t(T, solver = SO.Solver{T}(reduce = true, system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
-        # t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveDenseSystemSolver{T}(); options...)) # TODO delete
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveDenseSystemSolver{T}(); options...))
     end
-    # @testset "NaiveSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
-    # end
-    # # @testset "NaiveIndirect tests: $t" for t in testfuns # TODO need to use linearmaps here with the apply_LHS function, not blockmatrix
-    # #     T = Float64
-    # #     t(T, solver = SO.Solver{T}(preprocess = false, init_use_indirect = true, reduce = false, system_solver = SO.NaiveIndirectSystemSolver{T}(); options...))
-    # # end
-    # @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
-    # end
-    # @testset "NaiveElimSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
-    # end
-    # @testset "SymIndefDense tests: $t, $T" for t in testfuns, T in generic_reals
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefDenseSystemSolver{T}(); options...))
-    # end
-    # @testset "SymIndefSparse tests: $t" for t in testfuns
-    #     T = Float64
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
-    # end
-    # @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache,]#, Hypatia.DensePosDefCache]
-    #     t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
-    # end
+    @testset "NaiveSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveSparseSystemSolver{T}(); options...))
+    end
+    @testset "NaiveElimDense tests: $t, $T, $h" for t in testfuns, T in generic_reals, h in [true, false]
+        t(T, solver = SO.Solver{T}(system_solver = SO.NaiveElimDenseSystemSolver{T}(use_inv_hess = h); options...))
+    end
+    @testset "NaiveElimSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(reduce = false, system_solver = SO.NaiveElimSparseSystemSolver{T}(); options...))
+    end
+    @testset "SymIndefDense tests: $t, $T" for t in testfuns, T in generic_reals
+        t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefDenseSystemSolver{T}(); options...))
+    end
+    @testset "SymIndefSparse tests: $t" for t in testfuns
+        T = Float64
+        t(T, solver = SO.Solver{T}(system_solver = SO.SymIndefSparseSystemSolver{T}(); options...))
+    end
+    @testset "QRCholDense tests: $t, $T, $ss" for t in testfuns, T in generic_reals, ss in [Hypatia.DenseSymCache,]#, Hypatia.DensePosDefCache]
+        t(T, solver = SO.Solver{T}(system_solver = SO.QRCholDenseSystemSolver{T}(fact_cache = ss{T}()); options...))
+    end
 end

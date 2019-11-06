@@ -360,61 +360,6 @@ function possemideftricomplex1(T; options...)
     @test r.x ≈ [Trt2i, 0, 1, Trt2i] atol=tol rtol=tol
 end
 
-function possemideftri3(T; options...)
-    tol = sqrt(sqrt(eps(T)))
-
-    Random.seed!(2)
-    n = sum(1:5)
-    m = 40
-    c = rand(T, n)
-    A = rand(T, m, n)
-    b = rand(T, m) * 100
-    G = Diagonal(-one(T) * I, n)
-    h = zeros(T, n)
-    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(n)]
-
-    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r.status == :Optimal
-    @show r.primal_obj
-end
-
-function possemideftri4(T; options...)
-    tol = sqrt(sqrt(eps(T)))
-
-    Random.seed!(1)
-    n = sum(1:10)
-    m = 20
-    c = rand(T, n)
-    A = rand(T, m, n)
-    b = rand(T, m)
-    G = Diagonal(-one(T) * I, n)
-    h = zeros(T, n)
-    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(n)]
-
-    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r.status == :Optimal
-    @show r.primal_obj
-end
-
-function possemideftri5(T; options...)
-    tol = sqrt(sqrt(eps(T)))
-
-    Random.seed!(2)
-    n = sum(1:20)
-    m = 50
-    c = rand(T, n)
-    A = rand(T, m, n)
-    b = rand(T, m) * 100
-    G = Diagonal(-one(T) * I, n)
-    h = zeros(T, n)
-    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(n)]
-
-    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
-    @test r.status == :Optimal
-    @show r.primal_obj
-end
-
-
 function epiperexp1(T; options...)
     tol = sqrt(sqrt(eps(T)))
     Texph = exp(T(0.5))
@@ -487,8 +432,7 @@ function hypoperlog1(T; options...)
     b = T[2, 1]
     G = Matrix{T}(-I, 3, 3)
     h = zeros(T, 3)
-    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
-    cones = CO.Cone{T}[CO.HypoPerLog3{T}()]
+    cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -505,8 +449,7 @@ function hypoperlog2(T; options...)
     b = T[0]
     G = Diagonal(-one(T) * I, 3)
     h = zeros(T, 3)
-    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
-    cones = CO.Cone{T}[CO.HypoPerLog3{T}()]
+    cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -520,8 +463,7 @@ function hypoperlog3(T; options...)
     b = zeros(T, 0)
     G = sparse([1, 2, 3, 4], [1, 2, 3, 1], -ones(T, 4))
     h = zeros(T, 4)
-    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3), CO.Nonnegative{T}(1)]
-    cones = CO.Cone{T}[CO.HypoPerLog3{T}(), CO.Nonnegative{T}(1)]
+    cones = CO.Cone{T}[CO.HypoPerLog{T}(3), CO.Nonnegative{T}(1)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -538,8 +480,7 @@ function hypoperlog4(T; options...)
     b = T[1, -1]
     G = SparseMatrixCSC(-one(T) * I, 3, 3)
     h = zeros(T, 3)
-    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3, true)]
-    cones = CO.Cone{T}[CO.HypoPerLog3{T}(true)]
+    cones = CO.Cone{T}[CO.HypoPerLog{T}(3, true)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -881,8 +822,7 @@ function primalinfeas3(T; options...)
     b = [one(T), one(T), T(3)]
     G = SparseMatrixCSC(-one(T) * I, 3, 3)
     h = zeros(T, 3)
-    # cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
-    cones = CO.Cone{T}[CO.HypoPerLog3{T}()]
+    cones = CO.Cone{T}[CO.HypoPerLog{T}(3)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :PrimalInfeasible
