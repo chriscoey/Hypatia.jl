@@ -91,16 +91,12 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
 
     # TODO not needed for cones with last point already loaded
-    # if linear systems use scaled variables, none of this needs to happen. all data are updated at the end of the iteration in step_and_update_scaling
-    for (k, cone_k) in enumerate(solver.model.cones)
-        if !cone_k.try_scaled_updates
-            Cones.load_point(cone_k, point.primal_views[k])
-            Cones.load_dual_point(cone_k, point.dual_views[k])
-        end
-    end
+    Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(solver.model.cones, point.dual_views)
     Cones.reset_data.(solver.model.cones)
     Cones.is_feas.(solver.model.cones)
     Cones.grad.(solver.model.cones)
+    Cones.compute_scaling.(solver.model.cones)
 
     @timeit solver.timer "update_fact" update_fact(solver.system_solver, solver)
 
@@ -133,11 +129,6 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # TODO allow stepping different alphas in primal and dual cone directions? some solvers do
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
-
-    for (k, cone_k) in enumerate(solver.model.cones)
-        Cones.step_and_update_scaling(cone_k, alpha)
-    end
-
     @. point.z += alpha * stepper.z_dir
     @. point.s += alpha * stepper.s_dir
     solver.tau += alpha * stepper.dir[stepper.tau_row]
@@ -189,11 +180,6 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     tau_temp = kap_temp = taukap_temp = mu_temp = zero(T)
     while true
         # TODO only do nbhd checks for cones not using scaling
-        # this part I'm unsure about. I think we want
-        # if cone_k.try_scaled_updates
-        #   z_temp = cone_k.scaled_point + alpha * stepper.z_dir
-        #   s_temp = cone_k.scaled_point + alpha * stepper.s_dir
-        # and leave everything else the same
         @. z_temp = point.z + alpha * stepper.z_dir
         @. s_temp = point.s + alpha * stepper.s_dir
         tau_temp = solver.tau + alpha * tau_dir
@@ -362,7 +348,7 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
 
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
             if Cones.use_3order_corr(cone_k)
-                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k], solver.point.primal_views[k])
+                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
             end
         end
 
