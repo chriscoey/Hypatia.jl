@@ -436,8 +436,8 @@ function update_scaling(cone::PosSemidefTri)
             k += incr * i + 1
         end
         cone.scaled_eigvals .= lambda
-        cone.scalmat_sqrt = cone.scalmat_sqrt * fact.L * V * Diagonal(sqrt.(inv.(lambda)))
-        cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * inv(fact.L) * cone.scalmat_sqrti
+        cone.scalmat_sqrt = cone.scalmat_sqrt * fact.L * V * Diagonal(inv.(sqrt.(lambda)))
+        cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * fact.L \ cone.scalmat_sqrti
     else
         # fact = cone.fact
         # dual_fact = cone.dual_fact
@@ -450,7 +450,7 @@ function update_scaling(cone::PosSemidefTri)
 
         # TODO preallocate
         (U, lambda, V) = svd(dual_fact.U * fact.L)
-        cone.scalmat_sqrt = fact.L * V * Diagonal(sqrt.(inv.(lambda)))
+        cone.scalmat_sqrt = fact.L * V * Diagonal(inv.(sqrt.(lambda)))
         cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
         cone.scaled_eigvals = lambda
     end
