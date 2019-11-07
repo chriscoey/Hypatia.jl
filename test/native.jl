@@ -344,6 +344,7 @@ function possemideftri2(T; options...)
     @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
+# maximum eigenvalue problem
 function possemideftri3(T; options...)
     tol = sqrt(sqrt(eps(T)))
     rt2 = sqrt(T(2))
@@ -360,6 +361,27 @@ function possemideftri3(T; options...)
     eig_max = maximum(eigvals(rand_mat))
     @test r.primal_obj ≈ eig_max atol=tol rtol=tol
     @test r.x[1] ≈ eig_max atol=tol rtol=tol
+end
+
+# dual formulation to the above
+function possemideftri4(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    rt2 = sqrt(T(2))
+    s = 3
+    rand_mat = Hermitian(rand(T, s, s), :U)
+    dim = sum(1:s)
+    rand_vec = CO.smat_to_svec!(zeros(T, dim), rand_mat, rt2)
+    c = -rand_vec
+    A = reshape(CO.smat_to_svec!(zeros(T, dim), Matrix{T}(I, s, s), rt2), 1, dim)
+    b = T[1]
+    G = Diagonal(-one(T) * I, dim)
+    h = zeros(T, dim)
+    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(dim)]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    eig_max = maximum(eigvals(rand_mat))
+    @test r.primal_obj ≈ -eig_max atol=tol rtol=tol
 end
 
 function possemideftricomplex1(T; options...)
@@ -379,6 +401,7 @@ function possemideftricomplex1(T; options...)
     @test r.x ≈ [Trt2i, 0, 1, Trt2i] atol=tol rtol=tol
 end
 
+# maximum eigenvalue problem
 function possemideftricomplex2(T; options...)
     tol = sqrt(sqrt(eps(T)))
     rt2 = sqrt(T(2))
