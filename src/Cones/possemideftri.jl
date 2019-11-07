@@ -25,17 +25,16 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     dual_point::Vector{T}
     prev_scal_point::Vector{T}
     prev_scal_dual_point::Vector{T}
-    new_scal_point::Vector{T} # v in MOSEK # TODO this is strong too much currently because smat(v) will always be diagonal
+    new_scal_point::Vector{T} # v in MOSEK # TODO this is storing too much currently because smat(v) will always be diagonal
+    # new_scal_point::Diagonal{T}
     s_dir::Vector{T}
     z_dir::Vector{T}
-    scaled_eigvals::Vector{T}
     rt2::T
 
     feas_updated::Bool
     grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
-    scaling_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
@@ -61,7 +60,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
-        try_scaled_updates::Bool = false,
+        try_scaled_updates::Bool = true,
         ) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
@@ -96,7 +95,7 @@ load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.
 
 load_scaled_point(cone::PosSemidefTri, point::AbstractVector) = copyto!(cone.new_scal_point, point)
 
-reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scaling_updated = false)
+reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 
 function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
     reset_data(cone)
@@ -122,7 +121,6 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     set_initial_point(cone.new_scal_point, cone)
     cone.scalmat_sqrt = Matrix{T}(I, cone.side, cone.side)
     cone.scalmat_sqrti = Matrix{T}(I, cone.side, cone.side)
-    cone.scaled_eigvals = zeros(T, cone.side)
     cone.correction = zeros(T, dim)
     return
 end
@@ -153,18 +151,10 @@ end
 function update_grad(cone::PosSemidefTri)
     # TODO don't need both parts of the if statement anymore, figure out why failing without first part
     @assert cone.is_feas
-    if cone.try_scaled_updates
-        svec_to_smat!(cone.work_mat, cone.new_scal_point, cone.rt2)
-        inv_mat = inv(Hermitian(cone.work_mat, :U))
-        tmp = smat_to_svec!(similar(cone.point), inv_mat, cone.rt2)
-        tmp .*= -1
-        scalmat_ldiv!(cone.grad, tmp, cone, trans = false)
-    else
-        cone.inv_mat = inv(cone.fact)
-        smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
-        cone.grad .*= -1
-        copytri!(cone.mat, 'U', cone.is_complex)
-    end
+    cone.inv_mat = inv(cone.fact)
+    smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
+    cone.grad .*= -1
+    copytri!(cone.mat, 'U', cone.is_complex)
     cone.grad_updated = true
     return cone.grad
 end
@@ -392,11 +382,12 @@ function update_scaling(cone::PosSemidefTri)
     if cone.try_scaled_updates
         svec_to_smat!(cone.mat, cone.prev_scal_point, cone.rt2)
         svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
-        copyto!(cone.fact_mat, cone.mat)
+        copyto!(cone.work_mat, cone.mat)
         copyto!(cone.dual_fact_mat, cone.dual_mat)
-        fact = cholesky!(Hermitian(cone.fact_mat, :U))
+        fact = cholesky!(Hermitian(cone.work_mat, :U))
         dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
         (U, lambda, V) = svd(dual_fact.U * fact.L)
+        # copyto!(cone.new_scal_point.diag, lambda)
         cone.new_scal_point .= 0
         k = 1
         incr = (cone.is_complex ? 2 : 1)
@@ -404,7 +395,6 @@ function update_scaling(cone::PosSemidefTri)
             cone.new_scal_point[k] = lambda[i]
             k += incr * i + 1
         end
-        cone.scaled_eigvals .= lambda
         cone.scalmat_sqrt = cone.scalmat_sqrt * fact.L * V * Diagonal(inv.(sqrt.(lambda)))
         cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * (fact.L \ cone.scalmat_sqrti)
     else
@@ -420,7 +410,6 @@ function update_scaling(cone::PosSemidefTri)
         (U, lambda, V) = svd(dual_fact.U * fact.L)
         cone.scalmat_sqrt = fact.L * V * Diagonal(inv.(sqrt.(lambda)))
         cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
-        cone.scaled_eigvals = lambda
     end
     return
 end

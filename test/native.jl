@@ -343,6 +343,25 @@ function possemideftri2(T; options...)
     @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
+# NOTE not working yet
+function possemideftri3(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    rt2 = sqrt(T(2))
+    c = [one(T)]
+    A = zeros(T, 0, 1)
+    b = T[]
+    rand_mat = Symmetric(rand(T, 3, 3), :U)
+    G = reshape(T[1;  0; 1], 3, 1)
+    h = [rand_mat[1, 1], rand_mat[2, 1] * rt2, rand_mat[2, 2]]
+    cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3)]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    eig_max = maximum(eigvals(rand_mat))
+    @test r.primal_obj ≈ eig_max atol=tol rtol=tol
+    @test r.x[1] ≈ eig_max atol=tol rtol=tol
+end
+
 function possemideftricomplex1(T; options...)
     tol = sqrt(sqrt(eps(T)))
     Trt2 = sqrt(T(2))

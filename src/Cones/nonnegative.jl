@@ -14,12 +14,6 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     dim::Int
     point::Vector{T}
     dual_point::Vector{T}
-    # TODO can remove all of these fields
-    prev_scal_point::Vector{T} # for scaling stepper, old scaling applied to an updated primal iterate
-    prev_scal_dual_point::Vector{T} # for scaling stepper, old scaling applied to an updated dual iterate
-    new_scal_point::Vector{T} # v in MOSEK # TODO this is strong too much currently because smat(v) will always be diagonal
-    scaled_point::Vector{T}
-    scaling_point::Vector{T}
 
     feas_updated::Bool
     grad_updated::Bool
@@ -29,7 +23,6 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     grad::Vector{T}
     hess::Diagonal{T, Vector{T}}
     inv_hess::Diagonal{T, Vector{T}}
-    scaling_updated::Bool # TODO remove
 
     correction::Vector{T}
 
@@ -57,7 +50,7 @@ load_dual_point(cone::Nonnegative, dual_point::AbstractVector) = copyto!(cone.du
 
 load_scaled_point(cone::Nonnegative, point::AbstractVector) = copyto!(cone.scaled_point, point)
 
-reset_data(cone::Nonnegative) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = scaling_updated = false)
+reset_data(cone::Nonnegative) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::Nonnegative{T}) where {T <: Real}
@@ -65,16 +58,9 @@ function setup_data(cone::Nonnegative{T}) where {T <: Real}
     dim = cone.dim
     cone.point = zeros(T, dim)
     cone.dual_point = similar(cone.point)
-    cone.prev_scal_point = similar(cone.point)
-    cone.prev_scal_dual_point = similar(cone.point)
     cone.grad = similar(cone.point)
     cone.hess = Diagonal(zeros(T, dim))
     cone.inv_hess = Diagonal(zeros(T, dim))
-     # TODO initialize at the same time as the initial point
-    cone.new_scal_point = similar(cone.point)
-    set_initial_point(cone.new_scal_point, cone)
-    cone.scaling_point = similar(cone.point)
-    set_initial_point(cone.scaling_point, cone)
     cone.correction = zeros(T, dim)
     return
 end
