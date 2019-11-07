@@ -234,7 +234,7 @@ end
 function update_hess(cone::PosSemidefTri)
     @assert cone.grad_updated
     if cone.use_scaling
-        _build_hess(cone.hess.data, cone.scalmat_sqrti' * cone.scalmat_sqrti, cone.rt2)
+        _build_hess(cone.hess.data, cone.scalmat_sqrti' * cone.scalmat_sqrti, cone.rt2) # TODO fix inefficiency of the mul
     else
         _build_hess(cone.hess.data, cone.inv_mat, cone.rt2)
     end
@@ -245,7 +245,7 @@ end
 function update_inv_hess(cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
-        _build_hess(cone.inv_hess.data, cone.scalmat_sqrt * cone.scalmat_sqrt', cone.rt2)
+        _build_hess(cone.inv_hess.data, cone.scalmat_sqrt * cone.scalmat_sqrt', cone.rt2) # TODO fix inefficiency of the mul
     else
         _build_hess(cone.inv_hess.data, cone.mat, cone.rt2)
     end
@@ -281,7 +281,7 @@ end
 function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
-        mul!(cone.work_mat3, cone.scalmat_sqrti', cone.scalmat_sqrti)
+        mul!(cone.work_mat3, cone.scalmat_sqrti', cone.scalmat_sqrti) # TODO fix inefficiency of the mul
         herm_congruence_prod!(prod, arr, cone.work_mat3, cone)
     else
         @inbounds for i in 1:size(arr, 2)
@@ -298,7 +298,7 @@ end
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
-        mul!(cone.work_mat3, cone.scalmat_sqrt, cone.scalmat_sqrt')
+        mul!(cone.work_mat3, cone.scalmat_sqrt, cone.scalmat_sqrt') # TODO fix inefficiency of the mul
         herm_congruence_prod!(prod, arr, cone.work_mat3, cone)
     else
         herm_congruence_prod!(prod, arr, cone.mat, cone)
@@ -322,9 +322,9 @@ end
 
 function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
     svec_to_smat!(cone.work_mat2, dir, cone.rt2)
-    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.U))
+    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.U)) # TODO multiplying by inverse is inefficient and numerically poor
     ldiv!(fact.U', cone.work_mat)
-    # TODO preallocate. also explore faster options.
+    # TODO preallocate and explore faster options
     # NOTE julia calls eigvals inside eigmin, and eigmin is not currently implemented in GenericLinearAlgebra
     v = eigvals(Hermitian(cone.work_mat, :U))
     inv_min_dist = minimum(v)
@@ -375,8 +375,17 @@ function correction(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractV
     return cone.correction
 end
 
-function update_scaling(cone::PosSemidefTri)
+# s_sol and z_sol are scaled by an old scaling
+function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVector, z_sol::AbstractVector, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
     if cone.try_scaled_updates
+        # get the next s, z but in the old scaling
+        # TODO nandle old note by Lea - "we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific"
+        scalmat_ldiv!(cone.s_dir, s_sol, cone, trans = true)
+        scalmat_prod!(cone.z_dir, z_sol, cone)
+        @. cone.prev_scal_point = cone.new_scal_point + step_size * cone.s_dir
+        @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * cone.z_dir
+
+        # update old scaling
         svec_to_smat!(cone.mat, cone.prev_scal_point, cone.rt2)
         svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
         copyto!(cone.work_mat, cone.mat)
@@ -395,8 +404,7 @@ function update_scaling(cone::PosSemidefTri)
         cone.scalmat_sqrt = cone.scalmat_sqrt * fact.L * V * Diagonal(inv.(sqrt.(lambda)))
         cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * (fact.L \ cone.scalmat_sqrti)
     else
-        # fact = cone.fact
-        # dual_fact = cone.dual_fact
+        # calculate scaling without using old scaling
         svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
         copyto!(cone.dual_fact_mat, cone.dual_mat)
         dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
@@ -408,28 +416,11 @@ function update_scaling(cone::PosSemidefTri)
         cone.scalmat_sqrt = fact.L * V * Diagonal(inv.(sqrt.(lambda)))
         cone.scalmat_sqrti = Diagonal(inv.(sqrt.(lambda))) * U' * dual_fact.U
     end
+
     return
 end
 
-# this is an oracle for now because we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific
-function step(cone::PosSemidefTri{T, R}, s_sol::AbstractVector, z_sol::AbstractVector, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
-    # get the next s, z but in the old scaling
-    if cone.try_scaled_updates
-        scalmat_ldiv!(cone.s_dir, s_sol, cone, trans = true)
-        scalmat_prod!(cone.z_dir, z_sol, cone)
-        @. cone.prev_scal_point = cone.new_scal_point + step_size * cone.s_dir
-        @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * cone.z_dir
-    end
-    return
-end
-
-# s_sol and z_sol are scaled by an old scaling
-function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVector, z_sol::AbstractVector, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
-    step(cone, s_sol, z_sol, step_size)
-    update_scaling(cone)
-    return
-end
-
+# TODO move these functions to Cones.jl if used in other files (such as logdet cone)
 # TODO fix later, rt2::T doesn't work with tests using ForwardDiff
 function smat_to_svec!(vec::AbstractVector{T}, mat::AbstractMatrix{T}, rt2::Number) where {T}
     k = 1

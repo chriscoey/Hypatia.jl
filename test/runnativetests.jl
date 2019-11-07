@@ -5,6 +5,7 @@ TODO
 - add native test problems for WSOS cones
 - add at least 3 test problems per cone
 - speed up tests
+- test more cone options eg scaling, 3rd order corrector
 =#
 
 include(joinpath(@__DIR__, "nativeinstances.jl"))
