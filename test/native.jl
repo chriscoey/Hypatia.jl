@@ -6,6 +6,7 @@ using Test
 import Random
 using LinearAlgebra
 import GenericLinearAlgebra.svdvals
+import GenericLinearAlgebra.eigvals
 using SparseArrays
 import Hypatia
 import Hypatia.Solvers.build_solve_check
@@ -343,16 +344,15 @@ function possemideftri2(T; options...)
     @test norm(r.x) ≈ 0 atol=tol rtol=tol
 end
 
-# NOTE not working yet
 function possemideftri3(T; options...)
     tol = sqrt(sqrt(eps(T)))
     rt2 = sqrt(T(2))
-    c = [one(T)]
+    c = T[1]
     A = zeros(T, 0, 1)
     b = T[]
-    rand_mat = Symmetric(rand(T, 3, 3), :U)
-    G = reshape(T[1;  0; 1], 3, 1)
-    h = [rand_mat[1, 1], rand_mat[2, 1] * rt2, rand_mat[2, 2]]
+    rand_mat = Hermitian(rand(T, 2, 2), :U)
+    G = reshape(T[-1; 0; -1], 3, 1)
+    h = -[rand_mat[1, 1], rand_mat[2, 1] * rt2, rand_mat[2, 2]]
     cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
@@ -377,6 +377,29 @@ function possemideftricomplex1(T; options...)
     @test r.status == :Optimal
     @test r.primal_obj ≈ Trt2 atol=tol rtol=tol
     @test r.x ≈ [Trt2i, 0, 1, Trt2i] atol=tol rtol=tol
+end
+
+function possemideftricomplex2(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    rt2 = sqrt(T(2))
+    c = T[1]
+    A = zeros(T, 0, 1)
+    b = T[]
+    rand_mat = Hermitian(rand(Complex{T}, 2, 2), :U)
+    G = reshape(T[-1; 0; 0; -1], 4, 1)
+    h = -[
+        real(rand_mat[1, 1]),
+        real(rand_mat[2, 1]) * rt2,
+        imag(rand_mat[2, 1]) * rt2,
+        real(rand_mat[2, 2]),
+        ]
+    cones = CO.Cone{T}[CO.PosSemidefTri{T, Complex{T}}(4)]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    eig_max = maximum(eigvals(rand_mat))
+    @test r.primal_obj ≈ eig_max atol=tol rtol=tol
+    @test r.x[1] ≈ eig_max atol=tol rtol=tol
 end
 
 function epiperexp1(T; options...)

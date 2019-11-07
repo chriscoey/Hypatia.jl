@@ -72,7 +72,9 @@ testfuns = [
     epinormspectral1,
     possemideftri1,
     possemideftri2,
+    possemideftri3,
     possemideftricomplex1,
+    possemideftricomplex2,
     hypoperlogdettri1,
     hypoperlogdettri2,
     hypoperlogdettri3,
@@ -95,7 +97,7 @@ blas_reals = [
     Float32,
     ]
 
-options = (verbose = false,)
+options = (verbose = true,)
 
 @info("starting native tests")
 @testset "native tests" begin
