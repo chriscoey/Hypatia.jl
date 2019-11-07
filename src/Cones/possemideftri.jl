@@ -25,8 +25,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     dual_point::Vector{T}
     prev_scal_point::Vector{T}
     prev_scal_dual_point::Vector{T}
-    new_scal_point::Vector{T} # v in MOSEK # TODO this is storing too much currently because smat(v) will always be diagonal
-    # new_scal_point::Diagonal{T}
+    new_scal_point::Vector{T} # v in MOSEK this is always diagonal, but stored as a vector for stepping
     s_dir::Vector{T}
     z_dir::Vector{T}
     rt2::T
@@ -60,7 +59,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         dim::Int;
         use_scaling::Bool = true,
         use_3order_corr::Bool = true,
-        try_scaled_updates::Bool = true,
+        try_scaled_updates::Bool = false,
         ) where {R <: RealOrComplex{T}} where {T <: Real}
         @assert dim >= 1
         cone = new{T, R}()
@@ -92,8 +91,6 @@ use_3order_corr(cone::PosSemidefTri) = cone.use_3order_corr
 try_scaled_updates(cone::PosSemidefTri) = cone.try_scaled_updates # TODO
 
 load_dual_point(cone::PosSemidefTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
-
-load_scaled_point(cone::PosSemidefTri, point::AbstractVector) = copyto!(cone.new_scal_point, point)
 
 reset_data(cone::PosSemidefTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 

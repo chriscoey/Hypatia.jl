@@ -48,8 +48,6 @@ use_3order_corr(cone::Nonnegative) = cone.use_3order_corr
 
 load_dual_point(cone::Nonnegative, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
 
-load_scaled_point(cone::Nonnegative, point::AbstractVector) = copyto!(cone.scaled_point, point)
-
 reset_data(cone::Nonnegative) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 
 # TODO only allocate the fields we use

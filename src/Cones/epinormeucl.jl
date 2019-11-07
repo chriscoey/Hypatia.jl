@@ -31,8 +31,8 @@ mutable struct EpiNormEucl{T <: Real} <: Cone{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
 
-    scaled_point::Vector{T}
-    scaled_dual_point::Vector{T}
+    normalized_point::Vector{T}
+    normalized_dual_point::Vector{T}
     w::Vector{T} # TODO think about naming, it's w_bar in cvxopt paper
     # experimental
     lambda::Vector{T} # TODO think about naming, it's w_bar in cvxopt paper
@@ -82,8 +82,8 @@ function setup_data(cone::EpiNormEucl{T}) where {T <: Real}
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
-    cone.scaled_point = zeros(T, dim)
-    cone.scaled_dual_point = zeros(T, dim)
+    cone.normalized_point = zeros(T, dim)
+    cone.normalized_dual_point = zeros(T, dim)
     cone.w = zeros(T, dim)
     cone.v = zeros(T, dim)
     cone.correction = zeros(T, dim)
@@ -130,41 +130,41 @@ function update_scaling(cone::EpiNormEucl)
     @assert cone.feas_updated
     dual_dist = cone.dual_dist = calc_dist(cone.dual_point)
     @assert dual_dist >= 0
-    scaled_point = cone.scaled_point .= cone.point ./ sqrt(cone.dist)
-    scaled_dual_point = cone.scaled_dual_point .= cone.dual_point ./ sqrt(dual_dist)
-    gamma = cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
+    normalized_point = cone.normalized_point .= cone.point ./ sqrt(cone.dist)
+    normalized_dual_point = cone.normalized_dual_point .= cone.dual_point ./ sqrt(dual_dist)
+    gamma = cone.gamma = sqrt((1 + dot(normalized_point, normalized_dual_point)) / 2)
 
     w = cone.w
-    w[1] = scaled_point[1] + scaled_dual_point[1]
-    @. @views w[2:end] = scaled_point[2:end] - scaled_dual_point[2:end]
+    w[1] = normalized_point[1] + normalized_dual_point[1]
+    @. @views w[2:end] = normalized_point[2:end] - normalized_dual_point[2:end]
     w ./= 2 # NOTE probably not /2 for unhalved barrier
     w ./= gamma
 
     # different code
     # v = cone.v
-    # vs = dot(scaled_point, v)
-    # vz = jdot(scaled_dual_point, v)
+    # vs = dot(normalized_point, v)
+    # vz = jdot(normalized_dual_point, v)
     # vq = (vs + vz) / gamma / 2 # this is just v'q since q = (s + Jz) / 2 gamma
     # vu = vs - vz # dunno what this is
     #
     # lambda = cone.lambda
     # lambda[1] = gamma
     #
-    # w[1] = 2 * v[1] * vq - (scaled_point[1] + scaled_dual_point[1]) / gamma / 2
-    # d = (v[1] * vu - scaled_point[1] / 2 + scaled_dual_point[1] / 2) / (1 + w[1])
+    # w[1] = 2 * v[1] * vq - (normalized_point[1] + normalized_dual_point[1]) / gamma / 2
+    # d = (v[1] * vu - normalized_point[1] / 2 + normalized_dual_point[1] / 2) / (1 + w[1])
     #
     # @views begin
     #     copyto!(lambda[2:end], v[2:end])
     #     @. lambda[2:end] *= 2 * (-d * vq + 0.5 * vu)
-    #     @. lambda[2:end] +=  (1 - d / gamma) * scaled_point[2:end] / 2
-    #     @. lambda[2:end] +=  (1 + d / gamma) * scaled_dual_point[2:end] / 2
+    #     @. lambda[2:end] +=  (1 - d / gamma) * normalized_point[2:end] / 2
+    #     @. lambda[2:end] +=  (1 + d / gamma) * normalized_dual_point[2:end] / 2
     # end
     # @. lambda .*= sqrt(cone.dist / dual_dist)
     #
     # v .*= 2 * vq
-    # v[1] -= scaled_point[1] / 2 / gamma
-    # @views @. v[2:end] += scaled_point / gamma / 2
-    # @views @. v[2:end] -= scaled_dual_point /  gamma / 2
+    # v[1] -= normalized_point[1] / 2 / gamma
+    # @views @. v[2:end] += normalized_point / gamma / 2
+    # @views @. v[2:end] -= normalized_dual_point /  gamma / 2
     # v[1] += 1
     # v ./=  sqrt(2 * v[1])
 
@@ -189,9 +189,9 @@ end
 #     @assert cone.feas_updated
 #     dual_dist = cone.dual_dist = calc_dist(cone.dual_point)
 #     @assert dual_dist >= 0
-#     scaled_point = cone.scaled_point .= cone.point ./ sqrt(cone.dist)
-#     scaled_dual_point = cone.scaled_dual_point .= cone.dual_point ./ sqrt(dual_dist)
-#     cone.gamma = sqrt((1 + dot(scaled_point, scaled_dual_point)) / 2)
+#     normalized_point = cone.normalized_point .= cone.point ./ sqrt(cone.dist)
+#     normalized_dual_point = cone.normalized_dual_point .= cone.dual_point ./ sqrt(dual_dist)
+#     cone.gamma = sqrt((1 + dot(normalized_point, normalized_dual_point)) / 2)
 #
 #     q = cone.q
 #     v = cone.v
@@ -199,8 +199,8 @@ end
 #     w_old_dist = calc_dist(cone.w)
 #     q_old_dist = calc_dist(cone.q)
 #
-#     q[1] = scaled_point[1] + scaled_dual_point[1]
-#     @. @views q[2:end] = scaled_point[2:end] - scaled_dual_point[2:end]
+#     q[1] = normalized_point[1] + normalized_dual_point[1]
+#     @. @views q[2:end] = normalized_point[2:end] - normalized_dual_point[2:end]
 #     q ./= 2
 #     q ./= cone.gamma
 #
@@ -466,34 +466,6 @@ function correction(cone::EpiNormEucl, s_sol::AbstractVector, z_sol::AbstractVec
     return corr
 end
 
-# divides arr by lambda, the scaled point
-# TODO there is a faster way to get lambda
-function scalvec_ldiv!(div::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormEucl)
-    if !cone.scaling_updated
-        update_scaling(cone)
-    end
-    lambda = scalmat_prod!(similar(cone.point), cone.dual_point, cone)
-    return jordan_ldiv!(div, lambda, arr)
-end
-
-function jordan_ldiv!(C::AbstractVecOrMat, A::Vector, B::AbstractVecOrMat)
-    m = length(A)
-    @assert m == size(B, 1)
-    @assert size(B) == size(C)
-    A1 = A[1]
-    A2m = view(A, 2:m)
-    schur = calc_dist(A)
-    @views begin
-        mul!(C[1, :], B[2:end, :]', A2m)
-        @. C[2:end, :] = A2m * C[1, :]' / A1
-        axpby!(A1, B[1, :], -1, C[1, :])
-        @. C[2:end, :] -= A2m * B[1, :]'
-        C ./= schur
-        @. C[2:end, :] += B[2:end, :] / A1
-    end
-    return C
-end
-
 function dist_to_bndry(::EpiNormEucl{T}, point::Vector{T}, dir::AbstractVector{T}) where {T}
     point_dir_dist = point[1] * dir[1] - sum(point[i] * dir[i] for i in 2:length(point))
     fact = (point_dir_dist + dir[1]) / (point[1] + 1)
@@ -506,8 +478,8 @@ function dist_to_bndry(::EpiNormEucl{T}, point::Vector{T}, dir::AbstractVector{T
 end
 
 function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
-    primal_step_dist = sqrt(cone.dist) / dist_to_bndry(cone, cone.scaled_point, s_sol)
-    dual_step_dist = sqrt(cone.dual_dist) / dist_to_bndry(cone, cone.scaled_dual_point, z_sol)
+    primal_step_dist = sqrt(cone.dist) / dist_to_bndry(cone, cone.normalized_point, s_sol)
+    dual_step_dist = sqrt(cone.dual_dist) / dist_to_bndry(cone, cone.normalized_dual_point, z_sol)
 
     # TODO refactor
     step_dist = T(Inf)
@@ -518,12 +490,4 @@ function step_max_dist(cone::EpiNormEucl{T}, s_sol::AbstractVector{T}, z_sol::Ab
         step_dist = min(step_dist, dual_step_dist)
     end
     return step_dist
-end
-
-# NOTE this may be used as an internal function rather than an oracle defined for all cones
-function conic_prod!(w::AbstractVector, u::AbstractVector, v::AbstractVector, cone::EpiNormEucl)
-    @assert length(u) == length(v)
-    w[1] = dot(u, v)
-    @. @views w[2:end] = u[1] * v[2:end] + v[1] * u[2:end]
-    return w
 end
