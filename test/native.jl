@@ -427,7 +427,7 @@ function possemideftricomplex3(T; options...)
     rand_mat = Hermitian(rand(Complex{T}, s, s), :U)
     dim = abs2(s)
     c = -CO.smat_to_svec!(zeros(T, dim), rand_mat, rt2)
-    A = reshape(CO.smat_to_svec!(zeros(T, dim), Matrix{T}(I, s, s), rt2), 1, dim)
+    A = reshape(CO.smat_to_svec!(zeros(T, dim), Matrix{Complex{T}}(I, s, s), rt2), 1, dim)
     b = T[1]
     G = Diagonal(-one(T) * I, dim)
     h = zeros(T, dim)
