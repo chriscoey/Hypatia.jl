@@ -358,7 +358,7 @@ function possemideftri3(T; options...)
     A = zeros(T, 0, 1)
     b = T[]
     rand_mat = Hermitian(rand(T, 2, 2), :U)
-    G = reshape(T[-1; 0; -1], 3, 1)
+    G = reshape(T[-1, 0, -1], 3, 1)
     h = -CO.smat_to_svec!(zeros(T, 3), rand_mat, rt2)
     cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3)]
 
@@ -414,7 +414,7 @@ function possemideftricomplex2(T; options...)
     A = zeros(T, 0, 1)
     b = T[]
     rand_mat = Hermitian(rand(Complex{T}, 2, 2), :U)
-    G = reshape(T[-1; 0; 0; -1], 4, 1)
+    G = reshape(T[-1, 0, 0, -1], 4, 1)
     h = -CO.smat_to_svec!(zeros(T, 4), rand_mat, rt2)
     cones = CO.Cone{T}[CO.PosSemidefTri{T, Complex{T}}(4)]
 
