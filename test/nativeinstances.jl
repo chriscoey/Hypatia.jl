@@ -2,6 +2,10 @@
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 
 native test instances
+
+TODO
+- improve efficiency of many of the tests by doing in-place linear algebra etc
+- maybe pass in tol?
 =#
 
 using Test

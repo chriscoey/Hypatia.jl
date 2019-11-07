@@ -26,6 +26,7 @@ testfuns_few = [
     dualinfeas3,
     ]
 
+# TODO check all native instances are in this list
 testfuns_many = [
     nonnegative1,
     nonnegative2,
@@ -46,7 +47,7 @@ testfuns_many = [
     epiperexp3,
     epiperexp4,
     epipersumexp1,
-    epipersumexp2,
+    epipersumexp2, # TODO another epipersumexp test
     hypopersumlog1,
     hypopersumlog2,
     hypopersumlog3,
@@ -60,7 +61,7 @@ testfuns_many = [
     hypogeomean1,
     hypogeomean2,
     hypogeomean3,
-    epinormspectral1,
+    epinormspectral1, # TODO add more epinormspectral tests
     possemideftri1,
     possemideftri2,
     possemideftri3,
@@ -79,6 +80,7 @@ testfuns_many = [
     dualinfeas3,
     ]
 
+# TODO add more preprocessing test instances
 testfuns_preproc = [
     dimension1,
     consistent1,
