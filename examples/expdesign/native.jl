@@ -89,7 +89,7 @@ function expdesign(
             padx = num_trivars + q
             num_hypo = q
         end
-        # maximize the sum of hypograph variables of all hypoperlog cones
+        # maximize the sum of hypograph variables of all hypopersumlog cones
         c = vcat(zeros(T, p + num_trivars), -ones(T, num_hypo))
 
         # vectorized dimension of psd matrix
@@ -142,7 +142,7 @@ function expdesign(
                 zeros(T, q, p)    G_logvars    zeros(T, q)
                 ]
             h_log = vcat(zero(T), one(T), zeros(T, q))
-            push!(cones, CO.HypoPerLog{T}(q + 2))
+            push!(cones, CO.HypoPerSumLog{T}(q + 2))
         else
             G_log = zeros(T, 3 * q, dimx)
             h_log = zeros(T, 3 * q)
@@ -154,7 +154,7 @@ function expdesign(
                 h_log[offset + 1] = 1
                 # diagonal element in the triangular matrix
                 G_log[offset + 2, p + diag_idx(i)] = -1
-                push!(cones, CO.HypoPerLog{T}(3))
+                push!(cones, CO.HypoPerSumLog{T}(3)) # TODO use EpiPerExp (swap order of variables)
                 offset += 3
             end
         end

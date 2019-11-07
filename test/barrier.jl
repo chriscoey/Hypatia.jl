@@ -264,40 +264,40 @@ function test_epipersquare_barrier(T::Type{<:Real})
     return
 end
 
-function test_hypoperlog_barrier(T::Type{<:Real})
-    function barrier(s)
-        (u, v, w) = (s[1], s[2], s[3:end])
-        return -log(v * sum(log(wj / v) for wj in w) - u) - sum(log, w) - log(v)
-    end
-    for dim in [3, 5, 10]
-        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = T(1e-5))
-    end
-    for dim in [15, 65, 75, 100, 500]
-        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = T(1e-1), init_only = true)
-    end
-    return
-end
-
-function test_epiperexp3_barrier(T::Type{<:Real})
+function test_epiperexp_barrier(T::Type{<:Real})
     function barrier(s)
         (u, v, w) = (s[1], s[2], s[3])
         return -log(v * log(u / v) - w) - log(u) - log(v)
     end
-    test_barrier_oracles(CO.EpiPerExp3{T}(), barrier, init_tol = T(1e-6))
+    test_barrier_oracles(CO.EpiPerExp{T}(), barrier, init_tol = T(1e-6))
     return
 end
 
-function test_epiperexp_barrier(T::Type{<:Real})
+function test_epipersumexp_barrier(T::Type{<:Real})
     function barrier(s)
         (u, v, w) = (s[1], s[2], s[3:end])
         return -log(v * log(u / v) - v * log(sum(wi -> exp(wi / v), w))) - log(u) - log(v)
     end
     for dim in [3, 5, 10]
-        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = T(1e-5))
+        test_barrier_oracles(CO.EpiPerSumExp{T}(dim), barrier, init_tol = T(1e-5))
     end
     # NOTE when initial point improved, take tests up to dim=500 and tighten tolerance
     for dim in [15, 35 , 45, 100, 120, 200]
-        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = T(7e-1), init_only = true)
+        test_barrier_oracles(CO.EpiPerSumExp{T}(dim), barrier, init_tol = T(7e-1), init_only = true)
+    end
+    return
+end
+
+function test_hypopersumlog_barrier(T::Type{<:Real})
+    function barrier(s)
+        (u, v, w) = (s[1], s[2], s[3:end])
+        return -log(v * sum(log(wj / v) for wj in w) - u) - sum(log, w) - log(v)
+    end
+    for dim in [3, 5, 10]
+        test_barrier_oracles(CO.HypoPerSumLog{T}(dim), barrier, init_tol = T(1e-5))
+    end
+    for dim in [15, 65, 75, 100, 500]
+        test_barrier_oracles(CO.HypoPerSumLog{T}(dim), barrier, init_tol = T(1e-1), init_only = true)
     end
     return
 end

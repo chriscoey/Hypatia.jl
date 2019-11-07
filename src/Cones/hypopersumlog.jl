@@ -8,7 +8,7 @@ barrier (guessed, reduces to 3-dim exp cone self-concordant barrier)
 -log(v*sum(log.(w/v)) - u) - sum(log.(w)) - log(v)
 =#
 
-mutable struct HypoPerLog{T <: Real} <: Cone{T}
+mutable struct HypoPerSumLog{T <: Real} <: Cone{T}
     use_dual::Bool
     dim::Int
     point::Vector{T}
@@ -28,7 +28,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     vlwvu::T
     vwivlwvu::Vector{T}
 
-    function HypoPerLog{T}(
+    function HypoPerSumLog{T}(
         dim::Int,
         is_dual::Bool;
         hess_fact_cache = hessian_cache(T),
@@ -42,10 +42,10 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     end
 end
 
-HypoPerLog{T}(dim::Int) where {T <: Real} = HypoPerLog{T}(dim, false)
+HypoPerSumLog{T}(dim::Int) where {T <: Real} = HypoPerSumLog{T}(dim, false)
 
 # TODO only allocate the fields we use
-function setup_data(cone::HypoPerLog{T}) where {T <: Real}
+function setup_data(cone::HypoPerSumLog{T}) where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
@@ -57,15 +57,15 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     return
 end
 
-get_nu(cone::HypoPerLog) = cone.dim
+get_nu(cone::HypoPerSumLog) = cone.dim
 
-function set_initial_point(arr::AbstractVector, cone::HypoPerLog)
-    (arr[1], arr[2], w) = get_central_ray_hypoperlog(cone.dim - 2)
+function set_initial_point(arr::AbstractVector, cone::HypoPerSumLog)
+    (arr[1], arr[2], w) = get_central_ray_hypopersumlog(cone.dim - 2)
     arr[3:end] .= w
     return arr
 end
 
-function update_feas(cone::HypoPerLog)
+function update_feas(cone::HypoPerSumLog)
     @assert !cone.feas_updated
     u = cone.point[1]
     v = cone.point[2]
@@ -81,7 +81,7 @@ function update_feas(cone::HypoPerLog)
     return cone.is_feas
 end
 
-function update_grad(cone::HypoPerLog)
+function update_grad(cone::HypoPerSumLog)
     @assert cone.is_feas
     u = cone.point[1]
     v = cone.point[2]
@@ -94,7 +94,7 @@ function update_grad(cone::HypoPerLog)
     return cone.grad
 end
 
-function update_hess(cone::HypoPerLog)
+function update_hess(cone::HypoPerSumLog)
     @assert cone.grad_updated
     u = cone.point[1]
     v = cone.point[2]
@@ -123,10 +123,10 @@ function update_hess(cone::HypoPerLog)
 end
 
 # see analysis in https://github.com/lkapelevich/HypatiaBenchmarks.jl/tree/master/centralpoints
-function get_central_ray_hypoperlog(wdim::Int)
+function get_central_ray_hypopersumlog(wdim::Int)
     if wdim <= 10
         # lookup points where x = f'(x)
-        return central_rays_hypoperlog[wdim, :]
+        return central_rays_hypopersumlog[wdim, :]
     end
     # use nonlinear fit for higher dimensions
     if wdim <= 70
@@ -141,7 +141,7 @@ function get_central_ray_hypoperlog(wdim::Int)
     return [u, v, w]
 end
 
-const central_rays_hypoperlog = [
+const central_rays_hypopersumlog = [
     -0.827838399  0.805102005  1.290927713;
     -0.689609381  0.724604185  1.224619879;
     -0.584372734  0.681280549  1.182421998;

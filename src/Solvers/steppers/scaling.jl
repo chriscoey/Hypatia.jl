@@ -369,7 +369,8 @@ function update_rhs(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: R
             grad_k = Cones.grad(cone_k)
             @. stepper.s_rhs_k[k] -= gamma_mu * grad_k
             if Cones.use_3order_corr(cone_k)
-                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])#, solver.point.primal_views[k])
+                # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
+                stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.s_dir_k[k], stepper.z_dir_k[k])
             end
         end
 

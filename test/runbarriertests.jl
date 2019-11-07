@@ -9,10 +9,10 @@ barrier_testfuns = [
     test_epinormeucl_barrier,
     test_possemideftri_barrier,
     test_epinorminf_barrier,
-    test_epipersquare_barrier,
-    test_hypoperlog_barrier,
-    test_epiperexp3_barrier,
+    test_epipersquare_barrier, # TODO implement and test NT scaling
     test_epiperexp_barrier,
+    test_epipersumexp_barrier,
+    test_hypopersumlog_barrier,
     test_power_barrier,
     test_hypogeomean_barrier,
     test_epinormspectral_barrier,
@@ -26,8 +26,8 @@ barrier_testfuns = [
 
 real_types = [
     Float64,
-    Float32,
-    BigFloat,
+    # Float32,
+    # BigFloat,
     ]
 
 @info("starting barrier tests")

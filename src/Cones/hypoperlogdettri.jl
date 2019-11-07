@@ -5,7 +5,7 @@ Copyright 2018, Chris Coey and contributors
 (u in R, v in R_+, w in S_+) : u <= v*logdet(W/v)
 (see equivalent MathOptInterface LogDetConeConeTriangle definition)
 
-barrier (guessed, based on analogy to hypoperlog barrier)
+barrier (guessed, based on analogy to 3D exponential cone barrier)
 -log(v*logdet(W/v) - u) - logdet(W) - log(v)
 =#
 
