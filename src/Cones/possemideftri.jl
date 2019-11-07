@@ -17,7 +17,7 @@ TODO
 mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     use_scaling::Bool
     use_3order_corr::Bool
-    try_scaled_updates::Bool # experimental, run algorithm in scaled variables for numerical reasons. it may be too tricky to keep this boolean.
+    try_scaled_updates::Bool # run algorithm in scaled variables for numerical reasons TODO decide whether to keep this as an option
     dim::Int
     side::Int
     is_complex::Bool
@@ -25,9 +25,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     dual_point::Vector{T}
     prev_scal_point::Vector{T}
     prev_scal_dual_point::Vector{T}
-    new_scal_point::Vector{T} # v in MOSEK this is always diagonal, but stored as a vector for stepping
-    s_dir::Vector{T}
-    z_dir::Vector{T}
+    new_scal_point::Vector{T} # NOTE v in MOSEK; always diagonal, but stored as a vector for stepping
     rt2::T
 
     feas_updated::Bool
@@ -102,8 +100,6 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     cone.prev_scal_point = similar(cone.point)
     cone.prev_scal_dual_point = similar(cone.point)
     cone.new_scal_point = similar(cone.point)
-    cone.s_dir = similar(cone.point)
-    cone.z_dir = similar(cone.point)
     cone.grad = similar(cone.point)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
@@ -368,20 +364,24 @@ end
 function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVector, z_sol::AbstractVector, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
     if cone.try_scaled_updates
         # get the next s, z but in the old scaling
-        # TODO nandle old note by Lea - "we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific"
-        gen_congruence_prod!(cone.s_dir, s_sol, cone.scalmat_sqrti', cone)
-        gen_congruence_prod!(cone.z_dir, z_sol, cone.scalmat_sqrt, cone)
-        @. cone.prev_scal_point = cone.new_scal_point + step_size * cone.s_dir
-        @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * cone.z_dir
+        # TODO handle old note by Lea - "we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific"
+        dir = similar()
+        gen_congruence_prod!(dir, s_sol, cone.scalmat_sqrti', cone)
+        @. cone.prev_scal_point = cone.new_scal_point + step_size * dir
+        gen_congruence_prod!(dir, z_sol, cone.scalmat_sqrt, cone)
+        @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * dir
 
         # update old scaling
         svec_to_smat!(cone.mat, cone.prev_scal_point, cone.rt2)
-        svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
         copyto!(cone.work_mat, cone.mat)
-        copyto!(cone.dual_fact_mat, cone.dual_mat)
         fact = cholesky!(Hermitian(cone.work_mat, :U))
+
+        svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
+        copyto!(cone.dual_fact_mat, cone.dual_mat)
         dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
+
         (U, lambda, V) = svd(dual_fact.U * fact.L)
+        # TODO fix the next few lines - use diagonal .diag
         # copyto!(cone.new_scal_point.diag, lambda)
         cone.new_scal_point .= 0
         k = 1
@@ -390,6 +390,7 @@ function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVecto
             cone.new_scal_point[k] = lambda[i]
             k += incr * i + 1
         end
+
         cone.scalmat_sqrt = cone.scalmat_sqrt * fact.L * V * Diagonal(inv.(sqrt.(lambda)))
         cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * (fact.L \ cone.scalmat_sqrti)
     else
