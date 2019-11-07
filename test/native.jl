@@ -353,7 +353,7 @@ function possemideftri3(T; options...)
     b = T[]
     rand_mat = Hermitian(rand(T, 2, 2), :U)
     G = reshape(T[-1; 0; -1], 3, 1)
-    h = -[rand_mat[1, 1], rand_mat[2, 1] * rt2, rand_mat[2, 2]]
+    h = -CO.smat_to_svec!(zeros(T, 3), rand_mat, rt2)
     cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(3)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
@@ -370,8 +370,7 @@ function possemideftri4(T; options...)
     s = 3
     rand_mat = Hermitian(rand(T, s, s), :U)
     dim = sum(1:s)
-    rand_vec = CO.smat_to_svec!(zeros(T, dim), rand_mat, rt2)
-    c = -rand_vec
+    c = -CO.smat_to_svec!(zeros(T, dim), rand_mat, rt2)
     A = reshape(CO.smat_to_svec!(zeros(T, dim), Matrix{T}(I, s, s), rt2), 1, dim)
     b = T[1]
     G = Diagonal(-one(T) * I, dim)
@@ -410,12 +409,7 @@ function possemideftricomplex2(T; options...)
     b = T[]
     rand_mat = Hermitian(rand(Complex{T}, 2, 2), :U)
     G = reshape(T[-1; 0; 0; -1], 4, 1)
-    h = -[
-        real(rand_mat[1, 1]),
-        real(rand_mat[2, 1]) * rt2,
-        imag(rand_mat[2, 1]) * rt2,
-        real(rand_mat[2, 2]),
-        ]
+    h = -CO.smat_to_svec!(zeros(T, 4), rand_mat, rt2)
     cones = CO.Cone{T}[CO.PosSemidefTri{T, Complex{T}}(4)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
@@ -423,6 +417,26 @@ function possemideftricomplex2(T; options...)
     eig_max = maximum(eigvals(rand_mat))
     @test r.primal_obj ≈ eig_max atol=tol rtol=tol
     @test r.x[1] ≈ eig_max atol=tol rtol=tol
+end
+
+# dual formulation to the above
+function possemideftricomplex3(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    rt2 = sqrt(T(2))
+    s = 3
+    rand_mat = Hermitian(rand(Complex{T}, s, s), :U)
+    dim = abs2(s)
+    c = -CO.smat_to_svec!(zeros(T, dim), rand_mat, rt2)
+    A = reshape(CO.smat_to_svec!(zeros(T, dim), Matrix{T}(I, s, s), rt2), 1, dim)
+    b = T[1]
+    G = Diagonal(-one(T) * I, dim)
+    h = zeros(T, dim)
+    cones = CO.Cone{T}[CO.PosSemidefTri{T, Complex{T}}(dim)]
+
+    r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+    @test r.status == :Optimal
+    eig_max = maximum(eigvals(rand_mat))
+    @test r.primal_obj ≈ -eig_max atol=tol rtol=tol
 end
 
 function epiperexp1(T; options...)
