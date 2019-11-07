@@ -1,17 +1,17 @@
 #=
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 
-row-wise lower triangle of positive semidefinite matrix cone
+row-wise lower triangle of positive semidefinite matrix cone (scaled "svec" form)
 W \in S^n : 0 >= eigmin(W)
-(see equivalent MathOptInterface PositiveSemidefiniteConeTriangle definition)
 NOTE on-diagonal (real) elements have one slot in the vector and below diagonal (complex) elements have two consecutive slots in the vector
 
 barrier from "Self-Scaled Barriers and Interior-Point Methods for Convex Programming" by Nesterov & Todd
 -logdet(W)
 
 TODO
-describe hermitian complex PSD cone
-fix native and moi tests, and moi wrapper
+- describe svec scaling
+- describe hermitian complex PSD cone
+- fix native and moi tests, and moi wrapper
 =#
 
 mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
@@ -295,6 +295,7 @@ function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemi
     return prod
 end
 
+# TODO don't need to special case here
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
@@ -303,20 +304,6 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
     else
         herm_congruence_prod!(prod, arr, cone.mat, cone)
     end
-    return prod
-end
-
-# TODO think about whether transpose oracle is needed
-function scalmat_prod!(prod::AbstractVecOrMat{R}, arr::AbstractVecOrMat, cone::PosSemidefTri; trans::Bool = false) where {R <: Real}
-    outer_term = (trans ? cone.scalmat_sqrt' : cone.scalmat_sqrt)
-    gen_congruence_prod!(prod, arr, outer_term, cone)
-    return prod
-end
-
-# TODO think about whether transpose oracle is needed in the future (it is now)
-function scalmat_ldiv!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri; trans::Bool = false)
-    outer_term = (trans ? cone.scalmat_sqrti' : cone.scalmat_sqrti)
-    gen_congruence_prod!(prod, arr, outer_term, cone)
     return prod
 end
 
@@ -335,19 +322,21 @@ function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) 
     end
 end
 
+# TODO refactor this better with dist_to_bndry
 function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.is_feas
-    # TODO this could go in Cones.jl
+
     svec_to_smat!(cone.mat, cone.point, cone.rt2)
-    svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
     copyto!(cone.fact_mat, cone.mat)
-    copyto!(cone.dual_fact_mat, cone.dual_mat)
     cone.fact = cholesky!(Hermitian(cone.fact_mat, :U))
-    cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
     primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
+
+    svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
+    copyto!(cone.dual_fact_mat, cone.dual_mat)
+    cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
     dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
-    step_dist = min(primal_dist, dual_dist)
-    return step_dist
+
+    return min(primal_dist, dual_dist)
 end
 
 # from MOSEK paper
@@ -380,8 +369,8 @@ function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVecto
     if cone.try_scaled_updates
         # get the next s, z but in the old scaling
         # TODO nandle old note by Lea - "we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific"
-        scalmat_ldiv!(cone.s_dir, s_sol, cone, trans = true)
-        scalmat_prod!(cone.z_dir, z_sol, cone)
+        gen_congruence_prod!(cone.s_dir, s_sol, cone.scalmat_sqrti', cone)
+        gen_congruence_prod!(cone.z_dir, z_sol, cone.scalmat_sqrt, cone)
         @. cone.prev_scal_point = cone.new_scal_point + step_size * cone.s_dir
         @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * cone.z_dir
 
