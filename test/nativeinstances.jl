@@ -800,6 +800,34 @@ function epinormspectral1(T; options...)
     end
 end
 
+function epinormspectral2(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    mat = T[2 3 4; 4 6 8]
+    c = T[1, 0, 0, 0]
+    A = zeros(T, 3, 4)
+    A[1, 2] = 1
+    A[2, 3] = 1
+    A[3, 4] = 1
+    b = T[4, 6, 4]
+    G = zeros(T, 7, 4)
+    G[1, 1] = -1
+    G[3, 2] = -1
+    G[5, 3] = -1
+    G[6, 4] = -1
+    h = T[0, 2, 0, 3, 0, 0, 8]
+
+    for is_dual in (true, false)
+        cones = CO.Cone{T}[CO.EpiNormSpectral{T}(2, 3, is_dual)]
+        r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+        @test r.status == :Optimal
+        if is_dual
+            @test sum(svdvals(mat)) ≈ r.s[1] atol=tol rtol=tol
+        else
+            @test svdvals(mat)[1] ≈ r.s[1] atol=tol rtol=tol
+        end
+    end
+end
+
 function hypoperlogdettri1(T; options...)
     tol = sqrt(sqrt(eps(T)))
     Random.seed!(1)
