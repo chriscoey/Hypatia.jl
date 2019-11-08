@@ -62,6 +62,8 @@ testfuns_many = [
     hypogeomean2,
     hypogeomean3,
     epinormspectral1, # TODO add more epinormspectral tests
+    epinormspectral2,
+    epinormspectral3,
     possemideftri1,
     possemideftri2,
     possemideftri3,

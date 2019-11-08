@@ -365,7 +365,7 @@ function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVecto
     if cone.try_scaled_updates
         # get the next s, z but in the old scaling
         # TODO handle old note by Lea - "we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific"
-        dir = similar()
+        dir = similar(cone.point)
         gen_congruence_prod!(dir, s_sol, cone.scalmat_sqrti', cone)
         @. cone.prev_scal_point = cone.new_scal_point + step_size * dir
         gen_congruence_prod!(dir, z_sol, cone.scalmat_sqrt, cone)
