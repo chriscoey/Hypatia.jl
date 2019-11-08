@@ -810,10 +810,7 @@ function epinormspectral2(T; options...)
     A[3, 4] = 1
     b = T[4, 6, 4]
     G = zeros(T, 7, 4)
-    G[1, 1] = -1
-    G[3, 2] = -1
-    G[5, 3] = -1
-    G[6, 4] = -1
+    G[1, 1] = G[3, 2] = G[5, 3] = G[6, 4] = -1
     h = T[0, 2, 0, 3, 0, 0, 8]
 
     for is_dual in (true, false)
@@ -824,6 +821,33 @@ function epinormspectral2(T; options...)
             @test sum(svdvals(mat)) ≈ r.s[1] atol=tol rtol=tol
         else
             @test svdvals(mat)[1] ≈ r.s[1] atol=tol rtol=tol
+        end
+    end
+end
+
+# use definition of dual norm
+function epinormspectral3(T; options...)
+    tol = sqrt(sqrt(eps(T)))
+    Random.seed!(1)
+    (Xn, Xm) = (3, 4)
+    Xnm = Xn * Xm
+    mat = rand(T, Xn, Xm)
+    c = -vec(mat)
+    A = zeros(T, 0, Xnm)
+    b = T[]
+    G = vcat(zeros(T, 1, Xnm), Matrix{T}(-I, Xnm, Xnm))
+    h = vcat(one(T), zeros(T, Xnm))
+
+    for is_dual in (true, false)
+        cones = CO.Cone{T}[CO.EpiNormSpectral{T}(Xn, Xm, is_dual)]
+        r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
+        @test r.status == :Optimal
+        if is_dual
+            # the dual to the dual is the spectral norm
+            @test r.primal_obj ≈ -svdvals(mat)[1] atol=tol rtol=tol
+        else
+            # the dual to the primal is the nuclear norm
+            @test r.primal_obj ≈ -sum(svdvals(mat)) atol=tol rtol=tol
         end
     end
 end
