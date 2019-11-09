@@ -117,36 +117,36 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Con
 end
 
 # utilities for converting between symmetric/Hermitian matrix and vector triangle forms
-# TODO remove what isn't used
-function mat_U_to_vec_scaled!(vec::AbstractVector{T}, mat::AbstractMatrix{T}) where {T}
+# TODO fix later, rt2::T doesn't work with tests using ForwardDiff
+function smat_to_svec!(vec::AbstractVector{T}, mat::AbstractMatrix{T}, rt2::Number) where {T}
     k = 1
     m = size(mat, 1)
     @inbounds for j in 1:m, i in 1:j
         if i == j
             vec[k] = mat[i, j]
         else
-            vec[k] = 2 * mat[i, j]
+            vec[k] = mat[i, j] * rt2
         end
         k += 1
     end
     return vec
 end
 
-function vec_to_mat_U_scaled!(mat::AbstractMatrix{T}, vec::AbstractVector{T}) where {T}
+function svec_to_smat!(mat::AbstractMatrix{T}, vec::AbstractVector{T}, rt2::Number) where {T}
     k = 1
     m = size(mat, 1)
     @inbounds for j in 1:m, i in 1:j
         if i == j
             mat[i, j] = vec[k]
         else
-            mat[i, j] = vec[k] / 2
+            mat[i, j] = vec[k] / rt2
         end
         k += 1
     end
     return mat
 end
 
-function mat_U_to_vec_scaled!(vec::AbstractVector{T}, mat::AbstractMatrix{Complex{T}}) where {T}
+function smat_to_svec!(vec::AbstractVector{T}, mat::AbstractMatrix{Complex{T}}, rt2::Number) where {T}
     k = 1
     m = size(mat, 1)
     @inbounds for j in 1:m, i in 1:j
@@ -154,7 +154,7 @@ function mat_U_to_vec_scaled!(vec::AbstractVector{T}, mat::AbstractMatrix{Comple
             vec[k] = real(mat[i, j])
             k += 1
         else
-            ck = 2 * mat[i, j]
+            ck = mat[i, j] * rt2
             vec[k] = real(ck)
             k += 1
             vec[k] = -imag(ck)
@@ -164,7 +164,7 @@ function mat_U_to_vec_scaled!(vec::AbstractVector{T}, mat::AbstractMatrix{Comple
     return vec
 end
 
-function vec_to_mat_U_scaled!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVector{T}) where {T}
+function svec_to_smat!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVector{T}, rt2::Number) where {T}
     k = 1
     m = size(mat, 1)
     @inbounds for j in 1:m, i in 1:j
@@ -172,65 +172,13 @@ function vec_to_mat_U_scaled!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVect
             mat[i, j] = vec[k]
             k += 1
         else
-            mat[i, j] = Complex(vec[k], -vec[k + 1]) / 2
+            mat[i, j] = Complex(vec[k], -vec[k + 1]) / rt2
             k += 2
         end
     end
     return mat
 end
 
-function mat_U_to_vec!(vec::AbstractVector{T}, mat::AbstractMatrix{T}) where {T}
-    k = 1
-    m = size(mat, 1)
-    @inbounds for j in 1:m, i in 1:j
-        vec[k] = mat[i, j]
-        k += 1
-    end
-    return vec
-end
-
-function vec_to_mat_U!(mat::AbstractMatrix{T}, vec::AbstractVector{T}) where {T}
-    k = 1
-    m = size(mat, 1)
-    @inbounds for j in 1:m, i in 1:j
-        mat[i, j] = vec[k]
-        k += 1
-    end
-    return mat
-end
-
-function mat_U_to_vec!(vec::AbstractVector{T}, mat::AbstractMatrix{Complex{T}}) where {T}
-    k = 1
-    m = size(mat, 1)
-    @inbounds for j in 1:m, i in 1:j
-        if i == j
-            vec[k] = real(mat[i, j])
-            k += 1
-        else
-            ck = mat[i, j]
-            vec[k] = real(ck)
-            k += 1
-            vec[k] = -imag(ck)
-            k += 1
-        end
-    end
-    return vec
-end
-
-function vec_to_mat_U!(mat::AbstractMatrix{Complex{T}}, vec::AbstractVector{T}) where {T}
-    k = 1
-    m = size(mat, 1)
-    @inbounds for j in 1:m, i in 1:j
-        if i == j
-            mat[i, j] = vec[k]
-            k += 1
-        else
-            mat[i, j] = Complex(vec[k], -vec[k + 1])
-            k += 2
-        end
-    end
-    return mat
-end
 
 # TODO apply scaling updates per MOSEK and Tuncel papers
 # scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))

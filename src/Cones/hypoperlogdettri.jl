@@ -1,5 +1,5 @@
 #=
-Copyright 2018, Chris Coey and contributors
+Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 
 (closure of) hypograph of perspective of (natural) log of determinant of a (row-wise lower triangle) symmetric positive define matrix
 (u in R, v in R_+, w in S_+) : u <= v*logdet(W/v)
@@ -14,6 +14,7 @@ mutable struct HypoPerLogdetTri{T <: Real} <: Cone{T}
     dim::Int
     side::Int
     point::Vector{T}
+    rt2::T
 
     feas_updated::Bool
     grad_updated::Bool
@@ -47,6 +48,7 @@ mutable struct HypoPerLogdetTri{T <: Real} <: Cone{T}
         cone = new{T}()
         cone.use_dual = is_dual
         cone.dim = dim
+        cone.rt2 = sqrt(T(2))
         cone.side = round(Int, sqrt(0.25 + 2 * (dim - 2)) - 0.5)
         cone.hess_fact_cache = hess_fact_cache
         return cone
@@ -90,7 +92,7 @@ function update_feas(cone::HypoPerLogdetTri)
     v = cone.point[2]
 
     if v > 0
-        vec_to_mat_U!(cone.mat, view(cone.point, 3:cone.dim))
+        svec_to_smat!(cone.mat, view(cone.point, 3:cone.dim), cone.rt2)
         cone.fact_mat = cholesky!(Symmetric(cone.mat, :U), check = false)
         if isposdef(cone.fact_mat)
             cone.ldWv = logdet(cone.fact_mat) - cone.side * log(v)
@@ -119,7 +121,7 @@ function update_grad(cone::HypoPerLogdetTri)
     cone.grad[1] = inv(cone.z)
     cone.grad[2] = cone.nLz - inv(v)
     gend = view(cone.grad, 3:cone.dim)
-    mat_U_to_vec_scaled!(gend, cone.Wi)
+    smat_to_svec!(gend, cone.Wi, cone.rt2)
     gend .*= -cone.vzip1
 
     cone.grad_updated = true
@@ -132,6 +134,7 @@ function update_hess(cone::HypoPerLogdetTri)
     end
     Wi = cone.Wi
     Wivzi = cone.Wivzi
+    rt2 = cone.rt2
 
     H = cone.hess.data
     k1 = 3
@@ -141,9 +144,9 @@ function update_hess(cone::HypoPerLogdetTri)
             if (i == j) && (i2 == j2)
                 H[k2, k1] = abs2(Wi[i2, i]) * cone.vzip1 + Wivzi[i, i] * Wivzi[i2, i2]
             elseif (i != j) && (i2 != j2)
-                H[k2, k1] = 2 * (Wi[i2, i] * Wi[j, j2] + Wi[j2, i] * Wi[j, i2]) * cone.vzip1 + 4 * Wivzi[i, j] * Wivzi[i2, j2]
+                H[k2, k1] = (Wi[i2, i] * Wi[j, j2] + Wi[j2, i] * Wi[j, i2]) * cone.vzip1 + 2 * Wivzi[i, j] * Wivzi[i2, j2]
             else
-                H[k2, k1] = 2 * (Wi[i2, i] * Wi[j, j2] * cone.vzip1 + Wivzi[i, j] * Wivzi[i2, j2])
+                H[k2, k1] = rt2 * (Wi[i2, i] * Wi[j, j2] * cone.vzip1 + Wivzi[i, j] * Wivzi[i2, j2])
             end
             if k2 == k1
                 break
@@ -169,11 +172,11 @@ function update_hess_prod(cone::HypoPerLogdetTri)
     H[1, 1] = inv(z) / z
     H[1, 2] = cone.nLz / z
     h1end = view(H, 1, 3:cone.dim)
-    mat_U_to_vec_scaled!(h1end, cone.Wivzi)
+    smat_to_svec!(h1end, cone.Wivzi, cone.rt2)
     h1end ./= -z
     H[2, 2] = abs2(cone.nLz) + (cone.side / z + inv(v)) / v
     h2end = view(H, 2, 3:cone.dim)
-    mat_U_to_vec_scaled!(h2end, cone.Wi)
+    smat_to_svec!(h2end, cone.Wi, cone.rt2)
     h2end .*= ((cone.ldWv - cone.side) / cone.ldWvuv - 1) / z
 
     cone.hess_prod_updated = true
@@ -187,13 +190,13 @@ function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::HypoPer
 
     @views mul!(prod[1:2, :], cone.hess[1:2, :], arr)
     @inbounds for i in 1:size(arr, 2)
-        vec_to_mat_U!(cone.mat2, view(arr, 3:cone.dim, i))
+        svec_to_smat!(cone.mat2, view(arr, 3:cone.dim, i), cone.rt2)
         dot_prod = dot(Symmetric(cone.mat2, :U), Symmetric(cone.Wivzi, :U))
         copytri!(cone.mat2, 'U')
         rdiv!(cone.mat2, cone.fact_mat)
         ldiv!(cone.fact_mat, cone.mat2)
         axpby!(dot_prod, cone.Wivzi, cone.vzip1, cone.mat2)
-        mat_U_to_vec_scaled!(view(prod, 3:cone.dim, i), cone.mat2)
+        smat_to_svec!(view(prod, 3:cone.dim, i), cone.mat2, cone.rt2)
     end
     @views mul!(prod[3:cone.dim, :], cone.hess[3:cone.dim, 1:2], arr[1:2, :], true, true)
 

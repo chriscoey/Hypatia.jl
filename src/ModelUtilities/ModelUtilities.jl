@@ -20,4 +20,6 @@ import SemialgebraicSets
 const SAS = SemialgebraicSets
 include("semialgebraicsets.jl")
 
+include("svec.jl")
+
 end

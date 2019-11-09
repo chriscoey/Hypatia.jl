@@ -854,6 +854,7 @@ end
 
 function hypoperlogdettri1(T; options...)
     tol = sqrt(sqrt(eps(T)))
+    rt2 = sqrt(T(2))
     Random.seed!(1)
     side = 4
     dim = 2 + div(side * (side + 1), 2)
@@ -864,23 +865,24 @@ function hypoperlogdettri1(T; options...)
     mat_half = rand(T, side, side)
     mat = mat_half * mat_half'
     h = zeros(T, dim)
-    CO.mat_U_to_vec!(view(h, 3:dim), mat)
+    CO.smat_to_svec!(view(h, 3:dim), mat, rt2)
     cones = CO.Cone{T}[CO.HypoPerLogdetTri{T}(dim)]
-    unscale = [(i == j ? one(T) : inv(T(2))) for i in 1:side for j in 1:i]
+    # unscale = [(i == j ? one(T) : inv(T(2))) for i in 1:side for j in 1:i]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
     @test r.x[1] ≈ -r.primal_obj atol=tol rtol=tol
     @test r.x[2] ≈ 1 atol=tol rtol=tol
     sol_mat = zeros(T, side, side)
-    CO.vec_to_mat_U!(sol_mat, r.s[3:end])
+    CO.svec_to_smat!(sol_mat, r.s[3:end], rt2)
     @test r.s[2] * logdet(Symmetric(sol_mat, :U) / r.s[2]) ≈ r.s[1] atol=tol rtol=tol
-    CO.vec_to_mat_U!(sol_mat, -r.z[3:end] .* unscale)
+    CO.svec_to_smat!(sol_mat, -r.z[3:end], rt2)
     @test r.z[1] * (logdet(Symmetric(sol_mat, :U) / r.z[1]) + T(side)) ≈ r.z[2] atol=tol rtol=tol
 end
 
 function hypoperlogdettri2(T; options...)
     tol = sqrt(sqrt(eps(T)))
+    rt2 = sqrt(T(2))
     Random.seed!(1)
     side = 3
     dim = 2 + div(side * (side + 1), 2)
@@ -891,23 +893,24 @@ function hypoperlogdettri2(T; options...)
     mat_half = rand(T, side, side)
     mat = mat_half * mat_half'
     h = zeros(T, dim)
-    CO.mat_U_to_vec!(view(h, 3:dim), mat)
+    CO.smat_to_svec!(view(h, 3:dim), mat, rt2)
     cones = CO.Cone{T}[CO.HypoPerLogdetTri{T}(dim, true)]
-    unscale = [(i == j ? one(T) : inv(T(2))) for i in 1:side for j in 1:i]
+    # unscale = [(i == j ? one(T) : inv(T(2))) for i in 1:side for j in 1:i]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
     @test r.x[2] ≈ r.primal_obj atol=tol rtol=tol
     @test r.x[1] ≈ -1 atol=tol rtol=tol
     sol_mat = zeros(T, side, side)
-    CO.vec_to_mat_U!(sol_mat, -r.s[3:end] .* unscale)
+    CO.svec_to_smat!(sol_mat, -r.s[3:end], rt2)
     @test r.s[1] * (logdet(Symmetric(sol_mat, :U) / r.s[1]) + T(side)) ≈ r.s[2] atol=tol rtol=tol
-    CO.vec_to_mat_U!(sol_mat, r.z[3:end])
+    CO.svec_to_smat!(sol_mat, r.z[3:end], rt2)
     @test r.z[2] * logdet(Symmetric(sol_mat, :U) / r.z[2]) ≈ r.z[1] atol=tol rtol=tol
 end
 
 function hypoperlogdettri3(T; options...)
     tol = sqrt(sqrt(eps(T)))
+    rt2 = sqrt(T(2))
     Random.seed!(1)
     side = 3
     dim = 2 + div(side * (side + 1), 2)
@@ -918,7 +921,7 @@ function hypoperlogdettri3(T; options...)
     mat_half = rand(T, side, side)
     mat = mat_half * mat_half'
     h = zeros(T, dim)
-    CO.mat_U_to_vec!(view(h, 3:dim), mat)
+    CO.smat_to_svec!(view(h, 3:dim), mat, rt2)
     cones = CO.Cone{T}[CO.HypoPerLogdetTri{T}(dim)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
