@@ -23,6 +23,7 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     is_complex::Bool
     point::Vector{T}
     dual_point::Vector{T}
+
     prev_scal_point::Vector{T}
     prev_scal_dual_point::Vector{T}
     new_scal_point::Vector{T} # NOTE v in MOSEK; always diagonal, but stored as a vector for stepping
@@ -142,7 +143,6 @@ function update_feas(cone::PosSemidefTri)
 end
 
 function update_grad(cone::PosSemidefTri)
-    # TODO don't need both parts of the if statement anymore, figure out why failing without first part
     @assert cone.is_feas
     cone.inv_mat = inv(cone.fact)
     smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
@@ -304,8 +304,9 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
 end
 
 function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
-    svec_to_smat!(cone.work_mat2, dir, cone.rt2)
-    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.U)) # TODO multiplying by inverse is inefficient and numerically poor
+    svec_to_smat!(cone.work_mat, dir, cone.rt2)
+    copytri!(cone.work_mat, 'U', cone.is_complex)
+    rdiv!(cone.work_mat, fact.U)
     ldiv!(fact.U', cone.work_mat)
     # TODO preallocate and explore faster options
     # NOTE julia calls eigvals inside eigmin, and eigmin is not currently implemented in GenericLinearAlgebra
