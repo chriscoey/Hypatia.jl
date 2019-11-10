@@ -147,10 +147,11 @@ function densityest(
                 [1:U, 1:U, (U + 1):(U + 1)],
                 [(num_hypo_vars + 1):(num_hypo_vars + U), (num_hypo_vars + U + 1):(num_hypo_vars + U + num_psd_vars), (num_hypo_vars + 1):(num_hypo_vars + U)],
             )
+            I_scaled = MU.vec_to_svec_cols!(Diagonal(I * one(T), num_psd_vars), sqrt(T(2)))
             G = BlockMatrix{T}(
                 num_psd_vars + log_rows,
                 num_hypo_vars + U + num_psd_vars,
-                [-I, G_log],
+                [-I_scaled, G_log],
                 [1:num_psd_vars, (num_psd_vars + 1):(num_psd_vars + log_rows)],
                 [(num_hypo_vars + U + 1):(num_hypo_vars + U + num_psd_vars), 1:(num_hypo_vars + U)],
             )
@@ -169,8 +170,9 @@ function densityest(
                 zeros(T, U, num_hypo_vars)    Matrix{T}(-I, U, U)    A_psd;
                 zeros(T, 1, num_hypo_vars)    T.(w')    zeros(T, 1, num_psd_vars);
                 ]
+            I_scaled = MU.vec_to_svec_cols!(Matrix{T}(I, num_psd_vars, num_psd_vars), sqrt(T(2)))
             G = [
-                zeros(T, num_psd_vars, num_hypo_vars + U)   Matrix{T}(-I, num_psd_vars, num_psd_vars);
+                zeros(T, num_psd_vars, num_hypo_vars + U)   -I_scaled;
                 G_log   zeros(T, log_rows, num_psd_vars);
                 ]
         end

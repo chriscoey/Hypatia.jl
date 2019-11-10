@@ -97,6 +97,8 @@ function matrixcompletion(
             idx += i
             G_norm[offset + idx - 1, 1] = -1
         end
+        MU.vec_to_svec_cols!(G_norm, sqrt(T(2)))
+        MU.vec_to_svec!(h_norm, sqrt(T(2)))
         cones = CO.Cone{T}[CO.PosSemidefTri{T, T}(num_rows)]
     end
 

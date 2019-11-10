@@ -100,6 +100,7 @@ function polyminreal(
                     @. Gk[l, :] = -Pk[:, i] * Pk[:, j]
                     l += 1
                 end
+                MU.vec_to_svec_cols!(Gk, sqrt(T(2)))
                 G_full = vcat(G_full, Gk)
             end
             if use_linops

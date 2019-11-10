@@ -16,7 +16,8 @@ function vec_to_svec!(vec::AbstractVector{T}, rt2::T) where {T}
     return vec
 end
 
-function vec_to_svec_cols!(A::Matrix{T}, rt2::T) where {T}
+# TODO type A properly with rt2? common use case is for A to be Diagonal
+function vec_to_svec_cols!(A::AbstractMatrix, rt2::Number)
     @views for j in 1:size(A, 2)
         vec_to_svec!(A[:, j], rt2)
     end

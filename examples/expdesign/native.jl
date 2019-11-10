@@ -47,6 +47,7 @@ function expdesign(
             end
             l += 1
         end
+        MU.vec_to_svec_cols!(G_logdet, sqrt(T(2)))
         @assert l - 1 == dimvec
         # pad with hypograph variable and perspective variable
         h_logdet = vcat(zero(T), one(T), zeros(T, dimvec))
@@ -124,6 +125,7 @@ function expdesign(
             G_psd[l, p + diag_idx(i)] = -1
             l += 1
         end
+        MU.vec_to_svec_cols!(G_psd, sqrt(T(2)))
 
         h_psd = zeros(T, dimvec)
         push!(cones, CO.PosSemidefTri{T, T}(dimvec))

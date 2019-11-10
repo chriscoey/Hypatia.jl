@@ -42,9 +42,10 @@ function sparsepca(
         true_obj = NaN
     end
 
+    rt2 = sqrt(T(2))
     dimx = div(p * (p + 1), 2)
     # x will be the vec (lower triangle, row-wise) of the matrix solution we seek
-    c = T[-sigma[i, j] * (i == j ? 1 : 2) for i in 1:p for j in 1:i]
+    c = CO.smat_to_svec!(zeros(T, dimx), -sigma, rt2)
     b = T[1]
     A = zeros(T, 1, dimx)
     for i in 1:p
@@ -56,20 +57,13 @@ function sparsepca(
 
     if use_l1ball
         # l1 cone
-        # double off-diagonals
+        # double off-diagonals, which are already scaled by rt2
         if use_linops
-            Gl1 = Diagonal(fill(-T(2), dimx))
-            for i in 1:p
-                s = sum(1:i)
-                Gl1.diag[s] = -1
-            end
+            Gl1 = Diagonal(-one(T) * I, dimx)
         else
-            Gl1 = Matrix{T}(-2I, dimx, dimx)
-            for i in 1:p
-                s = sum(1:i)
-                Gl1[s, s] = -1
-            end
+            Gl1 = -Matrix{T}(I, dimx, dimx)
         end
+        MU.vec_to_svec_cols!(Gl1, rt2)
         if use_linops
             G = BlockMatrix{T}(
                 2 * dimx + 1,
@@ -90,7 +84,7 @@ function sparsepca(
         push!(cones, CO.EpiNormInf{T}(1 + dimx, true))
     else
         id = Matrix{T}(I, dimx, dimx)
-        l1 = [(i == j ? one(T) : T(2)) for i in 1:p for j in 1:i]
+        l1 = MU.vec_to_svec!(ones(T, dimx), rt2)
         if use_linops
             A = BlockMatrix{T}(
                 dimx + 1,

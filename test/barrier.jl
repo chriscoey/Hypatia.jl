@@ -349,7 +349,7 @@ end
 function test_hypoperlogdettri_barrier(T::Type{<:Real})
     for side in [1, 2, 3, 4, 5, 6, 12, 20]
         function barrier(s)
-            (u, v, W) = (s[1], s[2], similar(s, side, side))
+            (u, v, W) = (s[1], s[2], zeros(eltype(s), side, side))
             CO.svec_to_smat!(W, s[3:end], sqrt(T(2)))
             return -log(v * logdet(cholesky!(Symmetric(W / v, :U))) - u) - logdet(cholesky!(Symmetric(W, :U))) - log(v)
         end

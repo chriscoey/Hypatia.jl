@@ -43,11 +43,11 @@ end
 #     time_limit = 12e2, tol_feas = tol / 10, tol_abs_opt = tol / 10, tol_rel_opt = tol / 10,
 #     system_solver = SO.NaiveIndirectSystemSolver{T}()))
 #
-# @info("starting native examples linear operators tests")
-# @testset "native examples linear operators tests" begin
-#     @testset "densityest" begin test_densityest.(instances_densityest_linops, T = T, options = options) end
-#     @testset "expdesign" begin test_expdesign.(instances_expdesign_linops, T = T, options = options) end
-#     @testset "sparsepca" begin test_sparsepca.(instances_sparsepca_linops, T = T, options = options) end
-#     @testset "polymin" begin test_polymin.(instances_polymin_linops, T = T, options = options) end
-#     @testset "portfolio" begin test_portfolio.(instances_portfolio_linops, T = T, options = options) end
-# end
+@info("starting native examples linear operators tests")
+@testset "native examples linear operators tests" begin
+    @testset "densityest" begin test_densityest.(instances_densityest_linops, T = T, options = options) end
+    # @testset "expdesign" begin test_expdesign.(instances_expdesign_linops, T = T, options = options) end
+    # @testset "sparsepca" begin test_sparsepca.(instances_sparsepca_linops, T = T, options = options) end
+    # @testset "polymin" begin test_polymin.(instances_polymin_linops, T = T, options = options) end
+    # @testset "portfolio" begin test_portfolio.(instances_portfolio_linops, T = T, options = options) end
+end
