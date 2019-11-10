@@ -34,7 +34,6 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     inv_hess::Symmetric{T, Matrix{T}}
 
     mat::Matrix{R}
-    dual_mat::Matrix{R}
     fact_mat::Matrix{R}
     dual_fact_mat::Matrix{R}
     work_mat::Matrix{R}
@@ -99,7 +98,6 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.mat = zeros(R, cone.side, cone.side)
-    cone.dual_mat = similar(cone.mat)
     cone.fact_mat = similar(cone.mat)
     cone.dual_fact_mat = similar(cone.mat)
     cone.work_mat = similar(cone.mat)
@@ -305,13 +303,11 @@ end
 function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.is_feas
 
-    svec_to_smat!(cone.mat, cone.point, cone.rt2)
-    copyto!(cone.fact_mat, cone.mat)
+    svec_to_smat!(cone.fact_mat, cone.point, cone.rt2)
     cone.fact = cholesky!(Hermitian(cone.fact_mat, :U))
     primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
 
-    svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
-    copyto!(cone.dual_fact_mat, cone.dual_mat)
+    svec_to_smat!(cone.dual_fact_mat, cone.dual_point, cone.rt2)
     cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
     dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
 
@@ -363,11 +359,10 @@ function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVecto
         cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * (fact.L \ cone.scalmat_sqrti)
     else
         # calculate scaling without using old scaling
-        svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
-        copyto!(cone.dual_fact_mat, cone.dual_mat)
+        svec_to_smat!(cone.dual_fact_mat, cone.dual_point, cone.rt2)
         dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
-        svec_to_smat!(cone.mat, cone.point, cone.rt2)
-        fact = cholesky(Hermitian(cone.mat, :U))
+        svec_to_smat!(cone.mat, cone.point, cone.rt2) # TODO is this already done from update feas?
+        fact = cholesky(Hermitian(cone.mat, :U)) # TODO in-place
 
         # TODO preallocate
         (U, lambda, V) = svd(dual_fact.U * fact.L)
