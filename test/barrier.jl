@@ -78,29 +78,8 @@ function test_barrier_oracles(
         end
     end
 
-    # TODO add alpha oracles for all cones
-
-    # # max step in a recession direction
-    # e1 = CO.set_initial_point(zeros(T, dim), cone)
-    # max_step = CO.step_max_dist(cone, e1, e1)
-    # @test max_step ≈ T(Inf) atol=tol rtol=tol
-    #
-    # # max step elsewhere
-    # # primal dir and dual dir are not scaled
-    # primal_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-    # dual_dir = -e1 + T(noise) * (rand(T, dim) .- inv(T(2)))
-    #
-    # # max step tests for these new directions
-    # prev_primal = copy(cone.point)
-    # max_step = CO.step_max_dist(cone, primal_dir, dual_dir)
-    # # check smaller step returns feasible iterates
-    # primal_feas = load_reset_check(cone, cone.point + T(0.99) * max_step * primal_dir)
-    # dual_feas = load_reset_check(cone, cone.dual_point + T(0.99) * max_step * dual_dir)
-    # @test primal_feas && dual_feas
-    # # check larger step returns infeasible iterates
-    # primal_feas = load_reset_check(cone, cone.point + T(1.01) * max_step * primal_dir)
-    # dual_feas = load_reset_check(cone, cone.dual_point + T(1.01) * max_step * dual_dir)
-    # @test !primal_feas || !dual_feas
+    # TODO max step distances
+    # test_max_dist(cone, point, dual_point)
 
     return
 end
@@ -125,7 +104,6 @@ function test_barrier_scaling_oracles(
     @test load_reset_check(cone, point, dual_point)
 
     # run twice: first run scaling will be the identity
-    # take a step from the initial point
     for _ in 1:2
         s_dir = perturb_scale(zeros(T, dim), noise, one(T))
         z_dir = perturb_scale(zeros(T, dim), noise, one(T))
@@ -133,8 +111,13 @@ function test_barrier_scaling_oracles(
         @. point += s_dir * alpha
         @. dual_point += z_dir * alpha
         @test load_reset_check(cone, point, dual_point)
+
+        # step and scaling updates
         CO.step_and_update_scaling(cone, s_dir, z_dir, alpha)
         test_grad_hess(cone, point, dual_point, tol = tol)
+
+        # max step distances with scaling
+        test_max_dist(cone, point, dual_point)
     end
 
     # TODO scaling for nonsymmetric cones
@@ -186,6 +169,48 @@ function test_grad_hess(
         @test hess * point ≈ dual_point atol=tol rtol=tol
         @test inv_hess * dual_point ≈ point atol=tol rtol=tol
     end
+
+    return
+end
+
+function test_max_dist(
+    cone::CO.Cone{T},
+    point::Vector{T},
+    dual_point::Vector{T};
+    noise::T = T(0.1),
+    scale::T = T(0.1),
+    tol::T = 100eps(T),
+    ) where {T <: Real}
+    # max step in the central recession direction
+    s_dir = CO.set_initial_point(similar(point), cone)
+    z_dir = copy(s_dir)
+    max_step = CO.step_max_dist(cone, s_dir, z_dir)
+    @test max_step == T(Inf)
+
+    # perturb the central direction
+    perturb_scale(s_dir, noise, scale)
+    perturb_scale(z_dir, noise, scale)
+    max_step = CO.step_max_dist(cone, s_dir, z_dir)
+    @test max_step == T(Inf)
+
+    # max step in opposite direction
+    s_dir .*= -1
+    z_dir .*= -1
+    max_step = CO.step_max_dist(cone, s_dir, z_dir)
+    @test max_step > 0
+    @test isfinite(max_step)
+
+    # check smaller step returns two feasible points
+    smaller_step = T(0.99) * max_step
+    primal_feas = load_reset_check(cone, point + smaller_step * s_dir)
+    dual_feas = load_reset_check(cone, dual_point + smaller_step * z_dir)
+    @test primal_feas && dual_feas
+
+    # check larger step returns one or two infeasible points
+    larger_step = T(1.01) * max_step
+    primal_feas = load_reset_check(cone, point + larger_step * s_dir)
+    dual_feas = load_reset_check(cone, dual_point + larger_step * z_dir)
+    @test !primal_feas || !dual_feas
 
     return
 end

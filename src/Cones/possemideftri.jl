@@ -23,10 +23,6 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     is_complex::Bool
     point::Vector{T}
     dual_point::Vector{T}
-    prev_scal_point::Vector{T}
-    prev_scal_dual_point::Vector{T}
-    new_scal_point::Vector{T} # NOTE v in MOSEK; always diagonal, but stored as a vector for stepping
-    rt2::T
 
     feas_updated::Bool
     grad_updated::Bool
@@ -38,7 +34,6 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     inv_hess::Symmetric{T, Matrix{T}}
 
     mat::Matrix{R}
-    dual_mat::Matrix{R}
     fact_mat::Matrix{R}
     dual_fact_mat::Matrix{R}
     work_mat::Matrix{R}
@@ -49,6 +44,8 @@ mutable struct PosSemidefTri{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     dual_fact
 
     # factorizations of the scaling matrix
+    new_scal_point::Diagonal{T, Vector{T}} # NOTE v in MOSEK; always diagonal, but stored as a vector for stepping
+    rt2::T
     scalmat_sqrt::Matrix{R}
     scalmat_sqrti::Matrix{R}
     correction::Vector{T}
@@ -97,21 +94,16 @@ function setup_data(cone::PosSemidefTri{T, R}) where {R <: RealOrComplex{T}} whe
     dim = cone.dim
     cone.point = zeros(T, dim)
     cone.dual_point = similar(cone.point)
-    cone.prev_scal_point = similar(cone.point)
-    cone.prev_scal_dual_point = similar(cone.point)
-    cone.new_scal_point = similar(cone.point)
     cone.grad = similar(cone.point)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.mat = zeros(R, cone.side, cone.side)
-    cone.dual_mat = similar(cone.mat)
     cone.fact_mat = similar(cone.mat)
     cone.dual_fact_mat = similar(cone.mat)
     cone.work_mat = similar(cone.mat)
     cone.work_mat2 = similar(cone.mat)
     cone.work_mat3 = similar(cone.mat)
-    # TODO initialize at the same time as the initial point as well as factorizations
-    set_initial_point(cone.new_scal_point, cone)
+    cone.new_scal_point = Diagonal(ones(T, cone.side)) # initial point is identity
     cone.scalmat_sqrt = Matrix{T}(I, cone.side, cone.side)
     cone.scalmat_sqrti = Matrix{T}(I, cone.side, cone.side)
     cone.correction = zeros(T, dim)
@@ -142,7 +134,6 @@ function update_feas(cone::PosSemidefTri)
 end
 
 function update_grad(cone::PosSemidefTri)
-    # TODO don't need both parts of the if statement anymore, figure out why failing without first part
     @assert cone.is_feas
     cone.inv_mat = inv(cone.fact)
     smat_to_svec!(cone.grad, cone.inv_mat, cone.rt2)
@@ -263,17 +254,6 @@ function herm_congruence_prod!(prod::AbstractVecOrMat, inner::AbstractVecOrMat, 
     return prod
 end
 
-# PXP or P'XP depending on `trans`, where P is not symmetric or Hermitian
-function gen_congruence_prod!(prod::AbstractVecOrMat, inner::AbstractVecOrMat, outer::AbstractVecOrMat, cone::PosSemidefTri)
-    @inbounds for i in 1:size(inner, 2)
-        svec_to_smat!(cone.work_mat2, view(inner, :, i), cone.rt2)
-        mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), outer)
-        mul!(cone.work_mat2, outer', cone.work_mat)
-        smat_to_svec!(view(prod, :, i), cone.work_mat2, cone.rt2)
-    end
-    return prod
-end
-
 function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::PosSemidefTri)
     @assert is_feas(cone)
     if cone.use_scaling
@@ -304,8 +284,9 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Pos
 end
 
 function dist_to_bndry(cone::PosSemidefTri{T, R}, fact, dir::AbstractVector{T}) where {R <: RealOrComplex{T}} where {T <: Real}
-    svec_to_smat!(cone.work_mat2, dir, cone.rt2)
-    mul!(cone.work_mat, Hermitian(cone.work_mat2, :U), inv(fact.U)) # TODO multiplying by inverse is inefficient and numerically poor
+    svec_to_smat!(cone.work_mat, dir, cone.rt2)
+    copytri!(cone.work_mat, 'U', cone.is_complex)
+    rdiv!(cone.work_mat, fact.U)
     ldiv!(fact.U', cone.work_mat)
     # TODO preallocate and explore faster options
     # NOTE julia calls eigvals inside eigmin, and eigmin is not currently implemented in GenericLinearAlgebra
@@ -322,13 +303,11 @@ end
 function step_max_dist(cone::PosSemidefTri, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.is_feas
 
-    svec_to_smat!(cone.mat, cone.point, cone.rt2)
-    copyto!(cone.fact_mat, cone.mat)
+    svec_to_smat!(cone.fact_mat, cone.point, cone.rt2)
     cone.fact = cholesky!(Hermitian(cone.fact_mat, :U))
     primal_dist = dist_to_bndry(cone, cone.fact, s_sol)
 
-    svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
-    copyto!(cone.dual_fact_mat, cone.dual_mat)
+    svec_to_smat!(cone.dual_fact_mat, cone.dual_point, cone.rt2)
     cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
     dual_dist = dist_to_bndry(cone, cone.dual_fact, z_sol)
 
@@ -364,42 +343,26 @@ end
 function step_and_update_scaling(cone::PosSemidefTri{T, R}, s_sol::AbstractVector, z_sol::AbstractVector, step_size::T) where {R <: RealOrComplex{T}} where {T <: Real}
     if cone.try_scaled_updates
         # get the next s, z but in the old scaling
-        # TODO handle old note by Lea - "we could get the next s, z but in the old scaling by dividing by sqrt(H(v)), which is cone-specific"
-        dir = similar(cone.point)
-        gen_congruence_prod!(dir, s_sol, cone.scalmat_sqrti', cone)
-        @. cone.prev_scal_point = cone.new_scal_point + step_size * dir
-        gen_congruence_prod!(dir, z_sol, cone.scalmat_sqrt, cone)
-        @. cone.prev_scal_dual_point = cone.new_scal_point + step_size * dir
+        # TODO improve efficiency below
+        svec_to_smat!(cone.work_mat, s_sol, cone.rt2)
+        cone.work_mat2 = cone.new_scal_point + step_size * cone.scalmat_sqrti * Hermitian(cone.work_mat, :U) * cone.scalmat_sqrti'
+        svec_to_smat!(cone.work_mat, z_sol, cone.rt2)
+        cone.work_mat3 = cone.new_scal_point + step_size * cone.scalmat_sqrt' * Hermitian(cone.work_mat, :U) * cone.scalmat_sqrt
 
         # update old scaling
-        svec_to_smat!(cone.mat, cone.prev_scal_point, cone.rt2)
-        copyto!(cone.work_mat, cone.mat)
-        fact = cholesky!(Hermitian(cone.work_mat, :U))
-
-        svec_to_smat!(cone.dual_mat, cone.prev_scal_dual_point, cone.rt2)
-        copyto!(cone.dual_fact_mat, cone.dual_mat)
-        dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U))
-
+        fact = cholesky!(Hermitian(cone.work_mat2, :U))
+        dual_fact = cholesky!(Hermitian(cone.work_mat3, :U))
         (U, lambda, V) = svd(dual_fact.U * fact.L)
-        # TODO fix the next few lines - use diagonal .diag
-        # copyto!(cone.new_scal_point.diag, lambda)
-        cone.new_scal_point .= 0
-        k = 1
-        incr = (cone.is_complex ? 2 : 1)
-        @inbounds for i in 1:cone.side
-            cone.new_scal_point[k] = lambda[i]
-            k += incr * i + 1
-        end
-
+        cone.new_scal_point = Diagonal(lambda)
+        # TODO improve efficiency below
         cone.scalmat_sqrt = cone.scalmat_sqrt * fact.L * V * Diagonal(inv.(sqrt.(lambda)))
         cone.scalmat_sqrti = Diagonal(sqrt.(lambda)) * V' * (fact.L \ cone.scalmat_sqrti)
     else
         # calculate scaling without using old scaling
-        svec_to_smat!(cone.dual_mat, cone.dual_point, cone.rt2)
-        copyto!(cone.dual_fact_mat, cone.dual_mat)
+        svec_to_smat!(cone.dual_fact_mat, cone.dual_point, cone.rt2)
         dual_fact = cone.dual_fact = cholesky!(Hermitian(cone.dual_fact_mat, :U), check = false)
-        svec_to_smat!(cone.mat, cone.point, cone.rt2)
-        fact = cholesky(Hermitian(cone.mat, :U))
+        svec_to_smat!(cone.mat, cone.point, cone.rt2) # TODO is this already done from update feas?
+        fact = cholesky(Hermitian(cone.mat, :U)) # TODO in-place
 
         # TODO preallocate
         (U, lambda, V) = svd(dual_fact.U * fact.L)
