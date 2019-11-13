@@ -66,15 +66,22 @@ function test_barrier_oracles(
     end
 
     if dim < 8 && T in (Float32, Float64)
-        for _ in 1:10
-            dir = randn(dim)
-            dir ./= norm(dir)
-            hess = ForwardDiff.hessian(barrier, point)
-            sc_rhs = 2 * dot(dir, hess, dir) ^ (3 / 2)
+        # move around in the cone
+        for pt in 1:10
+            perturb_scale(point / scale, noise / 100, scale)
+            @test load_reset_check(cone, point)
+            CO.grad(cone)
+            hess = CO.hess(cone)
             FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-            FD_3deriv_dir = reshape(FD_3deriv * dir, dim, dim)
-            sc_lhs = abs(dot(dir, FD_3deriv_dir, dir))
-            @test sc_lhs <= sc_rhs + 10eps(T)
+            # test different directional derivatives
+            for _ in 1:1000
+                dir = randn(dim)
+                dir ./= norm(dir)
+                sc_rhs = 2 * dot(dir, hess, dir) ^ (3 / 2)
+                FD_3deriv_dir = reshape(FD_3deriv * dir, dim, dim)
+                sc_lhs = abs(dot(dir, FD_3deriv_dir, dir))
+                @test sc_lhs <= sc_rhs + 10eps(T)
+            end
         end
     end
 
