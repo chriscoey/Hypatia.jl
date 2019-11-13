@@ -65,6 +65,19 @@ function test_barrier_oracles(
         @test FD_corr ≈ CO.correction(cone, s_dir, z_dir) atol=tol rtol=tol
     end
 
+    if dim < 8 && T in (Float32, Float64)
+        for _ in 1:10
+            dir = randn(dim)
+            dir ./= norm(dir)
+            hess = ForwardDiff.hessian(barrier, point)
+            sc_rhs = 2 * dot(dir, hess, dir) ^ (3 / 2)
+            FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+            FD_3deriv_dir = reshape(FD_3deriv * dir, dim, dim)
+            sc_lhs = abs(dot(dir, FD_3deriv_dir, dir))
+            @test sc_lhs <= sc_rhs + 10eps(T)
+        end
+    end
+
     # TODO add alpha oracles for all cones
 
     # # max step in a recession direction
