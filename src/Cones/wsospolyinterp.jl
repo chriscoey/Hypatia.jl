@@ -13,6 +13,7 @@ TODO
 
 mutable struct WSOSPolyInterp{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     use_dual::Bool
+    use_3order_corr::Bool
     dim::Int
     Ps::Vector{Matrix{R}}
     point::Vector{T}
@@ -32,12 +33,17 @@ mutable struct WSOSPolyInterp{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     tmpUL::Vector{Matrix{R}}
     tmpLU::Vector{Matrix{R}}
     tmpUU::Matrix{R}
+    tmpU::Vector{R}
+    PΛiP::Matrix{R}
     ΛFs::Vector
+
+    correction::Vector{T}
 
     function WSOSPolyInterp{T, R}(
         dim::Int,
         Ps::Vector{Matrix{R}},
         is_dual::Bool;
+        use_3order_corr::Bool = true,
         hess_fact_cache = hessian_cache(T),
         ) where {R <: RealOrComplex{T}} where {T <: Real}
         for k in eachindex(Ps)
@@ -54,6 +60,8 @@ end
 
 WSOSPolyInterp{T, R}(dim::Int, Ps::Vector{Matrix{R}}) where {R <: RealOrComplex{T}} where {T <: Real} = WSOSPolyInterp{T, R}(dim, Ps, false)
 
+use_3order_corr(cone::WSOSPolyInterp) = cone.use_3order_corr
+
 function setup_data(cone::WSOSPolyInterp{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
     reset_data(cone)
     dim = cone.dim
@@ -67,7 +75,10 @@ function setup_data(cone::WSOSPolyInterp{T, R}) where {R <: RealOrComplex{T}} wh
     cone.tmpUL = [Matrix{R}(undef, dim, size(Pk, 2)) for Pk in Ps]
     cone.tmpLU = [Matrix{R}(undef, size(Pk, 2), dim) for Pk in Ps]
     cone.tmpUU = Matrix{R}(undef, dim, dim)
+    cone.PΛiP = Matrix{R}(undef, dim, dim)
+    cone.tmpU = zeros(T, dim)
     cone.ΛFs = Vector{Any}(undef, length(Ps))
+    cone.correction = zeros(T, dim)
     return
 end
 
@@ -122,13 +133,28 @@ end
 function update_hess(cone::WSOSPolyInterp)
     @assert cone.grad_updated
     cone.hess .= 0
+    cone.PΛiP .= 0
     @inbounds for k in eachindex(cone.Ps)
         LUk = cone.tmpLU[k]
         UUk = mul!(cone.tmpUU, LUk', LUk)
+        cone.PΛiP += UUk
         @inbounds for j in 1:cone.dim, i in 1:j
             cone.hess.data[i, j] += abs2(UUk[i, j])
         end
     end
     cone.hess_updated = true
     return cone.hess
+end
+
+# TODO think about vectorizing
+function correction(cone::WSOSPolyInterp, s_sol::AbstractVector, z_sol::AbstractVector)
+    @assert cone.hess_updated
+    dim = cone.dim
+    Hinv_z = inv_hess_prod!(cone.tmpU, z_sol, cone)
+    cone.correction .= 0
+    PΛiP = cone.PΛiP
+    for k in 1:dim
+        cone.correction[k] += sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] * s_sol[i] * Hinv_z[j] for i in 1:dim, j in 1:dim)
+    end
+    return cone.correction
 end

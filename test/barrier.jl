@@ -68,6 +68,7 @@ function test_barrier_oracles(
     if dim < 8 && T in (Float32, Float64)
         # move around in the cone
         for pt in 1:10
+            point .+= CO.set_initial_point(copy(point), cone)
             perturb_scale(point / scale, noise / 100, scale)
             @test load_reset_check(cone, point)
             CO.grad(cone)
@@ -80,7 +81,7 @@ function test_barrier_oracles(
                 sc_rhs = 2 * dot(dir, hess, dir) ^ (3 / 2)
                 FD_3deriv_dir = reshape(FD_3deriv * dir, dim, dim)
                 sc_lhs = abs(dot(dir, FD_3deriv_dir, dir))
-                @test sc_lhs <= sc_rhs + 10eps(T)
+                @test sc_lhs <= sc_rhs
             end
         end
     end
