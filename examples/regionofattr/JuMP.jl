@@ -37,9 +37,9 @@ function regionofattrJuMP(deg::Int; use_WSOS::Bool = true)
     vT = DP.subs(v, t => 1.0)
 
     if use_WSOS
-        dom1 = MU.Box([-1.0], [1.0]) # just state
-        dom2 = MU.Box([-1.0, 0.0], [1.0, 1.0]) # state and time
-        dom3 = MU.Box([-0.01], [0.01]) # state at the end
+        dom1 = MU.Box{Float64}([-1.0], [1.0]) # just state
+        dom2 = MU.Box{Float64}([-1.0, 0.0], [1.0, 1.0]) # state and time
+        dom3 = MU.Box{Float64}([-0.01], [0.01]) # state at the end
         halfdeg = div(deg + 1, 2)
         (U1, pts1, P01, PWts1, quad_weights) = MU.interpolate(dom1, halfdeg, sample = false, calc_w = true)
         (U2, pts2, P02, PWts2, _) = MU.interpolate(dom2, halfdeg, sample = false)

@@ -31,7 +31,7 @@ function densityest(
     (nobs, dim) = size(X)
     X = convert(Matrix{T}, X)
 
-    domain = MU.Box{Float64}(-ones(dim), ones(dim))
+    domain = MU.Box{T}(-ones(dim), ones(dim))
     # rescale X to be in unit box
     minX = minimum(X, dims = 1)
     maxX = maximum(X, dims = 1)
@@ -41,7 +41,7 @@ function densityest(
     halfdeg = div(deg + 1, 2)
     (U, pts, P0, PWts, w) = MU.interpolate(domain, halfdeg, sample = true, calc_w = true, sample_factor = sample_factor)
     lagrange_polys = MU.recover_lagrange_polys(pts, 2 * halfdeg)
-    basis_evals = Matrix{Float64}(undef, nobs, U)
+    basis_evals = Matrix{T}(undef, nobs, U)
     for i in 1:nobs, j in 1:U
         basis_evals[i, j] = lagrange_polys[j](X[i, :])
     end
