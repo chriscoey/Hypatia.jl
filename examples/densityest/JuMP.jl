@@ -35,7 +35,6 @@ function densityestJuMP(
 
     halfdeg = div(deg + 1, 2)
     (U, pts, P0, PWts, w) = MU.interpolate(domain, halfdeg, sample = true, calc_w = true, sample_factor = sample_factor)
-    @show typeof(P0), typeof(PWts), typeof(w)
 
     model = JuMP.Model()
     JuMP.@variable(model, z[1:nobs])
@@ -82,7 +81,6 @@ densityestJuMP6() = densityestJuMP(200, 1, 4, true)
 function test_densityestJuMP(instance::Function; options, rseed::Int = 1)
     Random.seed!(rseed)
     d = instance()
-    @show "have model"
     JuMP.optimize!(d.model, JuMP.with_optimizer(Hypatia.Optimizer; options...))
     @test JuMP.termination_status(d.model) == MOI.OPTIMAL
     return
