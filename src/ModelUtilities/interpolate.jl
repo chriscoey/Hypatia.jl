@@ -50,7 +50,7 @@ function interp_sample(dom::Ball{Float64}, npts::Int)
 end
 
 function get_weights(dom::Ball{T}, pts::AbstractMatrix{T}) where {T <: Real}
-    g = [dom.r^2 - sum((pts[j, :] - dom.c) .^ 2) for j in 1:size(pts, 1)]
+    g = [abs2(dom.r) - sum((pts[j, :] - dom.c) .^ 2) for j in 1:size(pts, 1)]
     @assert all(g .>= 0)
     return [g]
 end
@@ -79,11 +79,10 @@ function interp_sample(dom::Ellipsoid{Float64}, npts::Int)
 end
 
 function get_weights(dom::Ellipsoid{T}, pts::AbstractMatrix{T}) where {T <: Real}
-    g = [1.0 - (pts[j, :] - dom.c)' * dom.Q * (pts[j, :] - dom.c) for j in 1:size(pts, 1)]
-    @assert all(g .>= 0.0)
+    g = [1 - (pts[j, :] - dom.c)' * dom.Q * (pts[j, :] - dom.c) for j in 1:size(pts, 1)]
+    @assert all(g .>= 0)
     return [g]
 end
-
 
 interp_sample(dom::SemiFreeDomain, npts::Int) =
     hcat(interp_sample(dom.restricted_halfregion, npts), interp_sample(dom.restricted_halfregion, npts))
@@ -123,9 +122,9 @@ function wsos_box_params(dom::Box{T}, n::Int, d::Int; calc_w::Bool = false) wher
 
     # TODO refactor/cleanup below
     # scale and shift points, get WSOS matrices
-    pscale = [T(0.5) * (dom.u[mod(j - 1, get_dimension(dom)) + 1] - dom.l[mod(j - 1,get_dimension(dom)) + 1]) for j in 1:n]
-    pshift = [T(0.5) * (dom.u[mod(j - 1, get_dimension(dom)) + 1] + dom.l[mod(j - 1,get_dimension(dom)) + 1]) for j in 1:n]
-    Wtsfun = (j -> sqrt.(one(T) .- abs2.(pts[:, j])) * pscale[j])
+    pscale = [T(0.5) * (dom.u[mod(j - 1, get_dimension(dom)) + 1] - dom.l[mod(j - 1, get_dimension(dom)) + 1]) for j in 1:n]
+    pshift = [T(0.5) * (dom.u[mod(j - 1, get_dimension(dom)) + 1] + dom.l[mod(j - 1, get_dimension(dom)) + 1]) for j in 1:n]
+    Wtsfun = (j -> sqrt.(1 .- abs2.(pts[:, j])) * pscale[j])
     PWts = [Wtsfun(j) .* P0sub for j in 1:get_dimension(dom)]
     trpts = pts .* pscale' .+ pshift'
 
@@ -156,7 +155,7 @@ function calc_u(n::Int, d::Int, pts::Matrix{T}) where {T <: Real}
     u = Vector{Matrix{T}}(undef, n)
     for j in 1:n
         uj = u[j] = Matrix{T}(undef, size(pts, 1), d + 1)
-        uj[:, 1] .= one(T)
+        uj[:, 1] .= 1
         @. @views uj[:, 2] = pts[:, j]
         for t in 3:(d + 1)
             @. @views uj[:, t] = 2 * uj[:, 2] * uj[:, t - 1] - uj[:, t - 2]
@@ -304,7 +303,7 @@ function choose_interp_pts!(
     u = calc_u(n, deg, candidate_pts)
     m = Vector{T}(undef, U)
     m[1] = 2^n
-    M[:, 1] .= 1.0
+    M[:, 1] .= 1
 
     col = 1
     for t in 1:deg
@@ -313,7 +312,7 @@ function choose_interp_pts!(
             if any(isodd, xp)
                 m[col] = 0
             else
-                m[col] = m[1] / prod(1.0 - abs2(xp[j]) for j in 1:n)
+                m[col] = m[1] / prod(1 - abs2(xp[j]) for j in 1:n)
             end
             @. @views M[:, col] = u[1][:, xp[1] + 1]
             for j in 2:n

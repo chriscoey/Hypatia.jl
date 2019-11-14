@@ -31,7 +31,7 @@ function densityest(
     (nobs, dim) = size(X)
     X = convert(Matrix{T}, X)
 
-    domain = MU.Box{T}(-ones(dim), ones(dim))
+    domain = MU.Box{T}(-ones(T, dim), ones(T, dim))
     # rescale X to be in unit box
     minX = minimum(X, dims = 1)
     maxX = maximum(X, dims = 1)
