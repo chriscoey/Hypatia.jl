@@ -33,7 +33,7 @@ options = (atol = sqrt(sqrt(eps(T))), solver = SO.Solver{T}(
     # @testset "linearopt" begin test_linearopt.(instances_linearopt_few, T = T, options = options) end
     # @testset "matrixcompletion" begin test_matrixcompletion.(instances_matrixcompletion_few, T = T, options = options) end
     # @testset "sparsepca" begin test_sparsepca.(instances_sparsepca_few, T = T, options = options) end
-    # @testset "polymin" begin test_polymin.(instances_polymin_few, T = T, options = options) end
+    # @testset "polymin" begin test_polymin.(instances_polymin_few, T = T, options = options) end # only run if T != BigFloat
     # @testset "portfolio" begin test_portfolio.(instances_portfolio_few, T = T, options = options) end
 end
 

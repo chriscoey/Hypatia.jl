@@ -94,7 +94,7 @@ function getpolydata(polyname::Symbol; T::DataType = Float64)
     elseif polyname == :robinson_ball
         DP.@polyvar x[1:2]
         f = 1+x[1]^6+x[2]^6-x[1]^4*x[2]^2+x[1]^4-x[1]^2*x[2]^4+x[2]^4-x[1]^2+x[2]^2+3x[1]^2*x[2]^2
-        dom = MU.Ball{T}(zeros(T, 2), sqrt(T, 2))
+        dom = MU.Ball{T}(zeros(T, 2), sqrt(T(2)))
         true_obj = 0.814814 # small neighborhood around box
     elseif polyname == :rosenbrock
         DP.@polyvar x[1:2]
@@ -104,7 +104,7 @@ function getpolydata(polyname::Symbol; T::DataType = Float64)
     elseif polyname == :rosenbrock_ball
         DP.@polyvar x[1:2]
         f = (1-x[1])^2+100*(x[1]^2-x[2])^2
-        dom = MU.Ball{T}(T(2.5) * ones(T, 2), T(7.5) * sqrt(T, 2))
+        dom = MU.Ball{T}(T(2.5) * ones(T, 2), T(7.5) * sqrt(T(2)))
         true_obj = 0 # small neighborhood around box
     elseif polyname == :schwefel
         DP.@polyvar x[1:3]

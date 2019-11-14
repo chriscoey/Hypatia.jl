@@ -200,11 +200,6 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     tau_temp = kap_temp = taukap_temp = mu_temp = zero(T)
     while true
         # TODO only do nbhd checks for cones not using scaling
-        # this part I'm unsure about. I think we want
-        # if Cones.try_scaled_updates(cone_k)
-        #   z_temp = cone_k.scaled_point + alpha * stepper.z_dir
-        #   s_temp = cone_k.scaled_point + alpha * stepper.s_dir
-        # and leave everything else the same
         @. z_temp = point.z + alpha * stepper.z_dir
         @. s_temp = point.s + alpha * stepper.s_dir
         tau_temp = solver.tau + alpha * tau_dir

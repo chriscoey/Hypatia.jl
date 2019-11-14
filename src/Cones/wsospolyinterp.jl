@@ -147,7 +147,10 @@ end
 
 # TODO think about vectorizing
 function correction(cone::WSOSPolyInterp, s_sol::AbstractVector, z_sol::AbstractVector)
-    @assert cone.hess_updated
+    # TODO uncomment when logic in stepper obliviates the need for this
+    if !cone.hess_updated
+        update_hess(cone)
+    end
     dim = cone.dim
     Hinv_z = inv_hess_prod!(cone.tmpU, z_sol, cone)
     cone.correction .= 0
