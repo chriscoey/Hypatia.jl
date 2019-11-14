@@ -44,7 +44,8 @@ function polyminreal(
         (U, pts, P0, PWts, _) = MU.interpolate(dom, halfdeg, sample = true)
         interp_vals = T.(randn(U))
     else
-        (x, fn, dom, true_obj) = getpolydata(polyname)
+        # NOTE interpolation data will be in Float64 since not all domains support other number types
+        (x, fn, dom, true_obj) = getpolydata(polyname, T = Float64)
         sample = (length(x) >= 5) || !isa(dom, MU.Box)
         (U, pts, P0, PWts, _) = MU.interpolate(dom, halfdeg, sample = sample)
         # set up problem data

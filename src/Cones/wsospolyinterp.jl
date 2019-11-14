@@ -145,15 +145,15 @@ function update_hess(cone::WSOSPolyInterp)
     return cone.hess
 end
 
-der3_ijk(i::Int, j::Int, k::Int, cone::WSOSPolyInterp) = sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] for PΛiP in cone.PΛiPs)
-
 # TODO think about vectorizing
 function correction(cone::WSOSPolyInterp, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.hess_updated
     dim = cone.dim
     Hinv_z = inv_hess_prod!(cone.tmpU, z_sol, cone)
-    for k in 1:dim
-        cone.correction[k] = sum(der3_ijk(i, j, k, cone) * s_sol[i] * Hinv_z[j] for i in 1:dim, j in 1:dim)
+    cone.correction .= 0
+    for k in 1:dim, i in 1:dim, j in 1:dim
+        der3_ijk = sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] for PΛiP in cone.PΛiPs)
+        cone.correction[k] += der3_ijk * s_sol[i] * Hinv_z[j]
     end
     return cone.correction
 end

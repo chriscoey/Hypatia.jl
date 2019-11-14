@@ -30,7 +30,7 @@ function contractionJuMP(
     use_wsos::Bool = true,
     )
     n = 2
-    dom = MU.FreeDomain(n)
+    dom = MU.FreeDomain{Float64}(n)
 
     M_halfdeg = div(M_deg + 1, 2)
     (U_M, pts_M, P0_M, _, _) = MU.interpolate(dom, M_halfdeg, sample = false)

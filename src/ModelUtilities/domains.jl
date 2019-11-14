@@ -4,15 +4,15 @@ Copyright 2018, Chris Coey, Lea Kapelevich and contributors
 definitions of Hypatia domains
 =#
 
-abstract type Domain end
+abstract type Domain{T <: Real} end
 
 # hyperrectangle/box
-mutable struct Box <: Domain
-    l::Vector{Float64}
-    u::Vector{Float64}
-    function Box(l::Vector{Float64}, u::Vector{Float64})
+mutable struct Box{T <: Real} <: Domain{T}
+    l::Vector{T}
+    u::Vector{T}
+    function Box{T}(l::Vector{T}, u::Vector{T}) where {T <: Real}
         @assert length(l) == length(u)
-        dom = new()
+        dom = new{T}()
         dom.l = l
         dom.u = u
         return dom
@@ -23,11 +23,11 @@ get_dimension(dom::Box) = length(dom.l)
 get_degree(::Box) = 2
 
 # Euclidean hyperball
-mutable struct Ball <: Domain
+mutable struct Ball{T <: Real} <: Domain{T}
     c::Vector{Float64}
     r::Float64
-    function Ball(c::Vector{Float64}, r::Float64)
-        dom = new()
+    function Ball{T}(c::Vector{T}, r::T) where {T <: Real}
+        dom = new{T}()
         dom.c = c
         dom.r = r
         return dom
@@ -38,12 +38,12 @@ get_dimension(dom::Ball) = length(dom.c)
 get_degree(::Ball) = 2
 
 # hyperellipse: (x-c)'Q(x-c) \leq 1
-mutable struct Ellipsoid <: Domain
+mutable struct Ellipsoid{T <: Real} <: Domain{T}
     c::Vector{Float64}
     Q::AbstractMatrix{Float64}
-    function Ellipsoid(c::Vector{Float64}, Q::AbstractMatrix{Float64})
+    function Ellipsoid{T}(c::Vector{T}, Q::AbstractMatrix{T}) where {T <: Real}
         @assert length(c) == size(Q, 1)
-        dom = new()
+        dom = new{T}()
         dom.c = c
         dom.Q = Q
         return dom
@@ -54,7 +54,7 @@ get_dimension(dom::Ellipsoid) = length(dom.c)
 get_degree(::Ellipsoid) = 2
 
 # All reals of dimension n
-mutable struct FreeDomain <: Domain
+mutable struct FreeDomain{T <: Real} <: Domain{T}
     n::Int
 end
 
@@ -63,8 +63,8 @@ get_degree(::FreeDomain) = 0
 
 # TODO replace this domain with a more general cartesian product
 # assumes the free part has the same dimension as the restricted part
-mutable struct SemiFreeDomain <: Domain
-    restricted_halfregion::Domain
+mutable struct SemiFreeDomain{T <: Real} <: Domain{T}
+    restricted_halfregion::Domain{T}
 end
 
 get_dimension(dom::SemiFreeDomain) = 2 * get_dimension(dom.restricted_halfregion)
