@@ -34,7 +34,7 @@ mutable struct WSOSPolyInterp{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     tmpLU::Vector{Matrix{R}}
     tmpUU::Matrix{R}
     tmpU::Vector{R}
-    PΛiP::Matrix{R}
+    PΛiPs::Vector{Matrix{R}}
     ΛFs::Vector
 
     correction::Vector{T}
@@ -75,7 +75,7 @@ function setup_data(cone::WSOSPolyInterp{T, R}) where {R <: RealOrComplex{T}} wh
     cone.tmpUL = [Matrix{R}(undef, dim, size(Pk, 2)) for Pk in Ps]
     cone.tmpLU = [Matrix{R}(undef, size(Pk, 2), dim) for Pk in Ps]
     cone.tmpUU = Matrix{R}(undef, dim, dim)
-    cone.PΛiP = Matrix{R}(undef, dim, dim)
+    cone.PΛiPs = [Matrix{R}(undef, dim, dim) for _ in eachindex(Ps)]
     cone.tmpU = zeros(T, dim)
     cone.ΛFs = Vector{Any}(undef, length(Ps))
     cone.correction = zeros(T, dim)
@@ -133,27 +133,27 @@ end
 function update_hess(cone::WSOSPolyInterp)
     @assert cone.grad_updated
     cone.hess .= 0
-    cone.PΛiP .= 0
     @inbounds for k in eachindex(cone.Ps)
         LUk = cone.tmpLU[k]
-        UUk = mul!(cone.tmpUU, LUk', LUk)
-        cone.PΛiP += UUk
+        PΛiPk = cone.PΛiPs[k]
+        mul!(PΛiPk, LUk', LUk)
         @inbounds for j in 1:cone.dim, i in 1:j
-            cone.hess.data[i, j] += abs2(UUk[i, j])
+            cone.hess.data[i, j] += abs2(PΛiPk[i, j])
         end
     end
     cone.hess_updated = true
     return cone.hess
 end
 
+der3_ijk(i::Int, j::Int, k::Int, cone::WSOSPolyInterp) = sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] for PΛiP in cone.PΛiPs)
+
 # TODO think about vectorizing
 function correction(cone::WSOSPolyInterp, s_sol::AbstractVector, z_sol::AbstractVector)
     @assert cone.hess_updated
     dim = cone.dim
     Hinv_z = inv_hess_prod!(cone.tmpU, z_sol, cone)
-    PΛiP = cone.PΛiP
     for k in 1:dim
-        cone.correction[k] = sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] * s_sol[i] * Hinv_z[j] for i in 1:dim, j in 1:dim)
+        cone.correction[k] = sum(der3_ijk(i, j, k, cone) * s_sol[i] * Hinv_z[j] for i in 1:dim, j in 1:dim)
     end
     return cone.correction
 end

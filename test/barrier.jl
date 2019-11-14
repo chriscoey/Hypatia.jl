@@ -413,14 +413,23 @@ end
 function test_wsospolyinterp_barrier(T::Type{<:Real})
     Random.seed!(1)
     for (n, halfdeg) in [(1, 1), (1, 2), (1, 3), (2, 2), (3, 2), (2, 3)]
-        # TODO test with more Pi matrices
-        (U, _, P0, _, _) = MU.interpolate(MU.Box(-ones(T, n), ones(T, n)), halfdeg, sample = false)
+        if n < 3 && halfdeg < 3
+            dom = MU.Box(-ones(T, n), ones(T, n))
+        else
+            dom = MU.FreeDomain(n)
+        end
+        (U, _, P0, Ps, _) = MU.interpolate(dom, halfdeg, sample = false)
         P0 = convert(Matrix{T}, P0)
         function barrier(s)
             Lambda = Symmetric(P0' * Diagonal(s) * P0)
-            return -logdet(cholesky!(Lambda))
+            bar = -logdet(cholesky!(Lambda))
+            for p in Ps
+                Lambda = Symmetric(p' * Diagonal(s) * p)
+                bar -= logdet(cholesky!(Lambda))
+            end
+            return bar
         end
-        cone = CO.WSOSPolyInterp{T, T}(U, [P0], true)
+        cone = CO.WSOSPolyInterp{T, T}(U, [P0, Ps...], true)
         test_barrier_oracles(cone, barrier, init_tol = T(100)) # TODO center and test initial points
     end
     # TODO also test complex case CO.WSOSPolyInterp{T, Complex{T}} - need complex MU interp functions first
