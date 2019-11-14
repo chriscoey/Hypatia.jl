@@ -151,10 +151,9 @@ function correction(cone::WSOSPolyInterp, s_sol::AbstractVector, z_sol::Abstract
     @assert cone.hess_updated
     dim = cone.dim
     Hinv_z = inv_hess_prod!(cone.tmpU, z_sol, cone)
-    cone.correction .= 0
     PΛiP = cone.PΛiP
     for k in 1:dim
-        cone.correction[k] += sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] * s_sol[i] * Hinv_z[j] for i in 1:dim, j in 1:dim)
+        cone.correction[k] = sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] * s_sol[i] * Hinv_z[j] for i in 1:dim, j in 1:dim)
     end
     return cone.correction
 end

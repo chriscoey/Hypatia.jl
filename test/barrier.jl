@@ -414,7 +414,7 @@ function test_wsospolyinterp_barrier(T::Type{<:Real})
     Random.seed!(1)
     for (n, halfdeg) in [(1, 1), (1, 2), (1, 3), (2, 2), (3, 2), (2, 3)]
         # TODO test with more Pi matrices
-        (U, _, P0, _, _) = MU.interpolate(MU.FreeDomain(n), halfdeg, sample = false)
+        (U, _, P0, _, _) = MU.interpolate(MU.Box(-ones(T, n), ones(T, n)), halfdeg, sample = false)
         P0 = convert(Matrix{T}, P0)
         function barrier(s)
             Lambda = Symmetric(P0' * Diagonal(s) * P0)
