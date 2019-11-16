@@ -290,13 +290,25 @@ function test_possemideftri_barrier(T::Type{<:Real})
 end
 
 function test_epinorminf_barrier(T::Type{<:Real})
-    function barrier(s)
+    # real epinorminf cone
+    function R_barrier(s)
         (u, w) = (s[1], s[2:end])
-        return -sum(log(u - abs2(wj) / u) for wj in w) - log(u)
+        return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
     end
     for dim in [2, 4]
-        test_barrier_oracles(CO.EpiNormInf{T}(dim), barrier)
+        test_barrier_oracles(CO.EpiNormInf{T, T}(dim), R_barrier)
     end
+
+    # # complex epinorminf cone
+    # function C_barrier(s)
+    #     (u, ws) = (s[1], s[2:end])
+    #     w = [ws[i] + ws[i + 1] * im for i in 1:div(length(ws), 2)]
+    #     return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
+    # end
+    # for dim in [3, 7]
+    #     test_barrier_oracles(CO.EpiNormInf{T, Complex{T}}(dim), C_barrier)
+    # end
+
     return
 end
 

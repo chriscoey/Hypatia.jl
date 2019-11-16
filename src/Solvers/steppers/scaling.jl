@@ -139,6 +139,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
     @. point.z += alpha * stepper.z_dir
+    # TODO remove 
     # z = point.z
     # side = solver.model.cones[1].side
     # @show z[1] * (logdet(Symmetric(Cones.svec_to_smat!(zeros(T, side, side), z[3:end], sqrt(T(2))), :U) / z[1]) + T(side)), z[2]

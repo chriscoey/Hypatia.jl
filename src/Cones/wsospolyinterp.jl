@@ -36,7 +36,6 @@ mutable struct WSOSPolyInterp{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     tmpU::Vector{R}
     PΛiPs::Vector{Matrix{R}}
     ΛFs::Vector
-
     correction::Vector{T}
 
     function WSOSPolyInterp{T, R}(
