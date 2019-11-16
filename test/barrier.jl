@@ -291,24 +291,22 @@ end
 
 function test_epinorminf_barrier(T::Type{<:Real})
     # real epinorminf cone
-    function R_barrier(s)
-        (u, w) = (s[1], s[2:end])
-        return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
-    end
-    for dim in [2, 4]
-        test_barrier_oracles(CO.EpiNormInf{T, T}(dim), R_barrier)
-    end
+    for n in [1, 3]
+        function R_barrier(s)
+            (u, w) = (s[1], s[2:end])
+            return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
+        end
+        # test_barrier_oracles(CO.EpiNormInf{T, T}(1 + n), R_barrier)
+        test_barrier_oracles(CO.EpiNormInf{T}(1 + n), R_barrier)
 
-    # # complex epinorminf cone
-    # function C_barrier(s)
-    #     (u, ws) = (s[1], s[2:end])
-    #     w = [ws[i] + ws[i + 1] * im for i in 1:div(length(ws), 2)]
-    #     return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
-    # end
-    # for dim in [3, 7]
-    #     test_barrier_oracles(CO.EpiNormInf{T, Complex{T}}(dim), C_barrier)
-    # end
-
+        # # complex epinorminf cone
+        # function C_barrier(s)
+        #     (u, ws) = (s[1], s[2:end])
+        #     w = [ws[2i - 1] + ws[2i] * im for i in 1:n]
+        #     return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
+        # end
+        # test_barrier_oracles(CO.EpiNormInf{T, Complex{T}}(1 + 2n), C_barrier)
+    end
     return
 end
 
@@ -396,11 +394,21 @@ end
 
 function test_epinormspectral_barrier(T::Type{<:Real})
     for (n, m) in [(1, 2), (2, 2), (2, 3), (3, 5)]
-        function barrier(s)
+        # real epinormspectral barrier
+        function R_barrier(s)
             (u, W) = (s[1], reshape(s[2:end], n, m))
-            return -logdet(cholesky!(Symmetric(u * I - W * W' / u))) - log(u)
+            return -logdet(cholesky!(Hermitian(abs2(u) * I - W * W'))) + (n - 1) * log(u)
         end
-        test_barrier_oracles(CO.EpiNormSpectral{T}(n, m), barrier)
+        test_barrier_oracles(CO.EpiNormSpectral{T}(n, m), R_barrier)
+        # test_barrier_oracles(CO.EpiNormSpectral{T, T}(n, m), R_barrier)
+
+        # # complex epinormspectral barrier
+        # function C_barrier(s)
+        #     (u, Ws) = (s[1], reshape(s[2:end], n, 2m))
+        #     W = [Ws[i, 2j - 1] + Ws[i, 2j] * im for i in 1:n, j in 1:m]
+        #     return -logdet(cholesky!(Hermitian(abs2(u) * I - W * W'))) + (n - 1) * log(u)
+        # end
+        # test_barrier_oracles(CO.EpiNormSpectral{Complex{T}, T}(n, m), C_barrier)
     end
     return
 end
