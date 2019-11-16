@@ -13,6 +13,28 @@ import Hypatia
 const CO = Hypatia.Cones
 const MU = Hypatia.ModelUtilities
 
+# TODO decide whether to keep, clean up and maybe run optionally, describe
+# function test_self_concordance()
+#     # move around in the cone
+#     for pt in 1:10
+#         point .+= CO.set_initial_point(copy(point), cone)
+#         perturb_scale(point / scale, noise / 100, scale)
+#         @test load_reset_check(cone, point)
+#         CO.grad(cone)
+#         hess = CO.hess(cone)
+#         FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+#         # test different directional derivatives
+#         for _ in 1:1000
+#             dir = randn(dim)
+#             dir ./= norm(dir)
+#             sc_rhs = 2 * dot(dir, hess, dir) ^ (3 / 2)
+#             FD_3deriv_dir = reshape(FD_3deriv * dir, dim, dim)
+#             sc_lhs = abs(dot(dir, FD_3deriv_dir, dir))
+#             @test sc_lhs <= sc_rhs
+#         end
+#     end
+# end
+
 function test_barrier_oracles(
     cone::CO.Cone{T},
     barrier::Function;
@@ -63,27 +85,6 @@ function test_barrier_oracles(
         Hinv_z = CO.inv_hess_prod!(similar(z_dir), z_dir, cone)
         FD_corr = reshape(FD_3deriv * s_dir, dim, dim) * Hinv_z / -2
         @test FD_corr ≈ CO.correction(cone, s_dir, z_dir) atol=tol rtol=tol
-    end
-
-    if dim < 8 && T in (Float32, Float64)
-        # move around in the cone
-        for pt in 1:10
-            point .+= CO.set_initial_point(copy(point), cone)
-            perturb_scale(point / scale, noise / 100, scale)
-            @test load_reset_check(cone, point)
-            CO.grad(cone)
-            hess = CO.hess(cone)
-            FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-            # test different directional derivatives
-            for _ in 1:1000
-                dir = randn(dim)
-                dir ./= norm(dir)
-                sc_rhs = 2 * dot(dir, hess, dir) ^ (3 / 2)
-                FD_3deriv_dir = reshape(FD_3deriv * dir, dim, dim)
-                sc_lhs = abs(dot(dir, FD_3deriv_dir, dir))
-                @test sc_lhs <= sc_rhs
-            end
-        end
     end
 
     # TODO max step distances
@@ -412,19 +413,11 @@ end
 
 function test_wsospolyinterp_barrier(T::Type{<:Real})
     Random.seed!(1)
-    for (n, halfdeg) in [(1, 1), (1, 2), (1, 3), (2, 2), (3, 2), (2, 3)]
-        (U, _, P0, Ps, _) = MU.interpolate(MU.Box{T}(-ones(T, n), ones(T, n)), halfdeg, sample = false)
-        P0 = convert(Matrix{T}, P0)
-        function barrier(s)
-            Lambda = Symmetric(P0' * Diagonal(s) * P0)
-            bar = -logdet(cholesky!(Lambda))
-            for p in Ps
-                Lambda = Symmetric(p' * Diagonal(s) * p)
-                bar -= logdet(cholesky!(Lambda))
-            end
-            return bar
-        end
-        cone = CO.WSOSPolyInterp{T, T}(U, [P0, Ps...], true)
+    for (n, halfdeg) in [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (3, 1)]
+        (U, _, P0, Ps, _) = MU.interpolate(MU.Box{T}(-ones(T, n), ones(T, n)), halfdeg, sample = false) # use a unit box domain
+        Ps = vcat([P0], Ps)
+        barrier(s) = -sum(logdet(cholesky!(Symmetric(P' * Diagonal(s) * P))) for P in Ps)
+        cone = CO.WSOSPolyInterp{T, T}(U, Ps, true)
         test_barrier_oracles(cone, barrier, init_tol = T(100)) # TODO center and test initial points
     end
     # TODO also test complex case CO.WSOSPolyInterp{T, Complex{T}} - need complex MU interp functions first
