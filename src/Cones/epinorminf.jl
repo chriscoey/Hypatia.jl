@@ -6,6 +6,7 @@ epigraph of L-infinity norm
 
 barrier from "Barrier Functions in Interior Point Methods" by Osman Guler
 -sum_i(log(u - w_i^2/u)) - log(u)
+= -sum_i(log(u^2 - w_i^2)) + (n - 1)log(u)
 =#
 
 mutable struct EpiNormInf{T <: Real} <: Cone{T}

@@ -36,7 +36,6 @@ mutable struct WSOSPolyInterp{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     tmpU::Vector{R}
     PΛiPs::Vector{Matrix{R}}
     ΛFs::Vector
-
     correction::Vector{T}
 
     function WSOSPolyInterp{T, R}(
@@ -145,18 +144,15 @@ function update_hess(cone::WSOSPolyInterp)
     return cone.hess
 end
 
-# TODO think about vectorizing
+# TODO try to improve efficiency and simplify to remove inverse hessian product?
 function correction(cone::WSOSPolyInterp, s_sol::AbstractVector, z_sol::AbstractVector)
-    # TODO uncomment when logic in stepper obliviates the need for this
     if !cone.hess_updated
         update_hess(cone)
     end
-    dim = cone.dim
     Hinv_z = inv_hess_prod!(cone.tmpU, z_sol, cone)
-    cone.correction .= 0
-    for k in 1:dim, i in 1:dim, j in 1:dim
-        der3_ijk = sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] for PΛiP in cone.PΛiPs)
-        cone.correction[k] += der3_ijk * s_sol[i] * Hinv_z[j]
+    corr = cone.correction
+    @inbounds for k in eachindex(corr)
+        corr[k] = sum(sum(PΛiP[i, j] * PΛiP[i, k] * PΛiP[j, k] for PΛiP in cone.PΛiPs) * s_sol[i] * Hinv_z[j] for i in eachindex(corr), j in eachindex(corr))
     end
-    return cone.correction
+    return corr
 end
