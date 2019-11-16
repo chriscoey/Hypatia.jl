@@ -139,10 +139,6 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     @. point.x += alpha * stepper.x_dir
     @. point.y += alpha * stepper.y_dir
     @. point.z += alpha * stepper.z_dir
-    # TODO remove 
-    # z = point.z
-    # side = solver.model.cones[1].side
-    # @show z[1] * (logdet(Symmetric(Cones.svec_to_smat!(zeros(T, side, side), z[3:end], sqrt(T(2))), :U) / z[1]) + T(side)), z[2]
     @. point.s += alpha * stepper.s_dir
     solver.tau += alpha * stepper.dir[stepper.tau_row]
     solver.kap += alpha * stepper.dir[stepper.kap_row]
@@ -151,6 +147,7 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # TODO remove when not needed
     Cones.load_point.(solver.model.cones, point.primal_views)
     Cones.load_dual_point.(solver.model.cones, point.dual_views)
+    Cones.is_dual_feas(solver.model.cones[1]) #
     Cones.reset_data.(solver.model.cones)
     Cones.is_feas.(solver.model.cones)
     Cones.grad.(solver.model.cones)
@@ -193,6 +190,7 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
 
     # cones requiring line search and neighborhood
     nbhd = (stepper.in_affine_phase ? one(T) : solver.max_nbhd)
+    # nbhd = (stepper.in_affine_phase ? T(0.07) : T(0.02))
     point = solver.point
     model = solver.model
     z_temp = solver.z_temp
