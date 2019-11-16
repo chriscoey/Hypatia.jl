@@ -147,7 +147,6 @@ function step(stepper::ScalingStepper{T}, solver::Solver{T}) where {T <: Real}
     # TODO remove when not needed
     Cones.load_point.(solver.model.cones, point.primal_views)
     Cones.load_dual_point.(solver.model.cones, point.dual_views)
-    Cones.is_dual_feas(solver.model.cones[1]) #
     Cones.reset_data.(solver.model.cones)
     Cones.is_feas.(solver.model.cones)
     Cones.grad.(solver.model.cones)
@@ -190,7 +189,6 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
 
     # cones requiring line search and neighborhood
     nbhd = (stepper.in_affine_phase ? one(T) : solver.max_nbhd)
-    # nbhd = (stepper.in_affine_phase ? T(0.07) : T(0.02))
     point = solver.point
     model = solver.model
     z_temp = solver.z_temp
