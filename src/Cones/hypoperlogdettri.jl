@@ -14,6 +14,7 @@ mutable struct HypoPerLogdetTri{T <: Real} <: Cone{T}
     dim::Int
     side::Int
     point::Vector{T}
+    dual_point::Vector{T}
     rt2::T
 
     feas_updated::Bool
@@ -23,14 +24,17 @@ mutable struct HypoPerLogdetTri{T <: Real} <: Cone{T}
     hess_prod_updated::Bool
     inv_hess_prod_updated::Bool
     is_feas::Bool
+    is_dual_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
     hess_fact_cache
 
     mat::Matrix{T}
+    dual_mat::Matrix{T}
     mat2::Matrix{T}
     fact_mat
+    dual_fact_mat
     ldWv::T
     z::T
     Wi::Matrix{T}
@@ -57,17 +61,21 @@ end
 
 HypoPerLogdetTri{T}(dim::Int) where {T <: Real} = HypoPerLogdetTri{T}(dim, false)
 
+load_dual_point(cone::HypoPerLogdetTri, dual_point::AbstractVector) = copyto!(cone.dual_point, dual_point)
+
 reset_data(cone::HypoPerLogdetTri) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_prod_updated = cone.inv_hess_prod_updated = false)
 
 function setup_data(cone::HypoPerLogdetTri{T}) where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
-    cone.grad = zeros(T, dim)
+    cone.dual_point = similar(cone.point)
+    cone.grad = similar(cone.point)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     load_matrix(cone.hess_fact_cache, cone.hess)
     cone.mat = Matrix{T}(undef, cone.side, cone.side)
+    cone.dual_mat = similar(cone.mat)
     cone.mat2 = similar(cone.mat)
     cone.Wivzi = similar(cone.mat)
     return
@@ -107,6 +115,24 @@ function update_feas(cone::HypoPerLogdetTri)
 
     cone.feas_updated = true
     return cone.is_feas
+end
+
+function update_dual_feas(cone::HypoPerLogdetTri)
+    u = cone.dual_point[1]
+    v = cone.dual_point[2]
+    n = cone.side
+    if u < 0
+        svec_to_smat!(cone.dual_mat, view(cone.dual_point, 3:cone.dim), cone.rt2)
+        cone.dual_fact_mat = cholesky!(Symmetric(cone.dual_mat, :U), check = false)
+        if isposdef(cone.dual_fact_mat)
+            cone.is_dual_feas = (u * (logdet(cone.dual_fact_mat) - n * log(-u) + n) - v < 0)
+        else
+            cone.is_dual_feas = false
+        end
+    else
+        cone.is_dual_feas = false
+    end
+    return cone.is_dual_feas
 end
 
 function update_grad(cone::HypoPerLogdetTri)

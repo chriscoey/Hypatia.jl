@@ -49,6 +49,7 @@ load_dual_point(cone::Cone, dual_point::AbstractVector) = nothing
 dimension(cone::Cone) = cone.dim
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
+is_dual_feas(cone::Cone) = update_dual_feas(cone) # TODO is there a reason for a boolean flag for updating this other than consistency with other booleans? this check doesn't affect other oracles
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
