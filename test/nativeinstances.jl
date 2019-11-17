@@ -650,7 +650,7 @@ function hypogeomean1(T; options...)
     h = zeros(T, 3)
 
     for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.HypoGeomean{T}(ones(T, 2) / 2, is_dual)]
+        cones = CO.Cone{T}[CO.HypoGeomean2{T}(ones(T, 2) / 2, is_dual)]
 
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal
@@ -669,7 +669,7 @@ function hypogeomean2(T; options...)
 
     for is_dual in (true, false)
         b = is_dual ? [-one(T)] : [one(T)]
-        cones = CO.Cone{T}[CO.HypoGeomean{T}(fill(inv(T(l)), l), is_dual)]
+        cones = CO.Cone{T}[CO.HypoGeomean2{T}(fill(inv(T(l)), l), is_dual)]
 
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal
@@ -688,7 +688,7 @@ function hypogeomean3(T; options...)
     h = zeros(T, l + 1)
 
     for is_dual in (true, false)
-        cones = CO.Cone{T}[CO.HypoGeomean{T}(fill(inv(T(l)), l), is_dual)]
+        cones = CO.Cone{T}[CO.HypoGeomean2{T}(fill(inv(T(l)), l), is_dual)]
 
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal

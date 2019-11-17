@@ -22,8 +22,8 @@ include("linearalgebra/sparse.jl")
 # submodules
 include("ModelUtilities/ModelUtilities.jl")
 include("Cones/Cones.jl")
-# include("Models/Models.jl")
-# include("Solvers/Solvers.jl")
+include("Models/Models.jl")
+include("Solvers/Solvers.jl")
 
 # # MathOptInterface helpers
 # using SparseArrays
