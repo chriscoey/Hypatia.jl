@@ -26,8 +26,8 @@ barrier_testfuns = [
 
 real_types = [
     Float64,
-    # Float32,
-    # BigFloat,
+    Float32,
+    BigFloat,
     ]
 
 @info("starting barrier tests")

@@ -162,27 +162,22 @@ function test_grad_hess(
 
     @test dot(point, grad) ≈ -nu atol=tol rtol=tol
 
-    inv_hess_test = inv(cholesky(hess))
-    # println(inv_hess[1, :])
-    # println(inv_hess_test[1, :])
-    # println(inv_hess)
-    # println(inv_hess_test)
-    # println(inv_hess - inv_hess_test)
+    inv_hess_test = inv(cholesky(hess)) # TODO remove
     @test inv_hess_test ≈ inv_hess atol=tol rtol=tol
 
-    # @test hess * inv_hess ≈ I atol=tol rtol=tol
+    @test hess * inv_hess ≈ I atol=tol rtol=tol
 
     # dim = length(point)
     # prod_mat = similar(point, dim, dim)
     # @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
     # @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
     #
-    # if !CO.use_scaling(cone)
-    #     prod = similar(point)
-    #     @test hess * point ≈ -grad atol=tol rtol=tol
-    #     @test CO.hess_prod!(prod, point, cone) ≈ -grad atol=tol rtol=tol
-    #     @test CO.inv_hess_prod!(prod, grad, cone) ≈ -point atol=tol rtol=tol
-    # end
+    if !CO.use_scaling(cone)
+        prod = similar(point)
+        @test hess * point ≈ -grad atol=tol rtol=tol
+        # @test CO.hess_prod!(prod, point, cone) ≈ -grad atol=tol rtol=tol
+        # @test CO.inv_hess_prod!(prod, grad, cone) ≈ -point atol=tol rtol=tol
+    end
     #
     # if !isempty(dual_point)
     #     @test hess * point ≈ dual_point atol=tol rtol=tol
@@ -300,17 +295,14 @@ function test_possemideftri_barrier(T::Type{<:Real})
 end
 
 function test_epinorminf_barrier(T::Type{<:Real})
-    # real epinorminf cone
     for n in [1, 2, 3, 5]
-        # function R_barrier(s)
-        #     (u, w) = (s[1], s[2:end])
-        #     return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (n - 1) * log(u)
-        # end
-        # # test_barrier_oracles(CO.EpiNormInf{T, T}(1 + n), R_barrier)
-        # test_barrier_oracles(CO.EpiNormInf{T}(1 + n), R_barrier)
+        # real epinorminf cone
+        function R_barrier(s)
+            (u, w) = (s[1], s[2:end])
+            return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (n - 1) * log(u)
+        end
+        test_barrier_oracles(CO.EpiNormInf{T, T}(1 + n), R_barrier)
 
-        println(n)
-        println()
         # complex epinorminf cone
         function C_barrier(s)
             (u, wr) = (s[1], s[2:end])
