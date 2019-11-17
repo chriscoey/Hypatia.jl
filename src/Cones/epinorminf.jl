@@ -107,38 +107,37 @@ function update_grad(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where
     cone.schur = zero(T)
 
     complexgrad = similar(w)
-    prods = one(T)
-    sums = zero(T)
 
     # @inbounds for (j, wj) in enumerate(w)
     for (j, wj) in enumerate(w)
         # umwj = (u - wj)
         # upwj = (u + wj')
         # udiv = 2 * u / umwj / upwj
-        u2wj2 = usqr - abs2(wj)
-        udiv = 2 * u / u2wj2
+        wjsqr = abs2(wj)
+        u2mwj2 = usqr - wjsqr
+        udiv = 2 * u / u2mwj2
         g1 += udiv
         h1 += abs2(udiv)
-        wdiv = 2 * wj / u2wj2
+        wdiv = 2 * wj / u2mwj2
         complexgrad[j] = wdiv
         # cone.grad[j + 1] = wdiv
+
         # cone.diag2n[j] = 2 * (1 + wj * wdiv) / umwj / upwj
         # cone.invdiag2n[j] = umwj * upwj / (2 + 2 * wj * wdiv)
         # cone.edge2n[j] = -udiv * wdiv
-        u2pwj2 = usqr + abs2(wj)
+        u2pwj2 = usqr + wjsqr
         cone.div2n[j] = 2 * u / u2pwj2 * wj
-        cone.schur += inv(u2pwj2)
-        sums += abs2(wj)
-        prods *= abs2(wj)
+        cone.schur += 2 / u2pwj2
     end
 
     t1 = (length(w) - 1) / u
-    cone.grad[1] = t1 - g1
-    @views cvec_to_rvec!(cone.grad[2:end], complexgrad)
     cone.diag11 = h1 - (t1 + g1) / u
     @assert cone.diag11 > 0
-    cone.schur = 2 * cone.schur - t1 / u
+    cone.schur -= t1 / u
     @assert cone.schur > 0
+
+    cone.grad[1] = t1 - g1
+    @views cvec_to_rvec!(cone.grad[2:end], complexgrad)
 
     cone.grad_updated = true
     return cone.grad
@@ -240,10 +239,10 @@ function update_inv_hess(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} w
     cone.inv_hess_updated = true
     return cone.inv_hess
 end
-#
+
 # update_hess_prod(cone::EpiNormInf) = nothing
 # update_inv_hess_prod(cone::EpiNormInf) = nothing
-#
+
 # function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormInf)
 #     @assert cone.grad_updated
 #     @views begin
@@ -254,7 +253,7 @@ end
 #     end
 #     return prod
 # end
-#
+
 # function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiNormInf)
 #     @assert cone.grad_updated
 #     @views begin
