@@ -188,7 +188,8 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     end
 
     # cones requiring line search and neighborhood
-    nbhd = (stepper.in_affine_phase ? one(T) : solver.max_nbhd)
+    nbhd = (stepper.in_affine_phase ? T(0.7) : T(0.1))
+    # nbhd = (stepper.in_affine_phase ? one(T) : solver.max_nbhd)
     point = solver.point
     model = solver.model
     z_temp = solver.z_temp
@@ -242,7 +243,7 @@ function check_nbhd(
     for (k, cone_k) in enumerate(cones)
         if solver.cones_infeas[k]
             Cones.reset_data(cone_k)
-            if Cones.is_feas(cone_k)
+            if Cones.is_feas(cone_k) # && Cones.is_dual_feas(cone_k)
                 solver.cones_infeas[k] = false
                 solver.cones_loaded[k] = true
             else
