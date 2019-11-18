@@ -79,7 +79,7 @@ function update_feas(cone::HypoGeomean2)
     if all(wi -> wi > 0, w)
         # wprod always calculated because used in update_grad
         cone.wprod = sum(cone.alpha[i] * log(w[i]) for i in eachindex(cone.alpha))
-        cone.is_feas = (u < 0) || (cone.wprod > log(u))
+        cone.is_feas = (u <= 0) || (cone.wprod > log(u))
     else
         cone.is_feas = false
     end
