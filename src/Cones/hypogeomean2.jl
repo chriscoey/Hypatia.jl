@@ -67,8 +67,8 @@ get_nu(cone::HypoGeomean2) = cone.dim
 
 # TODO work out how to get central ray
 function set_initial_point(arr::AbstractVector{T}, cone::HypoGeomean2{T}) where {T}
-    arr[1] = 0
-    @. arr[2:end] = T(2) ^ (1 / cone.alpha)
+    (arr[1], w) = get_central_ray_hypogeomean2(cone.alpha)
+    arr[2:end] .= w
     return arr
 end
 
@@ -126,25 +126,25 @@ function update_hess(cone::HypoGeomean2)
 end
 
 # see analysis in https://github.com/lkapelevich/HypatiaBenchmarks.jl/tree/master/centralpoints
-# function get_central_ray_hypogeomean2(alpha::Vector{<:Real})
-#     wdim = length(alpha)
-#     # predict each w_i given alpha_i and n
-#     w = zeros(wdim)
-#     if wdim == 1
-#         w .= 1.30656
-#     elseif wdim == 2
-#         @. w = 0.371639 * alpha ^ 3 - 0.408226 * alpha ^ 2 + 0.337555 * alpha + 0.999426
-#     elseif wdim <= 5
-#         @. w = 0.90687113 - 0.02417035 * log(wdim) + 0.12939174 * exp(alpha)
-#     elseif wdim <= 20
-#         @. w = 0.927309483 - 0.004331391 * log(wdim) + 0.082597680 * exp(alpha)
-#     elseif wdim <= 100
-#         @. w = 0.9830810972 - 0.0002152296 * log(wdim) + 0.0177761654 * exp(alpha)
-#     else
-#         @. w = 9.968391e-01 - 9.605928e-06 * log(wdim) + 3.215512e-03 * exp(alpha)
-#     end
-#     # get u in closed form from w
-#     p = exp(-sum(alpha[i] * log(alpha[i]) for i in eachindex(alpha)))
-#     u = sum(p .- alpha .* p ./ (abs2.(w) .- 1)) / wdim
-#     return [u, w]
-# end
+function get_central_ray_hypogeomean2(alpha::Vector{<:Real})
+    wdim = length(alpha)
+    # predict each w_i given alpha_i and n
+    w = zeros(wdim)
+    if wdim == 1
+        w .= 1.306563
+    elseif wdim == 2
+        @. w = 1.005320 + 0.298108 * alpha
+    elseif wdim <= 5
+        @. w = 1.0049327 - 0.0006020 * wdim + 0.2998672 * alpha
+    elseif wdim <= 20
+        @. w = 1.001146 - 4.463046e-05 * wdim + 3.034014e-01 * alpha
+    elseif wdim <= 100
+        @. w = 1.000066 - 5.202270e-07 * wdim + 3.074873e-01 * alpha
+    else
+        @. w = 1 + 3.086695e-01 * alpha
+    end
+    # get u in closed form from w
+    p = exp(sum(alpha[i] * log(w[i]) for i in eachindex(alpha)))
+    u = sum(p .- alpha .* p ./ (abs2.(w) .- 1)) / wdim
+    return [u, w]
+end

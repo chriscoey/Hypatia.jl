@@ -427,7 +427,7 @@ function test_hypogeomean2_barrier(T::Type{<:Real})
         if dim <= 3
             test_barrier_oracles(cone, barrier, init_tol = T(1e-2))
         else
-            # test_barrier_oracles(cone, barrier, init_tol = T(3e-1), init_only = true)
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-2), init_only = true)
         end
     end
     return
