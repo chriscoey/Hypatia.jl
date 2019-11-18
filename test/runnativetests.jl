@@ -15,8 +15,8 @@ const SO = Hypatia.Solvers
 
 generic_reals = [
     Float64,
-    # Float32,
-    # BigFloat,
+    Float32,
+    BigFloat,
     ]
 
 options = (verbose = true,)

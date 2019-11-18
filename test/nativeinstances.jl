@@ -150,7 +150,7 @@ function epinorminf1(T; options...)
     b = [one(T), Tirt2]
     G = SparseMatrixCSC(-one(T) * I, 3, 3)
     h = zeros(T, 3)
-    cones = CO.Cone{T}[CO.EpiNormInf{T}(3)]
+    cones = CO.Cone{T}[CO.EpiNormInf{T, T}(3)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -169,7 +169,7 @@ function epinorminf2(T; options...)
     b = T[0, 0]
     G = [spzeros(T, 1, L); sparse(one(T) * I, L, L); spzeros(T, 1, L); sparse(T(2) * I, L, L)]
     h = zeros(T, 2L + 2); h[1] = 1; h[L + 2] = 1
-    cones = CO.Cone{T}[CO.EpiNormInf{T}(L + 1, true), CO.EpiNormInf{T}(L + 1, false)]
+    cones = CO.Cone{T}[CO.EpiNormInf{T, T}(L + 1, true), CO.EpiNormInf{T, T}(L + 1, false)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, obj_offset = one(T), options...)
     @test r.status == :Optimal
@@ -186,7 +186,7 @@ function epinorminf3(T; options...)
     b = zeros(T, 0)
     G = Diagonal(-one(T) * I, 6)
     h = zeros(T, 6)
-    cones = CO.Cone{T}[CO.EpiNormInf{T}(6)]
+    cones = CO.Cone{T}[CO.EpiNormInf{T, T}(6)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -201,7 +201,7 @@ function epinorminf4(T; options...)
     b = T[1, -0.4]
     G = Diagonal(-one(T) * I, 3)
     h = zeros(T, 3)
-    cones = CO.Cone{T}[CO.EpiNormInf{T}(3, true)]
+    cones = CO.Cone{T}[CO.EpiNormInf{T, T}(3, true)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -218,7 +218,7 @@ function epinorminf5(T; options...)
     b = vec(sum(A, dims = 2))
     G = rand(T, 6, 6)
     h = vec(sum(G, dims = 2))
-    cones = CO.Cone{T}[CO.EpiNormInf{T}(6, true)]
+    cones = CO.Cone{T}[CO.EpiNormInf{T, T}(6, true)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :Optimal
@@ -711,7 +711,7 @@ function power1(T; options...)
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal
         @test r.primal_obj ≈ (is_dual ? -sqrt(T(2)) : -inv(sqrt(T(2)))) atol=tol rtol=tol
-        @test r.x[3] ≈ (is_dual ? -sqrt(T(2)) : -inv(sqrt(T(2))))
+        @test r.x[3] ≈ (is_dual ? -sqrt(T(2)) : -inv(sqrt(T(2)))) atol=tol rtol=tol
         @test r.x[1:2] ≈ [0.5, 1] atol=tol rtol=tol
     end
 end
@@ -730,8 +730,8 @@ function power2(T; options...)
         r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
         @test r.status == :Optimal
         @test r.primal_obj ≈ (is_dual ? -T(2) : -1) atol=tol rtol=tol
-        @test norm(r.x[3:4]) ≈ (is_dual ? sqrt(T(2)) : inv(sqrt(T(2))))
-        @test r.x[3:4] ≈ (is_dual ? ones(T, 2) : fill(inv(T(2)), 2))
+        @test norm(r.x[3:4]) ≈ (is_dual ? sqrt(T(2)) : inv(sqrt(T(2)))) atol=tol rtol=tol
+        @test r.x[3:4] ≈ (is_dual ? ones(T, 2) : fill(inv(T(2)), 2)) atol=tol rtol=tol
         @test r.x[1:2] ≈ [1, 0.5] atol=tol rtol=tol
     end
 end
@@ -976,7 +976,7 @@ function dualinfeas1(T; options...)
     b = T[]
     G = repeat(SparseMatrixCSC(-one(T) * I, 3, 3), 2, 1)
     h = zeros(T, 6)
-    cones = CO.Cone{T}[CO.EpiNormInf{T}(3), CO.EpiNormInf{T}(3, true)]
+    cones = CO.Cone{T}[CO.EpiNormInf{T, T}(3), CO.EpiNormInf{T, T}(3, true)]
 
     r = build_solve_check(c, A, b, G, h, cones; atol = tol, options...)
     @test r.status == :DualInfeasible

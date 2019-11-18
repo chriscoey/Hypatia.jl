@@ -188,8 +188,11 @@ function find_max_alpha(stepper::ScalingStepper{T}, solver::Solver{T}) where {T 
     end
 
     # cones requiring line search and neighborhood
-    nbhd = (stepper.in_affine_phase ? T(0.7) : T(0.1))
+    # TODO tune nbhd
+    # nbhd = (stepper.in_affine_phase ? T(0.7) : T(0.1))
     # nbhd = (stepper.in_affine_phase ? one(T) : solver.max_nbhd)
+    nbhd = (stepper.in_affine_phase ? T(Inf) : solver.max_nbhd)
+
     point = solver.point
     model = solver.model
     z_temp = solver.z_temp
@@ -254,6 +257,10 @@ function check_nbhd(
         end
     end
 
+    if !isfinite(nbhd)
+        return true
+    end
+
     @assert solver.use_infty_nbhd # TODO hess nbhd?
     rhs_nbhd = mu_temp * abs2(nbhd)
     for (k, cone_k) in enumerate(cones)
@@ -263,9 +270,7 @@ function check_nbhd(
 
         if !solver.cones_loaded[k]
             Cones.reset_data(cone_k)
-            if !Cones.is_feas(cone_k)
-                return false
-            end
+            @assert Cones.is_feas(cone_k)
         end
 
         duals_k = solver.dual_views[k]
