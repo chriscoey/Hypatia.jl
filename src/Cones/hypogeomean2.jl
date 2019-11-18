@@ -77,8 +77,9 @@ function update_feas(cone::HypoGeomean2)
     u = cone.point[1]
     w = view(cone.point, 2:cone.dim)
     if all(wi -> wi > 0, w)
-        cone.wprod = prod(w[i] ^ cone.alpha[i] for i in eachindex(cone.alpha))
-        cone.is_feas = (cone.wprod > u)
+        # wprod always calculated because used in update_grad
+        cone.wprod = sum(cone.alpha[i] * log(w[i]) for i in eachindex(cone.alpha))
+        cone.is_feas = (u < 0) || (cone.wprod > log(u))
     else
         cone.is_feas = false
     end
@@ -90,7 +91,7 @@ function update_grad(cone::HypoGeomean2)
     @assert cone.is_feas
     u = cone.point[1]
     w = view(cone.point, 2:cone.dim)
-    wprod = cone.wprod
+    wprod = cone.wprod = exp(cone.wprod)
     wprodu = cone.wprodu = cone.wprod - u
     cone.grad[1] = inv(wprodu)
     @. cone.tmpn = wprod * cone.alpha / w / wprodu
@@ -123,3 +124,27 @@ function update_hess(cone::HypoGeomean2)
     cone.hess_updated = true
     return cone.hess
 end
+
+# see analysis in https://github.com/lkapelevich/HypatiaBenchmarks.jl/tree/master/centralpoints
+# function get_central_ray_hypogeomean2(alpha::Vector{<:Real})
+#     wdim = length(alpha)
+#     # predict each w_i given alpha_i and n
+#     w = zeros(wdim)
+#     if wdim == 1
+#         w .= 1.30656
+#     elseif wdim == 2
+#         @. w = 0.371639 * alpha ^ 3 - 0.408226 * alpha ^ 2 + 0.337555 * alpha + 0.999426
+#     elseif wdim <= 5
+#         @. w = 0.90687113 - 0.02417035 * log(wdim) + 0.12939174 * exp(alpha)
+#     elseif wdim <= 20
+#         @. w = 0.927309483 - 0.004331391 * log(wdim) + 0.082597680 * exp(alpha)
+#     elseif wdim <= 100
+#         @. w = 0.9830810972 - 0.0002152296 * log(wdim) + 0.0177761654 * exp(alpha)
+#     else
+#         @. w = 9.968391e-01 - 9.605928e-06 * log(wdim) + 3.215512e-03 * exp(alpha)
+#     end
+#     # get u in closed form from w
+#     p = exp(-sum(alpha[i] * log(alpha[i]) for i in eachindex(alpha)))
+#     u = sum(p .- alpha .* p ./ (abs2.(w) .- 1)) / wdim
+#     return [u, w]
+# end
