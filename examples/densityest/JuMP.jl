@@ -26,7 +26,7 @@ function densityestJuMP(
     )
     (nobs, dim) = size(X)
 
-    domain = MU.Box(-ones(dim), ones(dim))
+    domain = MU.Box{Float64}(-ones(dim), ones(dim))
     # rescale X to be in unit box
     minX = minimum(X, dims = 1)
     maxX = maximum(X, dims = 1)

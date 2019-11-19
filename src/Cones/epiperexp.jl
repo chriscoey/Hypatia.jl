@@ -1,198 +1,215 @@
 #=
-Copyright 2018, Chris Coey, Lea Kapelevich and contributors
+Copyright 2019, Chris Coey, Lea Kapelevich and contributors
 
-(closure of) epigraph of perspective of sum of exponentials (n-dimensional exponential cone)
-(u in R, v in R_+, w in R^n) : u >= v*sum(exp.(w/v))
+(closure of) epigraph of perspective of exponential (AKA exponential cone)
+(u in R_+, v in R_+, w in R) : u >= v*exp(w/v)
 
-barrier (guessed)
--log(v*log(u/v) - v*logsumexp(w/v)) - log(u) - log(v)
-in the three dimensional case this matches the barrier for hypoperlog (self-concordant)
+self-concordant barrier from "A homogeneous interior-point algorithm for nonsymmetric convex conic optimization" by Skajaa & Ye 2014
+-log(v*log(u/v) - w) - log(u) - log(v)
 
-TODO improve initial point
+TODO
+use StaticArrays
 =#
 
 mutable struct EpiPerExp{T <: Real} <: Cone{T}
+    use_3order_corr::Bool
     use_dual::Bool
-    dim::Int
     point::Vector{T}
+    # dual_point::Vector{T}
 
     feas_updated::Bool
     grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
-    inv_hess_prod_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
-    hess_fact_cache
 
-    lse::T
-    uvlse::T
-    sumwexp::T
-    sumexp::T
-    dzdv::T
-    dzdw::Vector{T}
-    expwv::Vector{T}
+    luv::T
+    vluvw::T
+    g1a::T
+    g2a::T
+    correction::Vector{T}
 
     function EpiPerExp{T}(
-        dim::Int,
         is_dual::Bool;
-        hess_fact_cache = hessian_cache(T),
+        use_3order_corr::Bool = true,
         ) where {T <: Real}
-        @assert dim >= 3
         cone = new{T}()
         cone.use_dual = is_dual
-        cone.dim = dim
-        cone.hess_fact_cache = hess_fact_cache
+        cone.use_3order_corr = use_3order_corr
         return cone
     end
 end
 
-EpiPerExp{T}(dim::Int) where {T <: Real} = EpiPerExp{T}(dim, false)
+EpiPerExp{T}() where {T <: Real} = EpiPerExp{T}(false)
 
+dimension(cone::EpiPerExp) = 3
+
+use_3order_corr(cone::EpiPerExp) = cone.use_3order_corr # TODO remove from here and just use one in Cones.jl when all cones allow
+
+reset_data(cone::EpiPerExp) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
+
+# TODO only allocate the fields we use
 function setup_data(cone::EpiPerExp{T}) where {T <: Real}
     reset_data(cone)
-    dim = cone.dim
-    cone.point = zeros(T, dim)
-    cone.grad = zeros(T, dim)
-    cone.hess = Symmetric(zeros(T, dim, dim), :U)
-    cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
-    load_matrix(cone.hess_fact_cache, cone.hess)
-    cone.expwv = zeros(T, dim - 2)
-    cone.dzdw = zeros(T, dim - 2)
+    cone.point = zeros(T, 3)
+    # cone.dual_point = zeros(T, 3)
+    cone.grad = zeros(T, 3)
+    cone.hess = Symmetric(zeros(T, 3, 3), :U)
+    cone.inv_hess = Symmetric(zeros(T, 3, 3), :U)
+    cone.correction = zeros(T, 3)
     return
 end
 
 get_nu(cone::EpiPerExp) = 3
 
-function set_initial_point(arr::AbstractVector{T}, cone::EpiPerExp{T}) where {T <: Real}
-    (arr[1], arr[2], w) = get_central_ray_epiperexp(cone.dim - 2)
-    arr[3:end] .= w
+function set_initial_point(arr::AbstractVector, cone::EpiPerExp)
+    arr .= (1.290928, 0.805102, -0.827838) # from MOSEK paper
     return arr
 end
 
 function update_feas(cone::EpiPerExp)
     @assert !cone.feas_updated
-    u = cone.point[1]
-    v = cone.point[2]
-    w = view(cone.point, 3:cone.dim)
-    cone.is_feas = false
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+
     if u > 0 && v > 0
-        @. cone.expwv = exp(w / v)
-        if all(ej -> isfinite(ej) && ej > 0, cone.expwv)
-            cone.sumexp = sum(cone.expwv)
-            cone.lse = log(cone.sumexp)
-            cone.uvlse = log(u) - log(v) - cone.lse
-            cone.is_feas = (isfinite(cone.uvlse) && cone.uvlse > 0)
-        end
+        cone.luv = log(u / v)
+        cone.vluvw = v * cone.luv - w
+        cone.is_feas = (cone.vluvw > 0)
+    else
+        cone.is_feas = false
     end
+
     cone.feas_updated = true
     return cone.is_feas
 end
 
 function update_grad(cone::EpiPerExp)
     @assert cone.is_feas
-    u = cone.point[1]
-    v = cone.point[2]
-    w = view(cone.point, 3:cone.dim)
-    lse = cone.lse
-    sumexp = cone.sumexp
-    sumwexp = dot(w, cone.expwv)
-    cone.sumwexp = sumwexp
-    uvlse = cone.uvlse
-    cone.dzdv = (sumwexp / v / sumexp - 1) / v # derivative of uvlse wrt v
-    cone.grad[1] = -(inv(uvlse) + 1) / u
-    cone.grad[2] = -cone.dzdv / uvlse - 2 / v
-    @. cone.dzdw = cone.expwv / v / sumexp
-    @. cone.grad[3:end] = cone.dzdw / uvlse
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+    vluvw = cone.vluvw
+
+    cone.g1a = -v / u / vluvw
+    cone.grad[1] = cone.g1a - inv(u)
+    cone.g2a = (1 - cone.luv) / vluvw
+    cone.grad[2] = cone.g2a - inv(v)
+    cone.grad[3] = inv(vluvw)
+
     cone.grad_updated = true
     return cone.grad
 end
 
 function update_hess(cone::EpiPerExp)
     @assert cone.grad_updated
-    u = cone.point[1]
-    v = cone.point[2]
-    w = view(cone.point, 3:cone.dim)
-    expwv = cone.expwv
-    lse = cone.lse
-    uvlse = cone.uvlse
-    sumwexp = cone.sumwexp
-    dzdv = cone.dzdv
-    dzdw = cone.dzdw
-    sumexp = cone.sumexp
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
     H = cone.hess.data
+    vluvw = cone.vluvw
+    g1a = cone.g1a
+    g2a = cone.g2a
 
-    H[1, 1] = ((inv(uvlse) + 1) / uvlse + 1) / u / u
-    H[1, 2] = dzdv / uvlse / uvlse / u
-    @. @views H[1, 3:cone.dim] = -dzdw / u / uvlse / uvlse
-
-    # the derivative of sum(w / v ^ 2 .* exp.(w / v)) with respect to v, unscaled by inv(v ^ 2)
-    sumwexpvv = sumwexp / v / v
-    sumwsqrexpvv = sum(abs2(w[j]) * expwv[j] for j in eachindex(w)) / v / v
-    dsumwexpvvdv = -(sumwsqrexpvv + 2 * sumwexp / v)
-    H[2, 2] = -(dzdv / uvlse + 1 / v) / v
-    H[2, 2] += (sumwexp * (dzdv / uvlse - sumwexpvv / sumexp) - dsumwexpvvdv) / v / v / sumexp
-    H[2, 2] /= uvlse
-    H[2, 2] += 2 / v / v
-
-    for i in eachindex(w)
-        # derivative of inv(z) wrt w
-        dzidw = -dzdw[i] / uvlse / uvlse
-        dsumwexpvvdw = expwv[i] * (1 + w[i] / v) / v / v
-        # derivative of inv(z) * inv(v) wrt w
-        H[2, 2 + i] = -dzidw / v
-        # product rule for inv(z) * inv(sumexp) * sumwexpvv
-        H[2, 2 + i] += dzidw * sumwexpvv / sumexp
-        H[2, 2 + i] += (dzdw[i] * sumwexpvv - dsumwexpvvdw) / uvlse / sumexp
-        # equivalently H[2, 2 + i] += ((dzdw[i] * sumwexpvv * (1 - inv(uvlse)) - dsumwexpvvdw) / uvlse) / sumexp
-    end
-
-    for j in eachindex(w)
-        j2 = j + 2
-        for i in 1:j
-            H[2 + i, j2] = dzdw[i] * dzdw[j] * (inv(uvlse) - 1) / uvlse
-        end
-        H[j2, j2] += dzdw[j] / v / uvlse
-    end
+    H[1, 3] = g1a / vluvw
+    H[2, 3] = g2a / vluvw
+    H[3, 3] = abs2(cone.grad[3])
+    H[1, 1] = abs2(g1a) - cone.grad[1] / u
+    H[1, 2] = -(v * cone.g2a + 1) / cone.vluvw / u
+    H[2, 2] = abs2(g2a) + (inv(vluvw) + inv(v)) / v
 
     cone.hess_updated = true
     return cone.hess
 end
 
-# see analysis in https://github.com/lkapelevich/HypatiaBenchmarks.jl/tree/master/centralpoints
-function get_central_ray_epiperexp(wdim::Int)
-    if wdim <= 10
-        # lookup points where x = f'(x)
-        return central_rays_epiperexp[wdim, :]
-    end
-    # use nonlinear fit for higher dimensions
-    if wdim <= 40
-        u = -0.04146118 * log(wdim) + 1.39451677
-        v = 0.75813593 / sqrt(wdim) - 0.05095272
-        w = -1.06004023 / sqrt(wdim) - 0.02413893
-    elseif wdim <= 110
-        u = -0.03306423 * log(wdim) + 1.36341636
-        v = 0.56297099 / sqrt(wdim) - 0.01873313
-        w = -1.155095575 / sqrt(wdim) - 0.008324484
-    else
-        u = 0.7778534 / sqrt(wdim) + 1.1361277
-        v = 0.433843790 / sqrt(wdim) - 0.006782253
-        w = -1.212254815 / sqrt(wdim) - 0.003030561
-    end
-    return [u, v, w]
+function update_inv_hess(cone::EpiPerExp)
+    @assert cone.is_feas
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+    Hi = cone.inv_hess.data
+    vluvw = cone.vluvw
+    vluv = vluvw + w
+    denom = vluvw + 2 * v
+    uvdenom = u * v / denom
+
+    Hi[1, 1] = u * (vluvw + v) / denom * u
+    Hi[2, 2] = v * (vluvw + v) / denom * v
+    Hi[3, 3] = 2 * (abs2(vluv - v) + vluv * (v - w)) + abs2(w) - v / denom * abs2(vluv - 2 * v)
+    Hi[1, 2] = uvdenom * v
+    Hi[1, 3] = uvdenom * (2 * vluv - w)
+    Hi[2, 3] = (abs2(vluv) + w * (v - vluv)) / denom * v
+
+    cone.inv_hess_updated = true
+    return cone.inv_hess
 end
 
-const central_rays_epiperexp = [
-    1.290927717	 0.805102006  -0.827838393;
-    1.331573688	 0.578857833  -0.667770596;
-    1.336363141	 0.451381764  -0.580341300;
-    1.332517701	 0.372146651  -0.521033456;
-    1.326602341	 0.318456053  -0.477223632;
-    1.320449568	 0.279670855  -0.443132253;
-    1.314603812	 0.250292511  -0.415618383;
-    1.309209025	 0.227223256  -0.392801051;
-    1.304275758	 0.208591886  -0.373475297;
-    1.299770819	 0.193203028  -0.356828868;
-    ]
+update_inv_hess_prod(cone::EpiPerExp) = (cone.inv_hess_updated ? nothing : update_inv_hess(cone))
+
+function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiPerExp)
+    update_inv_hess_prod(cone)
+    mul!(prod, cone.inv_hess, arr)
+    return prod
+end
+
+# directional third derivative term from MOSEK paper
+# TODO make efficient and improve numerics, reuse values stored in cone fields
+function correction(cone::EpiPerExp{T}, s_sol::AbstractVector{T}, z_sol::AbstractVector{T}) where {T}
+    update_hess(cone)
+    update_inv_hess_prod(cone)
+    corr = cone.correction
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+
+    Hi_z = similar(z_sol) # TODO prealloc
+    inv_hess_prod!(Hi_z, z_sol, cone)
+
+    # -log(v * log(u / v) - w) part
+    ψ = cone.vluvw
+    ψp = T[v / u, cone.luv - 1, -one(T)]
+    gpp = Symmetric(cone.hess - Diagonal(T[abs2(inv(u)), abs2(inv(v)), zero(T)]), :U) # TODO improve
+    zz3ψp = (z_sol[1:2] + z_sol[3] * ψp[1:2]) / (ψ + 2 * v)
+    ψpp_Hi_z = T[v * (zz3ψp[2] * v / u - zz3ψp[1]), u * zz3ψp[1] - v * zz3ψp[2], zero(T)]
+
+    # term1
+    corr .= z_sol[3] * 2 * ψ * gpp * s_sol
+    # term2
+    corr[1] += z_sol[3] * (-v * s_sol[1] / u + s_sol[2]) / u
+    corr[2] += z_sol[3] * (s_sol[1] / u - s_sol[2] / v)
+    # term3
+    corr[1] += ((2 * v / u * Hi_z[1] - Hi_z[2]) / u * -s_sol[1] / u + Hi_z[1] / u * s_sol[2] / u) / ψ
+    corr[2] += (Hi_z[1] / u * s_sol[1] / u - Hi_z[2] / v * s_sol[2] / v) / ψ
+    # term4
+    corr += (ψpp_Hi_z * dot(ψp, s_sol) + ψp * dot(ψpp_Hi_z, s_sol)) / ψ
+
+    # scale
+    corr /= -2
+
+    # - log(u) - log(v) part
+    corr[1] += Hi_z[1] / u * s_sol[1] / u / u
+    corr[2] += Hi_z[2] / v * s_sol[2] / v / v
+
+    return corr
+end
+
+# TODO nonsymmetric scaling helpers
+
+# cone.barrier = (x -> -log(x[2] * log(x[1] / x[2]) - x[3]) - log(x[1]) - log(x[2]))
+# cone.check_feas = (x -> (x[1] > 0) && (x[2] > 0) && (x[2] * log(x[1] / x[2]) > x[3]))
+
+# function scalmat_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, mu::T, cone::EpiPerExp{T}) where {T}
+#     if !cone.scal_hess_updated
+#         update_scaling(cone, mu)
+#     end
+#     point = cone.point
+#     dual_point = cone.dual_point
+#     H_bfgs = cone.hess
+#     dual_gap = cone.dual_gap
+#     primal_gap = cone.primal_gap
+#     ZZt = H_bfgs - dual_point * dual_point' / dot(point, dual_point) - dual_gap * dual_gap' / dot(primal_gap, dual_gap)
+#     # TODO work this out analytically rather than call eig
+#     f = eigen(ZZt)
+#     @assert f.values[1] ≈ 0 && f.values[2] ≈ 0
+#     z = f.vectors[:, 3] * sqrt(f.values[3])
+#     W = zeros(T, 3, 3)
+#     W[:, 1] = dual_point / sqrt(dot(point, dual_point))
+#     W[:, 2] = dual_gap / sqrt(dot(primal_gap, dual_gap))
+#     W[:, 3] = z
+#     prod = W * arr
+#     return prod
+# end

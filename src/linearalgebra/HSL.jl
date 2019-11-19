@@ -33,7 +33,7 @@ end
 
 using DataFrames, CSV
 
-function solve_system(cache::HSLSymCache, x::Matrix{Float64}, A::SparseMatrixCSC{<:HSL.Ma57Data, Int}, b::Matrix{Float64})
+function solve_system(cache::HSLSymCache, x::VecOrMat{Float64}, A::SparseMatrixCSC{<:HSL.Ma57Data, Int}, b::VecOrMat{Float64})
     # NOTE MA57 only has the option to take iterative refinement steps for a single-column RHS
     ma57 = cache.ma57
     copyto!(x, b)

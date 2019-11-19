@@ -31,7 +31,7 @@ function densityest(
     (nobs, dim) = size(X)
     X = convert(Matrix{T}, X)
 
-    domain = MU.Box(-ones(dim), ones(dim))
+    domain = MU.Box{T}(-ones(T, dim), ones(T, dim))
     # rescale X to be in unit box
     minX = minimum(X, dims = 1)
     maxX = maximum(X, dims = 1)
@@ -41,7 +41,7 @@ function densityest(
     halfdeg = div(deg + 1, 2)
     (U, pts, P0, PWts, w) = MU.interpolate(domain, halfdeg, sample = true, calc_w = true, sample_factor = sample_factor)
     lagrange_polys = MU.recover_lagrange_polys(pts, 2 * halfdeg)
-    basis_evals = Matrix{Float64}(undef, nobs, U)
+    basis_evals = Matrix{T}(undef, nobs, U)
     for i in 1:nobs, j in 1:U
         basis_evals[i, j] = lagrange_polys[j](X[i, :])
     end
@@ -105,7 +105,7 @@ function densityest(
         for i in 1:nobs
             G_log[i + 2, 2:(1 + U)] = -basis_evals[i, :]
         end
-        push!(cones, CO.HypoPerLog{T}(nobs + 2))
+        push!(cones, CO.HypoPerSumLog{T}(nobs + 2))
         num_hypo_vars = 1
     else
         h_log = zeros(T, 3 * nobs)
@@ -116,7 +116,7 @@ function densityest(
             G_log[offset + 2, (nobs + 1):(nobs + U)] = -basis_evals[i, :]
             h_log[offset + 1] = 1.0
             offset += 3
-            push!(cones, CO.HypoPerLog{T}(3))
+            push!(cones, CO.HypoPerSumLog{T}(3)) # TODO use EpiPerExp (swap order of variables)
             cone_offset += 3
         end
         num_hypo_vars = nobs
@@ -147,10 +147,11 @@ function densityest(
                 [1:U, 1:U, (U + 1):(U + 1)],
                 [(num_hypo_vars + 1):(num_hypo_vars + U), (num_hypo_vars + U + 1):(num_hypo_vars + U + num_psd_vars), (num_hypo_vars + 1):(num_hypo_vars + U)],
             )
+            I_scaled = MU.vec_to_svec_cols!(Diagonal(I * one(T), num_psd_vars), sqrt(T(2)))
             G = BlockMatrix{T}(
                 num_psd_vars + log_rows,
                 num_hypo_vars + U + num_psd_vars,
-                [-I, G_log],
+                [-I_scaled, G_log],
                 [1:num_psd_vars, (num_psd_vars + 1):(num_psd_vars + log_rows)],
                 [(num_hypo_vars + U + 1):(num_hypo_vars + U + num_psd_vars), 1:(num_hypo_vars + U)],
             )
@@ -169,8 +170,9 @@ function densityest(
                 zeros(T, U, num_hypo_vars)    Matrix{T}(-I, U, U)    A_psd;
                 zeros(T, 1, num_hypo_vars)    T.(w')    zeros(T, 1, num_psd_vars);
                 ]
+            I_scaled = MU.vec_to_svec_cols!(Matrix{T}(I, num_psd_vars, num_psd_vars), sqrt(T(2)))
             G = [
-                zeros(T, num_psd_vars, num_hypo_vars + U)   Matrix{T}(-I, num_psd_vars, num_psd_vars);
+                zeros(T, num_psd_vars, num_hypo_vars + U)   -I_scaled;
                 G_log   zeros(T, log_rows, num_psd_vars);
                 ]
         end

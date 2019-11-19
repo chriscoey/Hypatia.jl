@@ -27,7 +27,7 @@ function semidefinitepolyJuMP(x::Vector{DP.PolyVar{true}}, H::Matrix; use_wsos::
         matdim = size(H, 1)
         halfdeg = div(maximum(DP.maxdegree.(H)) + 1, 2)
         n = DP.nvariables(x)
-        dom = MU.FreeDomain(n)
+        dom = MU.FreeDomain{Float64}(n)
         (U, pts, P0, _, _) = MU.interpolate(dom, halfdeg, sample_factor = 20, sample = true)
         mat_wsos_cone = HYP.WSOSPolyInterpMatCone(matdim, U, [P0], use_dual)
 

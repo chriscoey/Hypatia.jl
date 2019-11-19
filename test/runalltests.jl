@@ -6,7 +6,7 @@ using Test
 
 @info("starting all tests")
 @testset "all tests" begin
-    include(joinpath(@__DIR__, "runinterptests.jl"))
+    include(joinpath(@__DIR__, "runmodelutilitiestests.jl"))
     include(joinpath(@__DIR__, "runbarriertests.jl"))
     include(joinpath(@__DIR__, "runnativetests.jl"))
     include(joinpath(@__DIR__, "runnativeexamplestests.jl"))

@@ -1,5 +1,8 @@
 #=
 Copyright 2018, Chris Coey, Lea Kapelevich and contributors
+
+TODO
+- add optional heuristic tests for log-homogeneity and self-concordancy of barrier function
 =#
 
 using Test
@@ -10,87 +13,240 @@ import Hypatia
 const CO = Hypatia.Cones
 const MU = Hypatia.ModelUtilities
 
+# TODO decide whether to keep, clean up and maybe run optionally, describe
+# function test_self_concordance()
+#     # move around in the cone
+#     for pt in 1:10
+#         point .+= CO.set_initial_point(copy(point), cone)
+#         perturb_scale(point / scale, noise / 100, scale)
+#         @test load_reset_check(cone, point)
+#         CO.grad(cone)
+#         hess = CO.hess(cone)
+#         FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+#         # test different directional derivatives
+#         for _ in 1:1000
+#             dir = randn(dim)
+#             dir ./= norm(dir)
+#             sc_rhs = 2 * dot(dir, hess, dir) ^ (3 / 2)
+#             FD_3deriv_dir = reshape(FD_3deriv * dir, dim, dim)
+#             sc_lhs = abs(dot(dir, FD_3deriv_dir, dir))
+#             @test sc_lhs <= sc_rhs
+#         end
+#     end
+# end
+
 function test_barrier_oracles(
     cone::CO.Cone{T},
     barrier::Function;
-    noise::Real = 0.2,
-    scale::Real = 10000,
-    tol::Real = 100eps(T),
-    init_tol::Real = tol,
+    noise::T = T(0.1),
+    scale::T = T(1e-3),
+    tol::T = 100eps(T),
+    init_tol::T = tol,
     init_only::Bool = false,
     ) where {T <: Real}
+    Random.seed!(1)
+
+    @test !CO.use_scaling(cone)
     CO.setup_data(cone)
     dim = CO.dimension(cone)
     point = Vector{T}(undef, dim)
+    CO.set_initial_point(point, cone)
+    @test load_reset_check(cone, point)
+    @test cone.point == point
 
-    if isfinite(init_tol)
-        # tests for centrality of initial point
-        CO.set_initial_point(point, cone)
-        CO.load_point(cone, point)
-        @test cone.point == point
-        @test CO.is_feas(cone)
-        grad = CO.grad(cone)
-        @test dot(point, -grad) ≈ norm(point) * norm(grad) atol=init_tol rtol=init_tol
-        @test point ≈ -grad atol=init_tol rtol=init_tol
-    end
+    # tests for centrality of initial point
+    grad = CO.grad(cone)
+    @test dot(point, -grad) ≈ norm(point) * norm(grad) atol=init_tol rtol=init_tol
+    @test point ≈ -grad atol=init_tol rtol=init_tol
     init_only && return
 
-    # tests for perturbed point
-    CO.reset_data(cone)
-    CO.set_initial_point(point, cone)
-    if !iszero(noise)
-        point += T(noise) * (rand(T, dim) .- inv(T(2)))
-        point /= scale
-    end
+    # perturb and scale the initial point and check feasible
+    perturb_scale(point, noise, scale)
+    @test load_reset_check(cone, point)
 
-    CO.load_point(cone, point)
-    @test cone.point == point
-    @test CO.is_feas(cone)
+    # test gradient and Hessian oracles
+    test_grad_hess(cone, point, tol = tol)
 
-    # CO.update_grad(cone)
+    # check gradient and Hessian agree with ForwardDiff
     grad = CO.grad(cone)
-    nu = CO.get_nu(cone)
-    @test dot(point, grad) ≈ -nu atol=tol rtol=tol
     hess = CO.hess(cone)
-    @test hess * point ≈ -grad atol=tol rtol=tol
 
-    if T in (Float32, Float64) # NOTE can only use BLAS floats with ForwardDiff barriers
-        @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
-        @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
+    @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
+    @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
+
+    # check 3rd order corrector agrees with ForwardDiff
+    # too slow if cone is too large or not using BlasReals
+    if CO.use_3order_corr(cone) && dim < 8 && T in (Float32, Float64)
+        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+        # check log-homog property that F'''(point)[point] = -2F''(point)
+        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
+        # check correction term agrees with directional 3rd derivative
+        s_dir = perturb_scale(zeros(T, dim), noise, one(T))
+        z_dir = perturb_scale(zeros(T, dim), noise, one(T))
+        Hinv_z = CO.inv_hess_prod!(similar(z_dir), z_dir, cone)
+        FD_corr = reshape(FD_3deriv * s_dir, dim, dim) * Hinv_z / -2
+        @test FD_corr ≈ CO.correction(cone, s_dir, z_dir) atol=tol rtol=tol
     end
 
+    # TODO max step distances
+    # test_max_dist(cone, point, dual_point)
+
+    return
+end
+
+# TODO cleanup, cover all scaling oracles, comment in some places
+function test_barrier_scaling_oracles(
+    cone::CO.Cone{T},
+    barrier::Function;
+    noise::T = T(0.1),
+    scale::T = T(1e-3),
+    tol::T = 100eps(T),
+    ) where {T <: Real}
+    Random.seed!(1)
+
+    @test CO.use_scaling(cone)
+    CO.setup_data(cone)
+    dim = CO.dimension(cone)
+    point = Vector{T}(undef, dim)
+    dual_point = similar(point)
+    CO.set_initial_point(point, cone)
+    CO.set_initial_point(dual_point, cone)
+    @test load_reset_check(cone, point, dual_point)
+
+    # run twice: first run scaling will be the identity
+    for _ in 1:2
+        s_dir = perturb_scale(zeros(T, dim), noise, one(T))
+        z_dir = perturb_scale(zeros(T, dim), noise, one(T))
+        alpha = T(0.1)
+        @. point += s_dir * alpha
+        @. dual_point += z_dir * alpha
+        @test load_reset_check(cone, point, dual_point)
+
+        # step and scaling updates
+        CO.step_and_update_scaling(cone, s_dir, z_dir, alpha)
+        test_grad_hess(cone, point, dual_point, tol = tol)
+
+        # max step distances with scaling
+        test_max_dist(cone, point, dual_point)
+    end
+
+    # TODO scaling for nonsymmetric cones
+    # # identities from page 7 of Myklebust and Tuncel, Interior Point Algorithms for Convex Optimization based on Primal-Dual Metrics
+    # load_reset_check(cone, point)
+    # grad = CO.grad(cone)
+    # pert_point = point + T(noise) * (rand(T, dim) .- inv(T(2)))
+    # conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, pert_point, -grad)
+    # @test conj_grad ≈ -point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+    #
+    # dual_point = -grad + T(noise) * (rand(T, dim) .- inv(T(2)))
+    # conj_grad = CO.conjugate_gradient(cone.barrier, cone.check_feas, point, dual_point)
+    # CO.load_point(cone, -conj_grad)
+    # CO.reset_data(cone)
+    # @test CO.is_feas(cone)
+    # grad = CO.grad(cone)
+    # @test -grad ≈ dual_point atol=cbrt(eps(T)) rtol=cbrt(eps(T))
+
+    return
+end
+
+function test_grad_hess(
+    cone::CO.Cone{T},
+    point::Vector{T},
+    dual_point::Vector{T} = T[];
+    tol::T = 100eps(T),
+    ) where {T <: Real}
+    nu = CO.get_nu(cone)
+    grad = CO.grad(cone)
+    hess = CO.hess(cone)
     inv_hess = CO.inv_hess(cone)
+
+    @test dot(point, grad) ≈ -nu atol=tol rtol=tol
     @test hess * inv_hess ≈ I atol=tol rtol=tol
 
-    # CO.update_hess_prod(cone)
-    # CO.update_inv_hess_prod(cone)
-    prod = similar(point)
-    @test CO.hess_prod!(prod, point, cone) ≈ -grad atol=tol rtol=tol
-    @test CO.inv_hess_prod!(prod, grad, cone) ≈ -point atol=tol rtol=tol
-    prod = similar(point, dim, dim)
-    @test CO.hess_prod!(prod, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
-    @test CO.inv_hess_prod!(prod, Matrix(hess), cone) ≈ I atol=tol rtol=tol
+    dim = length(point)
+    prod_mat = similar(point, dim, dim)
+    @test CO.hess_prod!(prod_mat, Matrix(inv_hess), cone) ≈ I atol=tol rtol=tol
+    @test CO.inv_hess_prod!(prod_mat, Matrix(hess), cone) ≈ I atol=tol rtol=tol
+
+    if !CO.use_scaling(cone)
+        prod = similar(point)
+        @test hess * point ≈ -grad atol=tol rtol=tol
+        @test CO.hess_prod!(prod, point, cone) ≈ -grad atol=tol rtol=tol
+        @test CO.inv_hess_prod!(prod, grad, cone) ≈ -point atol=tol rtol=tol
+    end
+
+    if !isempty(dual_point)
+        @test hess * point ≈ dual_point atol=tol rtol=tol
+        @test inv_hess * dual_point ≈ point atol=tol rtol=tol
+    end
 
     return
 end
 
-function test_orthant_barrier(T::Type{<:Real})
-    nonneg_barrier = (s -> -sum(log, s))
-    nonpos_barrier = (s -> -sum(log, -s))
+function test_max_dist(
+    cone::CO.Cone{T},
+    point::Vector{T},
+    dual_point::Vector{T};
+    noise::T = T(0.1),
+    scale::T = T(0.1),
+    tol::T = 100eps(T),
+    ) where {T <: Real}
+    # max step in the central recession direction
+    s_dir = CO.set_initial_point(similar(point), cone)
+    z_dir = copy(s_dir)
+    max_step = CO.step_max_dist(cone, s_dir, z_dir)
+    @test max_step == T(Inf)
+
+    # perturb the central direction
+    perturb_scale(s_dir, noise, scale)
+    perturb_scale(z_dir, noise, scale)
+    max_step = CO.step_max_dist(cone, s_dir, z_dir)
+    @test max_step == T(Inf)
+
+    # max step in opposite direction
+    s_dir .*= -1
+    z_dir .*= -1
+    max_step = CO.step_max_dist(cone, s_dir, z_dir)
+    @test max_step > 0
+    @test isfinite(max_step)
+
+    # check smaller step returns two feasible points
+    smaller_step = T(0.99) * max_step
+    primal_feas = load_reset_check(cone, point + smaller_step * s_dir)
+    dual_feas = load_reset_check(cone, dual_point + smaller_step * z_dir)
+    @test primal_feas && dual_feas
+
+    # check larger step returns one or two infeasible points
+    larger_step = T(1.01) * max_step
+    primal_feas = load_reset_check(cone, point + larger_step * s_dir)
+    dual_feas = load_reset_check(cone, dual_point + larger_step * z_dir)
+    @test !primal_feas || !dual_feas
+
+    return
+end
+
+function load_reset_check(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T} = T[]) where {T <: Real}
+    CO.load_point(cone, point)
+    !isempty(dual_point) && CO.load_dual_point(cone, dual_point)
+    CO.reset_data(cone)
+    return CO.is_feas(cone)
+end
+
+function perturb_scale(point::Vector{T}, noise::T, scale::T) where {T <: Real}
+    if !iszero(noise)
+        @. point += 2 * noise * rand(T) - noise
+    end
+    if !isone(scale)
+        point .*= scale
+    end
+    return point
+end
+
+function test_nonnegative_barrier(T::Type{<:Real})
+    barrier = (s -> -sum(log, s))
     for dim in [1, 3, 6]
-        test_barrier_oracles(CO.Nonnegative{T}(dim), nonneg_barrier)
-        test_barrier_oracles(CO.Nonpositive{T}(dim), nonpos_barrier)
-    end
-    return
-end
-
-function test_epinorminf_barrier(T::Type{<:Real})
-    function barrier(s)
-        (u, w) = (s[1], s[2:end])
-        return -sum(log(u - abs2(wj) / u) for wj in w) - log(u)
-    end
-    for dim in [2, 4]
-        test_barrier_oracles(CO.EpiNormInf{T}(dim), barrier)
+        test_barrier_oracles(CO.Nonnegative{T}(dim, use_scaling = false), barrier)
+        test_barrier_scaling_oracles(CO.Nonnegative{T}(dim, use_scaling = true), barrier)
     end
     return
 end
@@ -98,10 +254,81 @@ end
 function test_epinormeucl_barrier(T::Type{<:Real})
     function barrier(s)
         (u, w) = (s[1], s[2:end])
-        return -log(abs2(u) - sum(abs2, w))
+        return -log(abs2(u) - sum(abs2, w)) / 2
     end
-    for dim in [2, 4]
-        test_barrier_oracles(CO.EpiNormEucl{T}(dim), barrier)
+    for dim in [2, 4, 6]
+        test_barrier_oracles(CO.EpiNormEucl{T}(dim, use_scaling = false), barrier)
+        test_barrier_scaling_oracles(CO.EpiNormEucl{T}(dim, use_scaling = true), barrier)
+    end
+    return
+end
+
+function test_possemideftri_barrier(T::Type{<:Real})
+    for side in [1, 2, 4]
+        # real PSD cone
+        function R_barrier(s)
+            S = similar(s, side, side)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
+            return -logdet(cholesky!(Symmetric(S, :U)))
+        end
+        dim = div(side * (side + 1), 2)
+        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = false), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true, try_scaled_updates = false), R_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, T}(dim, use_scaling = true, try_scaled_updates = true), R_barrier)
+
+        # complex PSD cone
+        function C_barrier(s)
+            S = zeros(Complex{eltype(s)}, side, side)
+            CO.svec_to_smat!(S, s, sqrt(T(2)))
+            return -logdet(cholesky!(Hermitian(S, :U)))
+        end
+        dim = abs2(side)
+        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = false), C_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true, try_scaled_updates = false), C_barrier)
+        test_barrier_scaling_oracles(CO.PosSemidefTri{T, Complex{T}}(dim, use_scaling = true, try_scaled_updates = true), C_barrier)
+    end
+    return
+end
+
+function test_epinorminf_barrier(T::Type{<:Real})
+    for n in [1, 2, 3, 5]
+        # real epinorminf cone
+        function R_barrier(s)
+            (u, w) = (s[1], s[2:end])
+            return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (n - 1) * log(u)
+        end
+        test_barrier_oracles(CO.EpiNormInf{T, T}(1 + n), R_barrier)
+
+        # complex epinorminf cone
+        function C_barrier(s)
+            (u, wr) = (s[1], s[2:end])
+            w = zeros(Complex{eltype(s)}, n)
+            CO.rvec_to_cvec!(w, wr)
+            # w = [ws[2i - 1] + ws[2i] * im for i in 1:n] # TODO use CO.rvec_to_cvec!
+            return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (n - 1) * log(u)
+        end
+        test_barrier_oracles(CO.EpiNormInf{T, Complex{T}}(1 + 2n), C_barrier)
+    end
+    return
+end
+
+function test_epinorminfsymm_barrier(T::Type{<:Real})
+    # real epinorminf cone
+    for n in [1, 3]
+        function R_barrier(s)
+            (u, w) = (s[1], s[2:end])
+            return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
+        end
+        # test_barrier_oracles(CO.EpiNormInf{T, T}(1 + n), R_barrier)
+        test_barrier_oracles(CO.EpiNormInfSymm{T}(1 + n), R_barrier)
+
+        # # complex epinorminf cone
+        # function C_barrier(s)
+        #     (u, ws) = (s[1], s[2:end])
+        #     w = [ws[2i - 1] + ws[2i] * im for i in 1:n]
+        #     return -sum(log(abs2(u) - abs2(wj)) for wj in w) + (length(w) - 1) * log(u)
+        # end
+        # test_barrier_oracles(CO.EpiNormInf{T, Complex{T}}(1 + 2n), C_barrier)
     end
     return
 end
@@ -117,31 +344,40 @@ function test_epipersquare_barrier(T::Type{<:Real})
     return
 end
 
-function test_hypoperlog_barrier(T::Type{<:Real})
+function test_epiperexp_barrier(T::Type{<:Real})
     function barrier(s)
-        (u, v, w) = (s[1], s[2], s[3:end])
-        return -log(v * sum(log(wj / v) for wj in w) - u) - sum(log, w) - log(v)
+        (u, v, w) = (s[1], s[2], s[3])
+        return -log(v * log(u / v) - w) - log(u) - log(v)
     end
-    for dim in [3, 5, 10]
-        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = 1e-5)
-    end
-    for dim in [15, 65, 75, 100, 500]
-        test_barrier_oracles(CO.HypoPerLog{T}(dim), barrier, init_tol = 1e-1, init_only = true)
-    end
+    test_barrier_oracles(CO.EpiPerExp{T}(), barrier, init_tol = T(1e-6))
     return
 end
 
-function test_epiperexp_barrier(T::Type{<:Real})
+function test_epipersumexp_barrier(T::Type{<:Real})
     function barrier(s)
         (u, v, w) = (s[1], s[2], s[3:end])
         return -log(v * log(u / v) - v * log(sum(wi -> exp(wi / v), w))) - log(u) - log(v)
     end
     for dim in [3, 5, 10]
-        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = 1e-5)
+        test_barrier_oracles(CO.EpiPerSumExp{T}(dim), barrier, init_tol = T(1e-5))
     end
     # NOTE when initial point improved, take tests up to dim=500 and tighten tolerance
     for dim in [15, 35 , 45, 100, 120, 200]
-        test_barrier_oracles(CO.EpiPerExp{T}(dim), barrier, init_tol = 7e-1, init_only = true)
+        test_barrier_oracles(CO.EpiPerSumExp{T}(dim), barrier, init_tol = T(7e-1), init_only = true)
+    end
+    return
+end
+
+function test_hypopersumlog_barrier(T::Type{<:Real})
+    function barrier(s)
+        (u, v, w) = (s[1], s[2], s[3:end])
+        return -log(v * sum(log(wj / v) for wj in w) - u) - sum(log, w) - log(v)
+    end
+    for dim in [3, 5, 10]
+        test_barrier_oracles(CO.HypoPerSumLog{T}(dim), barrier, init_tol = T(1e-5))
+    end
+    for dim in [15, 65, 75, 100, 500]
+        test_barrier_oracles(CO.HypoPerSumLog{T}(dim), barrier, init_tol = T(1e-1), init_only = true)
     end
     return
 end
@@ -171,9 +407,28 @@ function test_hypogeomean_barrier(T::Type{<:Real})
         end
         cone = CO.HypoGeomean{T}(alpha)
         if dim <= 3
-            test_barrier_oracles(cone, barrier, init_tol = 1e-2)
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-2))
         else
-            test_barrier_oracles(cone, barrier, init_tol = 3e-1, init_only = true)
+            test_barrier_oracles(cone, barrier, init_tol = T(3e-1), init_only = true)
+        end
+    end
+    return
+end
+
+function test_hypogeomean2_barrier(T::Type{<:Real})
+    Random.seed!(1)
+    for dim in [2, 3, 5, 15, 90, 120, 500]
+        alpha = rand(T, dim - 1) .+ 1
+        alpha ./= sum(alpha)
+        function barrier(s)
+            (u, w) = (s[1], s[2:end])
+            return -log(prod(w[j] ^ alpha[j] for j in eachindex(w)) - u) - sum(log(wi) for wi in w)
+        end
+        cone = CO.HypoGeomean2{T}(alpha)
+        if dim <= 3
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-2))
+        else
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-2), init_only = true)
         end
     end
     return
@@ -181,50 +436,49 @@ end
 
 function test_epinormspectral_barrier(T::Type{<:Real})
     for (n, m) in [(1, 2), (2, 2), (2, 3), (3, 5)]
-        function barrier(s)
-            (u, W) = (s[1], reshape(s[2:end], n, m))
-            return -logdet(cholesky!(Symmetric(u * I - W * W' / u))) - log(u)
-        end
-        test_barrier_oracles(CO.EpiNormSpectral{T}(n, m), barrier)
-    end
-    return
-end
-
-function test_possemideftri_barrier(T::Type{<:Real})
-    for side in [1, 2, 5]
-        # real PSD cone
+        # real epinormspectral barrier
         function R_barrier(s)
-            S = similar(s, side, side)
-            CO.vec_to_mat_U!(S, s)
-            return -logdet(cholesky!(Symmetric(S, :U)))
+            (u, W) = (s[1], reshape(s[2:end], n, m))
+            return -logdet(cholesky!(Hermitian(abs2(u) * I - W * W'))) + (n - 1) * log(u)
         end
-        dim = div(side * (side + 1), 2)
-        test_barrier_oracles(CO.PosSemidefTri{T, T}(dim), R_barrier)
-        # complex PSD cone
-        function C_barrier(s)
-            S = zeros(Complex{eltype(s)}, side, side)
-            CO.vec_to_mat_U!(S, s)
-            return -logdet(cholesky!(Hermitian(S, :U)))
-        end
-        dim = side^2
-        test_barrier_oracles(CO.PosSemidefTri{T, Complex{T}}(dim), C_barrier)
+        test_barrier_oracles(CO.EpiNormSpectral{T}(n, m), R_barrier)
+        # test_barrier_oracles(CO.EpiNormSpectral{T, T}(n, m), R_barrier)
+
+        # # complex epinormspectral barrier
+        # function C_barrier(s)
+        #     (u, Ws) = (s[1], reshape(s[2:end], n, 2m))
+        #     W = [Ws[i, 2j - 1] + Ws[i, 2j] * im for i in 1:n, j in 1:m]
+        #     return -logdet(cholesky!(Hermitian(abs2(u) * I - W * W'))) + (n - 1) * log(u)
+        # end
+        # test_barrier_oracles(CO.EpiNormSpectral{Complex{T}, T}(n, m), C_barrier)
     end
     return
 end
 
 function test_hypoperlogdettri_barrier(T::Type{<:Real})
-    for side in [1, 2, 3, 4, 5, 6, 12, 20]
-        function barrier(s)
-            (u, v, W) = (s[1], s[2], similar(s, side, side))
-            CO.vec_to_mat_U!(W, s[3:end])
-            return -log(v * logdet(cholesky!(Symmetric(W / v, :U))) - u) - logdet(cholesky!(Symmetric(W, :U))) - log(v)
-        end
+    for side in [1, 2, 3, 4] #, 5, 6, 12, 20]
         dim = 2 + div(side * (side + 1), 2)
         cone = CO.HypoPerLogdetTri{T}(dim)
+        function barrier(s)
+            (u, v, W) = (s[1], s[2], zeros(eltype(s), side, side))
+            CO.svec_to_smat!(W, s[3:end], sqrt(T(2)))
+            t1 = -log(v * logdet(cholesky!(Symmetric(W / v, :U))) - u)
+            t2 = -logdet(cholesky!(Symmetric(W, :U)))
+            t3 = -log(v)
+            if cone.sc_try == :conic_hull
+                return cone.gamma * (t1 + t2 + t3 * (cone.k - side - 1))
+            elseif cone.sc_try == :composition
+                return t1 + (t2 + t3) * cone.beta
+            elseif cone.sc_try == :none
+                return t1 + t2 + t3
+            else
+                error("unknown sc_try $(sc_try)")
+            end
+        end
         if side <= 5
-            test_barrier_oracles(cone, barrier, init_tol = 1e-5)
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-5))
         else
-            test_barrier_oracles(cone, barrier, init_tol = 1e-1, init_only = true)
+            test_barrier_oracles(cone, barrier, init_tol = T(1e-1), init_only = true)
         end
     end
     return
@@ -232,16 +486,12 @@ end
 
 function test_wsospolyinterp_barrier(T::Type{<:Real})
     Random.seed!(1)
-    for (n, halfdeg) in [(1, 1), (1, 2), (1, 3), (2, 2), (3, 2), (2, 3)]
-        # TODO test with more Pi matrices
-        (U, _, P0, _, _) = MU.interpolate(MU.FreeDomain(n), halfdeg, sample = false)
-        P0 = convert(Matrix{T}, P0)
-        function barrier(s)
-            Lambda = Symmetric(P0' * Diagonal(s) * P0)
-            return -logdet(cholesky!(Lambda))
-        end
-        cone = CO.WSOSPolyInterp{T, T}(U, [P0], true)
-        test_barrier_oracles(cone, barrier, init_tol = Inf) # TODO center and test initial points
+    for (n, halfdeg) in [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2), (3, 1)]
+        (U, _, P0, Ps, _) = MU.interpolate(MU.Box{T}(-ones(T, n), ones(T, n)), halfdeg, sample = false) # use a unit box domain
+        Ps = vcat([P0], Ps)
+        barrier(s) = -sum(logdet(cholesky!(Symmetric(P' * Diagonal(s) * P))) for P in Ps)
+        cone = CO.WSOSPolyInterp{T, T}(U, Ps, true)
+        test_barrier_oracles(cone, barrier, init_tol = T(100)) # TODO center and test initial points
     end
     # TODO also test complex case CO.WSOSPolyInterp{T, Complex{T}} - need complex MU interp functions first
     return

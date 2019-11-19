@@ -38,9 +38,9 @@ function envelopeJuMP(
     return (model = model,)
 end
 
-envelopeJuMP1() = envelopeJuMP(2, 3, 4, MU.Box(-ones(2), ones(2)))
-# envelopeJuMP2() = envelopeJuMP(2, 3, 4, MU.Ball(zeros(2), sqrt(2))) # TODO needs https://github.com/chriscoey/Hypatia.jl/issues/173
-envelopeJuMP3() = envelopeJuMP(2, 3, 4, MU.Box(-ones(2), ones(2)), sample = false)
+envelopeJuMP1() = envelopeJuMP(2, 3, 4, MU.Box{Float64}(-ones(2), ones(2)))
+# envelopeJuMP2() = envelopeJuMP(2, 3, 4, MU.Ball{Float64}(zeros(2), sqrt(2))) # TODO needs https://github.com/chriscoey/Hypatia.jl/issues/173
+envelopeJuMP3() = envelopeJuMP(2, 3, 4, MU.Box{Float64}(-ones(2), ones(2)), sample = false)
 
 function test_envelopeJuMP(instance::Function; options, rseed::Int = 1)
     Random.seed!(rseed)

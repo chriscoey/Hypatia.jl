@@ -26,7 +26,7 @@ function envelope(
     )
     # generate interpolation
     @assert rand_halfdeg <= env_halfdeg
-    domain = MU.Box(-ones(n), ones(n))
+    domain = MU.Box{T}(-ones(T, n), ones(T, n))
     (U, pts, P0, PWts, w) = MU.interpolate(domain, env_halfdeg, sample = false, calc_w = true)
     # TODO remove below conversions when ModelUtilities can use T <: Real
     w = T.(w)

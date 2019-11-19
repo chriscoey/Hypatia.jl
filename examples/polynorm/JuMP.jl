@@ -17,7 +17,7 @@ const HYP = Hypatia
 const MU = HYP.ModelUtilities
 
 function polynormJuMP(n::Int, deg::Int, npolys::Int)
-    dom = MU.FreeDomain(n)
+    dom = MU.FreeDomain{Float64}(n)
     halfdeg = div(deg + 1, 2)
     (U, pts, P0, _, w) = MU.interpolate(dom, halfdeg, sample = false, calc_w = true)
     lagrange_polys = MU.recover_lagrange_polys(pts, 2 * halfdeg)

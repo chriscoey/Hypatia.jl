@@ -42,5 +42,5 @@ system_solver = Hypatia.Solvers.NaiveElimSparseSystemSolver{Float64}(fact_cache 
 solver = Hypatia.Solvers.Solver{Float64}(system_solver)
 
 include("test/native.jl")
-orthant1(Float64, solver = solver)
+nonnegative1(Float64, solver = solver)
 ```

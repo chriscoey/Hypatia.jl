@@ -17,24 +17,26 @@ sampling_region(dom::SemiFreeDomain) = dom.restricted_halfregion
 sampling_region(dom::Domain) = dom
 
 
-function interp_sample(dom::Box, npts::Int)
+function interp_sample(dom::Box{T}, npts::Int) where {T <: Real}
     dim = get_dimension(dom)
-    pts = rand(npts, dim) .- 0.5
-    shift = (dom.u + dom.l) .* 0.5
+    pts = rand(T, npts, dim) .- T(0.5)
+    shift = (dom.u + dom.l) .* T(0.5)
     for i in 1:npts
         pts[i, :] = pts[i, :] .* (dom.u - dom.l) + shift
     end
     return pts
 end
 
-function get_weights(dom::Box, pts::AbstractMatrix{Float64})
+function get_weights(dom::Box{T}, pts::AbstractMatrix{T}) where {T <: Real}
     g = [(pts[:, i] .- dom.l[i]) .* (dom.u[i] .- pts[:, i]) for i in 1:size(pts, 2)]
-    @assert all(all(gi .>= 0.0) for gi in g)
+    @assert all(all(gi .>= 0) for gi in g)
     return g
 end
 
 
-function interp_sample(dom::Ball, npts::Int)
+interp_sample(dom::Ball{T}, npts::Int) where {T <: Real} = error("cannot handle ball domains with number type $T")
+
+function interp_sample(dom::Ball{Float64}, npts::Int)
     dim = get_dimension(dom)
     pts = randn(npts, dim)
     norms = sum(abs2, pts, dims = 2)
@@ -47,14 +49,15 @@ function interp_sample(dom::Ball, npts::Int)
     return pts
 end
 
-function get_weights(dom::Ball, pts::AbstractMatrix{Float64})
-    g = [dom.r^2 - sum((pts[j, :] - dom.c) .^ 2) for j in 1:size(pts, 1)]
-    @assert all(g .>= 0.0)
+function get_weights(dom::Ball{T}, pts::AbstractMatrix{T}) where {T <: Real}
+    g = [abs2(dom.r) - sum((pts[j, :] - dom.c) .^ 2) for j in 1:size(pts, 1)]
+    @assert all(g .>= 0)
     return [g]
 end
 
+interp_sample(dom::Ellipsoid{T}, npts::Int) where {T <: Real} = error("cannot handle ellipsoid domains with number type $T")
 
-function interp_sample(dom::Ellipsoid, npts::Int)
+function interp_sample(dom::Ellipsoid{Float64}, npts::Int)
     dim = get_dimension(dom)
     pts = randn(npts, dim)
     norms = sum(abs2, pts, dims = 2)
@@ -75,12 +78,11 @@ function interp_sample(dom::Ellipsoid, npts::Int)
     return pts
 end
 
-function get_weights(dom::Ellipsoid, pts::AbstractMatrix{Float64})
-    g = [1.0 - (pts[j, :] - dom.c)' * dom.Q * (pts[j, :] - dom.c) for j in 1:size(pts, 1)]
-    @assert all(g .>= 0.0)
+function get_weights(dom::Ellipsoid{T}, pts::AbstractMatrix{T}) where {T <: Real}
+    g = [1 - (pts[j, :] - dom.c)' * dom.Q * (pts[j, :] - dom.c) for j in 1:size(pts, 1)]
+    @assert all(g .>= 0)
     return [g]
 end
-
 
 interp_sample(dom::SemiFreeDomain, npts::Int) =
     hcat(interp_sample(dom.restricted_halfregion, npts), interp_sample(dom.restricted_halfregion, npts))
@@ -89,20 +91,20 @@ get_weights(dom::SemiFreeDomain, pts::Matrix{Float64}) =
     get_weights(dom.restricted_halfregion, view(pts, :, 1:div(size(pts, 2), 2)))
 
 
-interp_sample(dom::FreeDomain, npts::Int) = interp_sample(Box(-ones(dom.n), ones(dom.n)), npts)
+interp_sample(dom::FreeDomain{T}, npts::Int) where {T <: Real} = interp_sample(Box{T}(-ones(T, dom.n), ones(T, dom.n)), npts)
 
-get_weights(::FreeDomain, ::AbstractMatrix{Float64}) = []
+get_weights(::FreeDomain{T}, ::AbstractMatrix{T}) where {T <: Real} = T[]
 
 
 get_L_U(n::Int, d::Int) = (binomial(n + d, n), binomial(n + 2d, n))
 
 function interpolate(
-    dom::Domain,
+    dom::Domain{T},
     d::Int; # TODO make this 2d
     sample::Bool = false,
     calc_w::Bool = false,
     sample_factor::Int = 10,
-    )
+    ) where {T <: Real}
     if sample
         return wsos_sample_params(dom, d, calc_w = calc_w, sample_factor = sample_factor)
     else
@@ -114,60 +116,60 @@ end
 wsos_box_params(dom::Domain, n::Int, d::Int; calc_w::Bool) = error("accurate methods for interpolation points are only available for box domains, use sampling instead")
 
 # difference with sampling functions is that P0 is always formed using points in [-1, 1]
-function wsos_box_params(dom::Box, n::Int, d::Int; calc_w::Bool = false)
+function wsos_box_params(dom::Box{T}, n::Int, d::Int; calc_w::Bool = false) where {T <: Real}
     # n could be larger than the dimension of dom if the original domain was a SemiFreeDomain
-    (U, pts, P0, P0sub, w) = wsos_box_params(n, d, calc_w)
+    (U, pts, P0, P0sub, w) = wsos_box_params(T, n, d, calc_w)
 
     # TODO refactor/cleanup below
     # scale and shift points, get WSOS matrices
-    pscale = [0.5 * (dom.u[mod(j - 1, get_dimension(dom)) + 1] - dom.l[mod(j - 1,get_dimension(dom)) + 1]) for j in 1:n]
-    pshift = [0.5 * (dom.u[mod(j - 1, get_dimension(dom)) + 1] + dom.l[mod(j - 1,get_dimension(dom)) + 1]) for j in 1:n]
-    Wtsfun = (j -> sqrt.(1.0 .- abs2.(pts[:, j])) * pscale[j])
+    pscale = [T(0.5) * (dom.u[mod(j - 1, get_dimension(dom)) + 1] - dom.l[mod(j - 1, get_dimension(dom)) + 1]) for j in 1:n]
+    pshift = [T(0.5) * (dom.u[mod(j - 1, get_dimension(dom)) + 1] + dom.l[mod(j - 1, get_dimension(dom)) + 1]) for j in 1:n]
+    Wtsfun = (j -> sqrt.(1 .- abs2.(pts[:, j])) * pscale[j])
     PWts = [Wtsfun(j) .* P0sub for j in 1:get_dimension(dom)]
     trpts = pts .* pscale' .+ pshift'
 
     return (U = U, pts = trpts, P0 = P0, PWts = PWts, w = w)
 end
 
-function wsos_box_params(dom::FreeDomain, n::Int, d::Int; calc_w::Bool = false)
+function wsos_box_params(dom::FreeDomain{T}, n::Int, d::Int; calc_w::Bool = false) where {T <: Real}
     # n could be larger than the dimension of dom if the original domain was a SemiFreeDomain
-    (U, pts, P0, P0sub, w) = wsos_box_params(n, d, calc_w)
+    (U, pts, P0, P0sub, w) = wsos_box_params(T, n, d, calc_w)
     return (U = U, pts = pts, P0 = P0, PWts = [], w = w)
 end
 
-function wsos_box_params(n::Int, d::Int, calc_w::Bool)
+function wsos_box_params(T::DataType, n::Int, d::Int, calc_w::Bool)
     if n == 1
-        return cheb2_data(d, calc_w)
+        return cheb2_data(T, d, calc_w)
     elseif n == 2
-        return padua_data(d, calc_w) # or approxfekete_data(n, d)
+        return padua_data(T, d, calc_w) # or approxfekete_data(n, d)
     elseif n > 2
-        return approxfekete_data(n, d, calc_w)
+        return approxfekete_data(T, n, d, calc_w)
     end
 end
 
 # return k Chebyshev points of the second kind
-cheb2_pts(k::Int) = [-cospi(j / (k - 1)) for j in 0:(k - 1)]
+cheb2_pts(T::DataType, k::Int) = [-cospi(T(j) / T(k - 1)) for j in 0:(k - 1)]
 
-function calc_u(n::Int, d::Int, pts::Matrix{Float64})
+function calc_u(n::Int, d::Int, pts::Matrix{T}) where {T <: Real}
     @assert d > 0
-    u = Vector{Matrix{Float64}}(undef, n)
+    u = Vector{Matrix{T}}(undef, n)
     for j in 1:n
-        uj = u[j] = Matrix{Float64}(undef, size(pts, 1), d + 1)
-        uj[:, 1] .= 1.0
+        uj = u[j] = Matrix{T}(undef, size(pts, 1), d + 1)
+        uj[:, 1] .= 1
         @. @views uj[:, 2] = pts[:, j]
         for t in 3:(d + 1)
-            @. @views uj[:, t] = 2.0 * uj[:, 2] * uj[:, t - 1] - uj[:, t - 2]
+            @. @views uj[:, t] = 2 * uj[:, 2] * uj[:, t - 1] - uj[:, t - 2]
         end
     end
     return u
 end
 
-function cheb2_data(d::Int, calc_w::Bool)
+function cheb2_data(T::DataType, d::Int, calc_w::Bool)
     @assert d > 0
     U = 2d + 1
 
     # Chebyshev points for degree 2d
-    pts = reshape(cheb2_pts(U), :, 1)
+    pts = reshape(cheb2_pts(T, U), :, 1)
 
     # evaluations
     P0 = calc_u(1, d, pts)[1]
@@ -175,6 +177,10 @@ function cheb2_data(d::Int, calc_w::Bool)
 
     # weights for Clenshaw-Curtis quadrature at pts
     if calc_w
+        if T == BigFloat
+            # TODO we can probably avoid FFTW.ifft
+            error("cannot compute quadrature weights using BigFloat without sampling")
+        end
         wa = [2.0 / (1 - j^2) for j in 0:2:(U - 1)]
         append!(wa, wa[div(U, 2):-1:2])
         w = real.(FFTW.ifft(wa))
@@ -187,17 +193,17 @@ function cheb2_data(d::Int, calc_w::Bool)
     return (U, pts, P0, P0sub, w)
 end
 
-function padua_data(d::Int, calc_w::Bool)
+function padua_data(T::DataType, d::Int, calc_w::Bool)
     @assert d > 0
     (L, U) = get_L_U(2, d)
 
     # Padua points for degree 2d
-    cheba = cheb2_pts(2d + 1)
-    chebb = cheb2_pts(2d + 2)
-    pts = Matrix{Float64}(undef, U, 2)
+    cheba = cheb2_pts(T, 2d + 1)
+    chebb = cheb2_pts(T, 2d + 2)
+    pts = Matrix{T}(undef, U, 2)
     j = 1
     for a in 0:2d
-        for b in 0:2d+1
+        for b in 0:(2d + 1)
             if iseven(a + b)
                 pts[j, 1] = -cheba[a + 1]
                 pts[(U + 1 - j), 2] = -chebb[2d + 2 - b]
@@ -208,7 +214,7 @@ function padua_data(d::Int, calc_w::Bool)
 
     # evaluations
     u = calc_u(2, d, pts)
-    P0 = Matrix{Float64}(undef, U, L)
+    P0 = Matrix{T}(undef, U, L)
     P0[:, 1] .= 1
     col = 1
     for t in 1:d
@@ -222,30 +228,30 @@ function padua_data(d::Int, calc_w::Bool)
     # cubature weights at Padua points
     # even-degree Chebyshev polynomials on the subgrids
     if calc_w
-        te1 = [cospi(i * j / (2d)) for i in 0:2:2d, j in 0:2:2d]
-        to1 = [cospi(i * j / (2d)) for i in 0:2:2d, j in 1:2:2d]
-        te2 = [cospi(i * j / (2d + 1)) for i in 0:2:2d, j in 0:2:(2d + 1)]
-        to2 = [cospi(i * j / (2d + 1)) for i in 0:2:2d, j in 1:2:(2d + 1)]
-        te1[2:(d + 1), :] .*= sqrt(2)
-        to1[2:(d + 1), :] .*= sqrt(2)
-        te2[2:(d + 1), :] .*= sqrt(2)
-        to2[2:(d + 1), :] .*= sqrt(2)
+        te1 = [cospi(T(i * j) / T(2d)) for i in 0:2:2d, j in 0:2:2d]
+        to1 = [cospi(T(i * j) / T(2d)) for i in 0:2:2d, j in 1:2:2d]
+        te2 = [cospi(T(i * j) / T(2d + 1)) for i in 0:2:2d, j in 0:2:(2d + 1)]
+        to2 = [cospi(T(i * j) / T(2d + 1)) for i in 0:2:2d, j in 1:2:(2d + 1)]
+        te1[2:(d + 1), :] .*= sqrt(T(2))
+        to1[2:(d + 1), :] .*= sqrt(T(2))
+        te2[2:(d + 1), :] .*= sqrt(T(2))
+        to2[2:(d + 1), :] .*= sqrt(T(2))
         # even, even moments matrix
-        mom = 2 * sqrt(2) ./ [1.0 - i^2 for i in 0:2:2d]
+        mom = T(2) * sqrt(T(2)) ./ [T(1 - i^2) for i in 0:2:2d]
         mom[1] = 2
-        Mmom = zeros(d + 1, d + 1)
-        f = inv(d * (2d + 1))
+        Mmom = zeros(T, d + 1, d + 1)
+        f = inv(T(d * (2d + 1)))
         for j in 1:(d + 1), i in 1:(d + 2 - j)
             Mmom[i, j] = mom[i] * mom[j] * f
         end
-        Mmom[1, d + 1] *= 0.5
+        Mmom[1, d + 1] /= T(2)
         # cubature weights as matrices on the subgrids
-        W = Matrix{Float64}(undef, d + 1, 2d + 1)
+        W = Matrix{T}(undef, d + 1, 2d + 1)
         W[:, 1:2:(2d + 1)] .= to2' * Mmom * te1
         W[:, 2:2:(2d + 1)] .= te2' * Mmom * to1
-        W[:, [1, (2d + 1)]] .*= 0.5
-        W[1, 2:2:(2d + 1)] .*= 0.5
-        W[d + 1, 1:2:(2d + 1)] .*= 0.5
+        W[:, [1, (2d + 1)]] ./= T(2)
+        W[1, 2:2:(2d + 1)] ./= T(2)
+        W[d + 1, 1:2:(2d + 1)] ./= T(2)
         w = vec(W)
     else
         w = Float64[]
@@ -254,17 +260,17 @@ function padua_data(d::Int, calc_w::Bool)
     return (U, pts, P0, P0sub, w)
 end
 
-function approxfekete_data(n::Int, d::Int, calc_w::Bool)
+function approxfekete_data(T::DataType, n::Int, d::Int, calc_w::Bool)
     @assert d > 0
     @assert n > 1
     (L, U) = get_L_U(n, d)
 
     # points in the initial interpolation grid
     npts = prod((2d + 1):(2d + n))
-    candidate_pts = Matrix{Float64}(undef, npts, n)
+    candidate_pts = Matrix{T}(undef, npts, n)
     for j in 1:n
         ig = prod((2d + 1 + j):(2d + n))
-        cs = cheb2_pts(2d + j)
+        cs = cheb2_pts(T, 2d + j)
         i = 1
         l = 1
         while true
@@ -279,34 +285,34 @@ function approxfekete_data(n::Int, d::Int, calc_w::Bool)
             end
         end
     end
-    dom = Box(-ones(n), ones(n))
+    dom = Box{T}(-ones(T, n), ones(T, n))
     (pts, P0, P0sub, w) = make_wsos_arrays(dom, candidate_pts, 2d, U, L, calc_w = calc_w)
     return (U, pts, P0, P0sub, w)
 end
 
 # indices of points to keep and quadrature weights at those points
 function choose_interp_pts!(
-    M::Matrix{Float64},
-    candidate_pts::Matrix{Float64},
+    M::Matrix{T},
+    candidate_pts::Matrix{T},
     deg::Int,
     U::Int,
     calc_w::Bool,
-    )
+    ) where {T <: Real}
 
     n = size(candidate_pts, 2)
     u = calc_u(n, deg, candidate_pts)
-    m = Vector{Float64}(undef, U)
+    m = Vector{T}(undef, U)
     m[1] = 2^n
-    M[:, 1] .= 1.0
+    M[:, 1] .= 1
 
     col = 1
     for t in 1:deg
         for xp in Combinatorics.multiexponents(n, t)
             col += 1
             if any(isodd, xp)
-                m[col] = 0.0
+                m[col] = 0
             else
-                m[col] = m[1] / prod(1.0 - abs2(xp[j]) for j in 1:n)
+                m[col] = m[1] / prod(1 - abs2(xp[j]) for j in 1:n)
             end
             @. @views M[:, col] = u[1][:, xp[1] + 1]
             for j in 2:n
@@ -325,16 +331,16 @@ function choose_interp_pts!(
 end
 
 function make_wsos_arrays(
-    dom::Domain,
-    candidate_pts::Matrix{Float64},
+    dom::Domain{T},
+    candidate_pts::Matrix{T},
     deg::Int,
     U::Int,
     L::Int;
     calc_w::Bool = false,
-    )
+    ) where {T <: Real}
 
     (npts, n) = size(candidate_pts)
-    M = Matrix{Float64}(undef, npts, U)
+    M = Matrix{T}(undef, npts, U)
     (keep_pts, w) = choose_interp_pts!(M, candidate_pts, deg, U, calc_w)
     pts = candidate_pts[keep_pts, :]
     P0 = M[keep_pts, 1:L] # subset of polynomial evaluations up to total degree d
@@ -361,16 +367,16 @@ function wsos_sample_params(
 end
 
 # TODO should work without sampling too
-function get_interp_pts(dom::Domain, deg::Int; sample_factor::Int = 10, calc_w::Bool = false)
+function get_interp_pts(dom::Domain{T}, deg::Int; sample_factor::Int = 10, calc_w::Bool = false) where {T <: Real}
     n = get_dimension(dom)
     U = binomial(n + deg, n)
     candidate_pts = interp_sample(dom, U * sample_factor)
-    M = Matrix{Float64}(undef, size(candidate_pts, 1), U)
+    M = Matrix{T}(undef, size(candidate_pts, 1), U)
     (keep_pts, w) = choose_interp_pts!(M, candidate_pts, deg, U, calc_w)
     return (candidate_pts[keep_pts, :], w)
 end
 
-function recover_lagrange_polys(pts::Matrix{Float64}, deg::Int)
+function recover_lagrange_polys(pts::Matrix{T}, deg::Int) where {T <: Real}
     (U, n) = size(pts)
     DP.@polyvar x[1:n]
     monos = DP.monomials(x, 0:deg)
@@ -383,7 +389,7 @@ function calc_u(monovec::Vector{DynamicPolynomials.PolyVar{true}}, d::Int)
     n = length(monovec)
     u = Vector{Vector}(undef, n)
     for j in 1:n
-        uj = u[j] = Vector{DP.Polynomial{true,Int64}}(undef, d + 1)
+        uj = u[j] = Vector{DP.Polynomial{true, Int64}}(undef, d + 1)
         uj[1] = DP.Monomial(1)
         uj[2] = monovec[j]
         for t in 3:(d + 1)
@@ -398,7 +404,7 @@ function get_chebyshev_polys(x::Vector{DynamicPolynomials.PolyVar{true}}, d::Int
     n = length(x)
     u = calc_u(x, d)
     L = binomial(n + d, n)
-    M = Vector{DP.Polynomial{true,Int64}}(undef, L)
+    M = Vector{DP.Polynomial{true, Int64}}(undef, L)
     M[1] = DP.Monomial(1)
     col = 1
     for t in 1:d, xp in Combinatorics.multiexponents(n, t)

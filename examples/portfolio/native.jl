@@ -173,7 +173,7 @@ function portfolio(
         end
         h = vcat(h, h2, h2)
         for i in 1:(2 * num_stocks)
-            push!(cones, CO.HypoPerLog{T}(3))
+            push!(cones, CO.HypoPerSumLog{T}(3)) # TODO use EpiPerExp (swap order of variables)
         end
         cone_offset += 6 * num_stocks
     end

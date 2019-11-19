@@ -1,7 +1,9 @@
 #=
 Copyright 2019, Chris Coey and contributors
 
-interior point stepping routines for algorithms based on homogeneous self dual embedding
+combined directions stepping routine
+
+TODO delete and just use scaling stepper? rename that too maybe
 =#
 
 mutable struct CombinedStepper{T <: Real} <: Stepper{T}
@@ -176,6 +178,46 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     return point
 end
 
+# return directions
+# TODO make this function the same for all system solvers, move to solver.jl
+function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
+    dirs = stepper.dirs
+    system_solver = solver.system_solver
+
+    @timeit solver.timer "update_rhs" rhs = update_rhs(stepper, solver)
+    @timeit solver.timer "update_fact" update_fact(system_solver, solver)
+    @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs, rhs) # NOTE dense solve with cache destroys RHS
+
+    # TODO don't do iterative refinement unless it's likely to be worthwhile based on the current worst residuals on the KKT conditions
+    iter_ref_steps = 3 # TODO handle, maybe change dynamically
+    dirs_new = rhs # TODO avoid by prealloc, reduce confusion
+    copyto!(dirs_new, dirs)
+    @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver) # modifies rhs
+    norm_inf = norm(res, Inf)
+    norm_2 = norm(res, 2)
+    for i in 1:iter_ref_steps
+        if norm_inf < 100 * eps(T)
+            break
+        end
+        # dirs_new .= zero(T) # TODO maybe want for the indirect methods
+        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs_new, res)
+        @. dirs_new = dirs - dirs_new
+        @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver)
+        norm_inf_new = norm(res, Inf)
+        norm_2_new = norm(res, 2)
+        if norm_inf_new > norm_inf || norm_2_new > norm_2
+            break
+        end
+        # residual has improved, so use the iterative refinement
+        solver.verbose && @printf("used iter ref, norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", norm_inf, norm_inf_new, norm_2, norm_2_new)
+        copyto!(dirs, dirs_new)
+        norm_inf = norm_inf_new
+        norm_2 = norm_2_new
+    end
+
+    return dirs
+end
+
 # update the 6x2 RHS matrix
 function update_rhs(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     rhs = stepper.rhs
@@ -254,190 +296,4 @@ function calc_system_residual(stepper::CombinedStepper{T}, solver::Solver{T}) wh
     res_kap[2] += solver.kap - solver.mu / solver.tau
 
     return vcat(res_x, res_y, res_z, res_tau, res_s, res_kap) # TODO don't vcat
-end
-
-# return directions
-# TODO make this function the same for all system solvers, move to solver.jl
-function get_directions(stepper::Stepper{T}, solver::Solver{T}) where {T <: Real}
-    dirs = stepper.dirs
-    system_solver = solver.system_solver
-
-    @timeit solver.timer "update_rhs" rhs = update_rhs(stepper, solver)
-    @timeit solver.timer "update_fact" update_fact(system_solver, solver)
-    @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs, rhs) # NOTE dense solve with cache destroys RHS
-
-    # TODO don't do iterative refinement unless it's likely to be worthwhile based on the current worst residuals on the KKT conditions
-    iter_ref_steps = 3 # TODO handle, maybe change dynamically
-    dirs_new = rhs # TODO avoid by prealloc, reduce confusion
-    copyto!(dirs_new, dirs)
-    @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver) # modifies rhs
-    norm_inf = norm(res, Inf)
-    norm_2 = norm(res, 2)
-    for i in 1:iter_ref_steps
-        if norm_inf < 100 * eps(T)
-            break
-        end
-        # dirs_new .= zero(T) # TODO maybe want for the indirect methods
-        @timeit solver.timer "solve_system" solve_system(system_solver, solver, dirs_new, res)
-        @. dirs_new = dirs - dirs_new
-        @timeit solver.timer "calc_sys_res" res = calc_system_residual(stepper, solver)
-        norm_inf_new = norm(res, Inf)
-        norm_2_new = norm(res, 2)
-        if norm_inf_new > norm_inf || norm_2_new > norm_2
-            break
-        end
-        # residual has improved, so use the iterative refinement
-        solver.verbose && @printf("used iter ref, norms: inf %9.2e to %9.2e, two %9.2e to %9.2e\n", norm_inf, norm_inf_new, norm_2, norm_2_new)
-        copyto!(dirs, dirs_new)
-        norm_inf = norm_inf_new
-        norm_2 = norm_2_new
-    end
-
-    return dirs
-end
-
-# backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
-function find_max_alpha_in_nbhd(
-    z_dir::AbstractVector{T},
-    s_dir::AbstractVector{T},
-    tau_dir::T,
-    kap_dir::T,
-    solver::Solver{T};
-    nbhd::T,
-    prev_alpha::T,
-    min_alpha::T,
-    ) where {T <: Real}
-    point = solver.point
-    model = solver.model
-    z_temp = solver.z_temp
-    s_temp = solver.s_temp
-
-    alpha = min(prev_alpha * T(1.4), one(T)) # TODO option for parameter
-    if kap_dir < zero(T)
-        alpha = min(alpha, -solver.kap / kap_dir)
-    end
-    if tau_dir < zero(T)
-        alpha = min(alpha, -solver.tau / tau_dir)
-    end
-    alpha *= T(0.9999)
-
-    solver.cones_infeas .= true
-    tau_temp = kap_temp = taukap_temp = mu_temp = zero(T)
-    while true
-        @timeit solver.timer "ls_update" begin
-        @. z_temp = point.z + alpha * z_dir
-        @. s_temp = point.s + alpha * s_dir
-        tau_temp = solver.tau + alpha * tau_dir
-        kap_temp = solver.kap + alpha * kap_dir
-        taukap_temp = tau_temp * kap_temp
-        mu_temp = (dot(s_temp, z_temp) + taukap_temp) / (one(T) + model.nu)
-        end
-
-        if mu_temp > zero(T)
-            @timeit solver.timer "nbhd_check" in_nbhd = check_nbhd(mu_temp, taukap_temp, nbhd, solver)
-            if in_nbhd
-                break
-            end
-        end
-
-        if alpha < min_alpha
-            # alpha is very small so finish
-            alpha = zero(T)
-            break
-        end
-
-        # iterate is outside the neighborhood: decrease alpha
-        alpha *= T(0.8) # TODO option for parameter
-    end
-
-    return alpha
-end
-
-function check_nbhd(
-    mu_temp::T,
-    taukap_temp::T,
-    nbhd::T,
-    solver::Solver{T},
-    ) where {T <: Real}
-    cones = solver.model.cones
-    sqrtmu = sqrt(mu_temp)
-
-    rhs_nbhd = mu_temp * abs2(nbhd)
-    lhs_nbhd = abs2(taukap_temp / sqrtmu - sqrtmu)
-    if lhs_nbhd >= rhs_nbhd
-        return false
-    end
-
-    Cones.load_point.(cones, solver.primal_views, sqrtmu)
-
-    # accept primal iterate if it is inside the cone and neighborhood
-    # first check inside cone for whichever cones were violated last line search iteration
-    for (k, cone_k) in enumerate(cones)
-        if solver.cones_infeas[k]
-            Cones.reset_data(cone_k)
-            if Cones.is_feas(cone_k)
-                solver.cones_infeas[k] = false
-                solver.cones_loaded[k] = true
-            else
-                return false
-            end
-        else
-            solver.cones_loaded[k] = false
-        end
-    end
-
-    for (k, cone_k) in enumerate(cones)
-        if !solver.cones_loaded[k]
-            Cones.reset_data(cone_k)
-            if !Cones.is_feas(cone_k)
-                return false
-            end
-        end
-
-        # modifies dual_views
-        duals_k = solver.dual_views[k]
-        g_k = Cones.grad(cone_k)
-        @. duals_k += g_k * sqrtmu
-
-        if solver.use_infty_nbhd
-            k_nbhd = abs2(norm(duals_k, Inf) / norm(g_k, Inf))
-            # k_nbhd = abs2(maximum(abs(dj) / abs(gj) for (dj, gj) in zip(duals_k, g_k))) # TODO try this neighborhood
-            lhs_nbhd = max(lhs_nbhd, k_nbhd)
-        else
-            nbhd_temp_k = solver.nbhd_temp[k]
-            Cones.inv_hess_prod!(nbhd_temp_k, duals_k, cone_k)
-            k_nbhd = dot(duals_k, nbhd_temp_k)
-            if k_nbhd <= -cbrt(eps(T))
-                @warn("numerical failure: cone neighborhood is $k_nbhd")
-                return false
-            elseif k_nbhd > zero(T)
-                lhs_nbhd += k_nbhd
-            end
-        end
-
-        if lhs_nbhd > rhs_nbhd
-            return false
-        end
-    end
-
-    return true
-end
-
-# TODO experimental for BlockMatrix LHS: if block is a Cone then define mul as hessian product, if block is solver then define mul by mu/tau/tau
-# TODO optimize... maybe need for each cone a 5-arg hess prod
-import LinearAlgebra.mul!
-
-function mul!(y::AbstractVecOrMat{T}, A::Cones.Cone{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-    # TODO in-place
-    ytemp = y * beta
-    Cones.hess_prod!(y, x, A)
-    rmul!(y, alpha)
-    y .+= ytemp
-    return y
-end
-
-function mul!(y::AbstractVecOrMat{T}, solver::Solvers.Solver{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-    rmul!(y, beta)
-    @. y += alpha * x / solver.tau * solver.mu / solver.tau
-    return y
 end

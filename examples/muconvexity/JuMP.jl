@@ -50,14 +50,14 @@ function muconvexityJuMP(
     return (model = model, mu = mu)
 end
 
-muconvexityJuMP1() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.FreeDomain(1), use_wsos = true)
-muconvexityJuMP2() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.FreeDomain(3), use_wsos = true)
-muconvexityJuMP3() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.Box([-1.0], [1.0]), use_wsos = true)
-muconvexityJuMP4() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.Ball(ones(2), 5.0), use_wsos = true)
-muconvexityJuMP5() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.FreeDomain(1), use_wsos = false)
-muconvexityJuMP6() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.FreeDomain(3), use_wsos = false)
-muconvexityJuMP7() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.Box([-1.0], [1.0]), use_wsos = false)
-muconvexityJuMP8() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.Ball(ones(2), 5.0), use_wsos = false)
+muconvexityJuMP1() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.FreeDomain{Float64}(1), use_wsos = true)
+muconvexityJuMP2() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.FreeDomain{Float64}(3), use_wsos = true)
+muconvexityJuMP3() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.Box{Float64}([-1.0], [1.0]), use_wsos = true)
+muconvexityJuMP4() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.Ball{Float64}(ones(2), 5.0), use_wsos = true)
+muconvexityJuMP5() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.FreeDomain{Float64}(1), use_wsos = false)
+muconvexityJuMP6() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.FreeDomain{Float64}(3), use_wsos = false)
+muconvexityJuMP7() = muconvexityJuMP(x -> (x[1] + 1)^2 * (x[1] - 1)^2, MU.Box{Float64}([-1.0], [1.0]), use_wsos = false)
+muconvexityJuMP8() = muconvexityJuMP(x -> sum(x.^4) - sum(x.^2), MU.Ball{Float64}(ones(2), 5.0), use_wsos = false)
 
 function test_muconvexityJuMP(instance::Tuple{Function, Float64}; options, rseed::Int = 1)
     Random.seed!(rseed)

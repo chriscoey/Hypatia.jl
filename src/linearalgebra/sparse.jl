@@ -34,7 +34,7 @@ function update_fact(cache::UMFPACKNonSymCache, A::SparseMatrixCSC{Float64, Suit
         cache.umfpack = lu(A) # symbolic and numeric factorization
         cache.analyzed = true
     else
-        # TODO this is a hack around lack of interface https://github.com/JuliaLang/julia/issues/33323
+        # TODO update when https://github.com/JuliaLang/julia/pull/33738 is merged
         # update nzval field in the factorizationTimer
         copyto!(cache.umfpack.nzval, A.nzval)
         # do not indicate that the numeric factorization has been computed
@@ -44,7 +44,7 @@ function update_fact(cache::UMFPACKNonSymCache, A::SparseMatrixCSC{Float64, Suit
     return
 end
 
-function solve_system(cache::UMFPACKNonSymCache, x::Matrix{Float64}, A::SparseMatrixCSC{Float64, SuiteSparseInt}, b::Matrix{Float64})
+function solve_system(cache::UMFPACKNonSymCache, x::VecOrMat{Float64}, A::SparseMatrixCSC{Float64, SuiteSparseInt}, b::VecOrMat{Float64})
     ldiv!(x, cache.umfpack, b) # does not repeat symbolic or numeric factorization
     return x
 end
@@ -93,7 +93,7 @@ function update_fact(cache::CHOLMODSymCache, A::SparseMatrixCSC{Float64, SuiteSp
     return
 end
 
-function solve_system(cache::CHOLMODSymCache, x::Matrix{Float64}, A::SparseMatrixCSC{Float64, SuiteSparseInt}, b::Matrix{Float64})
+function solve_system(cache::CHOLMODSymCache, x::VecOrMat{Float64}, A::SparseMatrixCSC{Float64, SuiteSparseInt}, b::VecOrMat{Float64})
     x .= cache.cholmod \ b # TODO try to make this in-place
     return x
 end
