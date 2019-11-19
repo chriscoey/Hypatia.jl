@@ -56,9 +56,9 @@ function test_barrier_oracles(
 
     # tests for centrality of initial point
     grad = CO.grad(cone)
-    # @test dot(point, -grad) ≈ norm(point) * norm(grad) atol=init_tol rtol=init_tol
-    # @test point ≈ -grad atol=init_tol rtol=init_tol
-    # init_only && return
+    @test dot(point, -grad) ≈ norm(point) * norm(grad) atol=init_tol rtol=init_tol
+    @test point ≈ -grad atol=init_tol rtol=init_tol
+    init_only && return
 
     # perturb and scale the initial point and check feasible
     perturb_scale(point, noise, scale)
@@ -68,11 +68,9 @@ function test_barrier_oracles(
     test_grad_hess(cone, point, tol = tol)
 
     # check gradient and Hessian agree with ForwardDiff
-    CO.reset_data(cone)
     grad = CO.grad(cone)
     hess = CO.hess(cone)
 
-    # @show hess ./ ForwardDiff.hessian(barrier, point)
     @test ForwardDiff.gradient(barrier, point) ≈ grad atol=tol rtol=tol
     @test ForwardDiff.hessian(barrier, point) ≈ hess atol=tol rtol=tol
 
