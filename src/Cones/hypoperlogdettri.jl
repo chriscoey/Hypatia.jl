@@ -16,6 +16,10 @@ mutable struct HypoPerLogdetTri{T <: Real} <: Cone{T}
     point::Vector{T}
     dual_point::Vector{T}
     rt2::T
+    k::T
+    gamma::T
+    beta::T
+    sc_try::Symbol
 
     feas_updated::Bool
     grad_updated::Bool
@@ -46,6 +50,7 @@ mutable struct HypoPerLogdetTri{T <: Real} <: Cone{T}
     function HypoPerLogdetTri{T}(
         dim::Int,
         is_dual::Bool;
+        sc_try::Symbol = :conic_hull,
         hess_fact_cache = hessian_cache(T),
         ) where {T <: Real}
         @assert dim >= 3
@@ -53,7 +58,17 @@ mutable struct HypoPerLogdetTri{T <: Real} <: Cone{T}
         cone.use_dual = is_dual
         cone.dim = dim
         cone.rt2 = sqrt(T(2))
+        cone.sc_try = sc_try
         cone.side = round(Int, sqrt(0.25 + 2 * (dim - 2)) - 0.5)
+        if cone.sc_try == :conic_hull
+            # this should be correct and ready
+            n = cone.side + 1
+            k = cone.k = 4n
+            cone.gamma = (k^(3 / 2) / (k - n)^(3 / 2) + (1 + k / (k - n))^(3 / 2) / sqrt(k))^2
+        elseif sc_try == :composition
+            # this is not correct and ready, need to figure out beta
+            cone.beta = cone.side
+        end
         cone.hess_fact_cache = hess_fact_cache
         return cone
     end
@@ -81,7 +96,17 @@ function setup_data(cone::HypoPerLogdetTri{T}) where {T <: Real}
     return
 end
 
-get_nu(cone::HypoPerLogdetTri) = cone.side + 2
+function get_nu(cone::HypoPerLogdetTri)
+    if cone.sc_try == :conic_hull
+        return cone.k * cone.gamma
+    elseif cone.sc_try == :composition
+        return cone.beta * cone.side + cone.beta + 1
+    elseif cone.sc_try == :none
+        return cone.side + 2
+    else
+        error("unknown sc_try $(cone.sc_try)")
+    end
+end
 
 function set_initial_point(arr::AbstractVector, cone::HypoPerLogdetTri{T}) where {T <: Real}
     arr .= 0
@@ -126,10 +151,13 @@ function update_dual_feas(cone::HypoPerLogdetTri)
         cone.dual_fact_mat = cholesky!(Symmetric(cone.dual_mat, :U), check = false)
         if isposdef(cone.dual_fact_mat)
             cone.is_dual_feas = (u * (logdet(cone.dual_fact_mat) - n * log(-u) + n) - v < 0)
+            @show (u * (logdet(cone.dual_fact_mat) - n * log(-u) + n) - v < 0)
         else
+            @show "not psd"
             cone.is_dual_feas = false
         end
     else
+        @show "u nonneg"
         cone.is_dual_feas = false
     end
     return cone.is_dual_feas
@@ -143,12 +171,20 @@ function update_grad(cone::HypoPerLogdetTri)
     cone.Wi = inv(cone.fact_mat)
     cone.nLz = (cone.side - cone.ldWv) / cone.z
     cone.ldWvuv = cone.ldWv - u / v
-    cone.vzip1 = 1 + inv(cone.ldWvuv)
+    cone.vzip1 = (cone.sc_try == :composition ? cone.beta + inv(cone.ldWvuv) : 1 + inv(cone.ldWvuv))
     cone.grad[1] = inv(cone.z)
-    cone.grad[2] = cone.nLz - inv(v)
+    if cone.sc_try == :conic_hull
+        fact = cone.k - cone.side - 1
+    elseif cone.sc_try == :composition
+        fact = cone.beta
+    else
+        fact = 1
+    end
+    cone.grad[2] = cone.nLz - inv(v) * fact
     gend = view(cone.grad, 3:cone.dim)
     smat_to_svec!(gend, cone.Wi, cone.rt2)
     gend .*= -cone.vzip1
+    @. cone.grad *= (cone.sc_try == :conic_hull ? cone.gamma : 1)
 
     cone.grad_updated = true
     return cone.grad
@@ -181,6 +217,7 @@ function update_hess(cone::HypoPerLogdetTri)
         end
         k1 += 1
     end
+    @. H[3:end, :] *= (cone.sc_try == :conic_hull ? cone.gamma : 1)
 
     cone.hess_updated = true
     return cone.hess
@@ -200,10 +237,18 @@ function update_hess_prod(cone::HypoPerLogdetTri)
     h1end = view(H, 1, 3:cone.dim)
     smat_to_svec!(h1end, cone.Wivzi, cone.rt2)
     h1end ./= -z
-    H[2, 2] = abs2(cone.nLz) + (cone.side / z + inv(v)) / v
+    if cone.sc_try == :conic_hull
+        fact = cone.k - cone.side - 1
+    elseif cone.sc_try == :composition
+        fact = cone.beta
+    else
+        fact = 1
+    end
+    H[2, 2] = abs2(cone.nLz) + (cone.side / z + inv(v) * fact) / v
     h2end = view(H, 2, 3:cone.dim)
     smat_to_svec!(h2end, cone.Wi, cone.rt2)
     h2end .*= ((cone.ldWv - cone.side) / cone.ldWvuv - 1) / z
+    @. H[1:2, :] *= (cone.sc_try == :conic_hull ? cone.gamma : 1)
 
     cone.hess_prod_updated = true
     return
@@ -224,6 +269,7 @@ function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::HypoPer
         axpby!(dot_prod, cone.Wivzi, cone.vzip1, cone.mat2)
         smat_to_svec!(view(prod, 3:cone.dim, i), cone.mat2, cone.rt2)
     end
+    @. prod[3:end, :] *= (cone.sc_try == :conic_hull ? cone.gamma : 1)
     @views mul!(prod[3:cone.dim, :], cone.hess[3:cone.dim, 1:2], arr[1:2, :], true, true)
 
     return prod
