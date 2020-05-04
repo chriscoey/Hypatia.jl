@@ -68,6 +68,7 @@ function test(
     default_solver_options = (), # default solver options
     process_extended_certificates::Bool = true, # whether to process the certificates for the extended space model (for Hypatia only) or the natural space model
     rseed::Int = 1,
+    load_only::Bool = false,
     )
     # setup instance and model
     Random.seed!(rseed)
