@@ -69,6 +69,11 @@ example_tests(::Type{CentralPolyMatJuMP{Float64}}, ::ExpInstances) = begin
     ((2, 3, true), ClassicConeOptimizer, options),
     ((2, 5, true), ClassicConeOptimizer, options),
     ((7, 2, true), ClassicConeOptimizer, options),
+    # TODO uncomment when geomean -> exp bridge is in
+    # ((1, 10, false), ClassicConeOptimizer, options),
+    # ((2, 3, false), ClassicConeOptimizer, options),
+    # ((2, 5, false), ClassicConeOptimizer, options),
+    # ((7, 2, false), ClassicConeOptimizer, options),
     ]
 end
 

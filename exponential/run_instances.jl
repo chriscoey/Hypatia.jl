@@ -40,6 +40,7 @@ native_example_names = [
 JuMP_example_names = [
     "centralpolymat",
     "expdesign",
+    # "maxvolume", # TODO uncoment when geomean -> exp bridge is in
     "robustgeomprog",
     "signomialmin",
     ]

@@ -72,6 +72,9 @@ example_tests(::Type{ExpDesignJuMP{Float64}}, ::ExpInstances) = begin
     return [
     ((3, 5, 7, 2, true, false, false), ClassicConeOptimizer),
     ((25, 75, 125, 10, true, false, false), ClassicConeOptimizer),
+    # uncomment when geomean -> exp bridge is in
+    # ((3, 5, 7, 2, false, true, false), ClassicConeOptimizer),
+    # ((25, 75, 125, 10, false, true, false), ClassicConeOptimizer),
     ]
 end
 
