@@ -84,10 +84,10 @@ example_tests(::Type{SignomialMinJuMP{Float64}}, ::ExpInstances) = begin
     relaxed_options = (tol_feas = 1e-5, tol_rel_opt = 1e-4, tol_abs_opt = 1e-4)
     return [
     ((:motzkin2,), ClassicConeOptimizer, options),
-    ((:MCW19ex8,), ClassicConeOptimizer, relaxed_options),
-    ((3, 2), ClassicConeOptimizer, options),
-    ((20, 3), ClassicConeOptimizer, options),
-    ((10, 10), ClassicConeOptimizer, options),
+    # ((:MCW19ex8,), ClassicConeOptimizer, relaxed_options),
+    # ((3, 2), ClassicConeOptimizer, options),
+    # ((20, 3), ClassicConeOptimizer, options),
+    # ((10, 10), ClassicConeOptimizer, options),
     ]
 end
 

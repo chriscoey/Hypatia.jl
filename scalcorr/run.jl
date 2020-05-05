@@ -15,9 +15,10 @@ struct ExpInstances <: InstanceSet end
 # options to solvers
 timer = TimerOutput()
 default_solver_options = (
-    verbose = false,
-    iter_limit = 250,
+    verbose = true,
+    iter_limit = 100,
     timer = timer,
+    system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
     )
 
 # instance sets and real types to run and corresponding time limits (seconds)
@@ -27,7 +28,7 @@ instance_sets = [
 
 # types of models to run and corresponding options and example names
 model_types = [
-    "native",
+    # "native",
     "JuMP",
     ]
 
@@ -38,10 +39,10 @@ native_example_names = [
 
 # list of names of JuMP examples to run
 JuMP_example_names = [
-    "centralpolymat",
-    "expdesign",
-    # "maxvolume", # TODO uncoment when geomean -> exp bridge is in
-    "robustgeomprog",
+    # "centralpolymat",
+    # "expdesign",
+    # # "maxvolume", # TODO uncoment when geomean -> exp bridge is in
+    # "robustgeomprog",
     "signomialmin",
     ]
 

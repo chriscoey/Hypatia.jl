@@ -20,11 +20,13 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
+    scal_hess_updated::Bool
     hess_fact_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
+    scal_hess::Symmetric{T, Matrix{T}}
     hess_fact_cache
     nbhd_tmp::Vector{T}
     nbhd_tmp2::Vector{T}
@@ -41,6 +43,11 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
         max_neighborhood::Real = default_max_neighborhood(),
         hess_fact_cache = hessian_cache(T),
         ) where {T <: Real}
+        # TODO delete when generalize again later
+        @assert dim == 3
+        @assert !use_dual
+        @assert !use_heuristic_neighborhood
+        # old:
         @assert dim >= 3
         cone = new{T}()
         cone.use_dual_barrier = use_dual
@@ -60,6 +67,7 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
+    cone.scal_hess = Symmetric(zeros(T, dim, dim), :U)
     load_matrix(cone.hess_fact_cache, cone.hess)
     cone.nbhd_tmp = zeros(T, dim)
     cone.nbhd_tmp2 = zeros(T, dim)
@@ -67,7 +75,15 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     return
 end
 
+use_scaling(cone::HypoPerLog) = true
+
+use_correction(cone::HypoPerLog) = true
+
+barrier(cone::HypoPerLog) = (x -> -log(x[2] * log(x[3] / x[2]) - x[1]) - log(x[3]) - log(x[2]))
+
 get_nu(cone::HypoPerLog) = 1 + 2 * (cone.dim - 2)
+
+reset_data(cone::HypoPerLog) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scal_hess_updated = cone.hess_fact_updated = false)
 
 function set_initial_point(arr::AbstractVector, cone::HypoPerLog)
     (arr[1], arr[2], w) = get_central_ray_hypoperlog(cone.dim - 2)
@@ -142,43 +158,53 @@ function update_hess(cone::HypoPerLog)
     return cone.hess
 end
 
-# see analysis in https://github.com/lkapelevich/HypatiaBenchmarks.jl/tree/master/centralpoints
-function get_central_ray_hypoperlog(w_dim::Int)
-    if w_dim <= 10
-        # lookup points where x = f'(x)
-        return central_rays_hypoperlog[w_dim, :]
-    end
-    # use nonlinear fit for higher dimensions
-    x = inv(w_dim)
-    if w_dim <= 70
-        u = -1.974777 * x ^ 2 + 0.413520 * x - 0.706751
-        v = -1.213389 * x + 1.413551
-        w = -0.406380 * x + 1.411894
-    else
-        u = 0.405290 * x - 0.707011
-        v = -1.238597 * x + 1.414216
-        w = -0.511055 * x + 1.414163
-    end
-    return [u, v, w]
-end
-
-const central_rays_hypoperlog = [
-    -0.827838399  0.805102005  1.290927713;
-    -0.751337431  0.980713381  1.317894791;
-    -0.716423551  1.079796942  1.331762729;
-    -0.699644766  1.144036715 1.341797042;
-    -0.69134357  1.188706149  1.349742329;
-    -0.687251501  1.221310686  1.3562255;
-    -0.685353717  1.246016352  1.361602711;
-    -0.684641818  1.265307905  1.366119586;
-    -0.684585293  1.280747581  1.369956554;
-    -0.684893372  1.293360445  1.373249434;
-    ]
-
-
 # TODO add hess prod, inv hess etc functions
+
+
+
+
+
 # NOTE old EpiPerExp code below may be useful (cone vector is reversed)
 
+# # directional third derivative term
+# # TODO make efficient and improve numerics, reuse values stored in cone fields
+# function correction(cone::EpiPerExp{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
+#     update_hess(cone)
+#     update_inv_hess_prod(cone)
+#     corr = cone.correction
+#     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+#
+#     Hi_z = similar(dual_dir) # TODO prealloc
+#     inv_hess_prod!(Hi_z, dual_dir, cone)
+#
+#     # -log(v * log(u / v) - w) part
+#     ψ = cone.vluvw
+#     ψp = T[v / u, cone.luv - 1, -one(T)]
+#     gpp = Symmetric(cone.hess - Diagonal(T[abs2(inv(u)), abs2(inv(v)), zero(T)]), :U) # TODO improve
+#     zz3ψp = (dual_dir[1:2] + dual_dir[3] * ψp[1:2]) / (ψ + 2 * v)
+#     ψpp_Hi_z = T[v * (zz3ψp[2] * v / u - zz3ψp[1]), u * zz3ψp[1] - v * zz3ψp[2], zero(T)]
+#
+#     # term1
+#     corr .= dual_dir[3] * 2 * ψ * gpp * primal_dir
+#     # term2
+#     corr[1] += dual_dir[3] * (-v * primal_dir[1] / u + primal_dir[2]) / u
+#     corr[2] += dual_dir[3] * (primal_dir[1] / u - primal_dir[2] / v)
+#     # term3
+#     corr[1] += ((2 * v / u * Hi_z[1] - Hi_z[2]) / u * -primal_dir[1] / u + Hi_z[1] / u * primal_dir[2] / u) / ψ
+#     corr[2] += (Hi_z[1] / u * primal_dir[1] / u - Hi_z[2] / v * primal_dir[2] / v) / ψ
+#     # term4
+#     corr += (ψpp_Hi_z * dot(ψp, primal_dir) + ψp * dot(ψpp_Hi_z, primal_dir)) / ψ
+#
+#     # scale
+#     corr /= -2
+#
+#     # - log(u) - log(v) part
+#     corr[1] += Hi_z[1] / u * primal_dir[1] / u / u
+#     corr[2] += Hi_z[2] / v * primal_dir[2] / v / v
+#
+#     return corr
+# end
+#
 # function update_feas(cone::EpiPerExp)
 #     @assert !cone.feas_updated
 #     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
@@ -261,3 +287,40 @@ const central_rays_hypoperlog = [
 #     mul!(prod, cone.inv_hess, arr)
 #     return prod
 # end
+
+
+
+
+
+# see analysis in https://github.com/lkapelevich/HypatiaBenchmarks.jl/tree/master/centralpoints
+function get_central_ray_hypoperlog(w_dim::Int)
+    if w_dim <= 10
+        # lookup points where x = f'(x)
+        return central_rays_hypoperlog[w_dim, :]
+    end
+    # use nonlinear fit for higher dimensions
+    x = inv(w_dim)
+    if w_dim <= 70
+        u = -1.974777 * x ^ 2 + 0.413520 * x - 0.706751
+        v = -1.213389 * x + 1.413551
+        w = -0.406380 * x + 1.411894
+    else
+        u = 0.405290 * x - 0.707011
+        v = -1.238597 * x + 1.414216
+        w = -0.511055 * x + 1.414163
+    end
+    return [u, v, w]
+end
+
+const central_rays_hypoperlog = [
+    -0.827838399  0.805102005  1.290927713;
+    -0.751337431  0.980713381  1.317894791;
+    -0.716423551  1.079796942  1.331762729;
+    -0.699644766  1.144036715 1.341797042;
+    -0.69134357  1.188706149  1.349742329;
+    -0.687251501  1.221310686  1.3562255;
+    -0.685353717  1.246016352  1.361602711;
+    -0.684641818  1.265307905  1.366119586;
+    -0.684585293  1.280747581  1.369956554;
+    -0.684893372  1.293360445  1.373249434;
+    ]

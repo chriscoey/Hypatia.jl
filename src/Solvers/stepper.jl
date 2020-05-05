@@ -206,10 +206,10 @@ function update_rhs_correction(stepper::CombinedStepper{T}, solver::Solver{T}) w
         duals_k = solver.point.dual_views[k]
         grad_k = Cones.grad(cone_k)
         @. stepper.s_rhs_k[k] = -duals_k - solver.mu * grad_k
-        # if Cones.use_3order_corr(cone_k)
-        #     # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
-        #     stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k])
-        # end
+        if Cones.use_correction(cone_k)
+            # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
+            stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k])
+        end
     end
 
     # kap
@@ -296,8 +296,13 @@ function apply_lhs(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: R
         # (du bar) mu*H_k*z_k + s_k
         # (pr bar) z_k + mu*H_k*s_k
         s_res_k = stepper.s_res_k[k]
-        Cones.hess_prod!(s_res_k, stepper.primal_dir_k[k], cone_k)
-        lmul!(solver.mu, s_res_k)
+        if Cones.use_scaling(cone_k)
+            scal_hess = Cones.scal_hess(cone_k, solver.mu, solver.point.dual_views[k])
+            mul!(s_res_k, scal_hess, stepper.primal_dir_k[k])
+        else
+            Cones.hess_prod!(s_res_k, stepper.primal_dir_k[k], cone_k)
+            lmul!(solver.mu, s_res_k)
+        end
         @. s_res_k += stepper.dual_dir_k[k]
     end
 
