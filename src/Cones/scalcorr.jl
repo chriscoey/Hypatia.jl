@@ -3,6 +3,7 @@
 
 import Optim
 import ForwardDiff
+include("damped_newton.jl")
 
 use_scaling(cone::Cone) = false
 
@@ -43,7 +44,10 @@ function update_scal_hess(
     if use_update_2
         # second update
         g = grad(cone)
-        conj_g = conjugate_gradient(barrier(cone), s, z)
+        @show conjugate_gradient1(barrier(cone), s, z)
+        @show conjugate_gradient2(barrier(cone), s, z)
+        # @assert isapprox(conjugate_gradient1(barrier(cone), s, z), conjugate_gradient2(barrier(cone), s, z))
+        conj_g = conjugate_gradient2(barrier(cone), s, z)
 
         mu_cone = dot(s, z) / get_nu(cone)
         # @show mu_cone
@@ -78,12 +82,19 @@ end
 # TODO use domain constraints properly
 # TODO use central point as starting point?
 # TODO use constrained method from https://julianlsolvers.github.io/Optim.jl/stable/#examples/generated/ipnewton_basics/#constrained-optimization-with-ipnewton
-function conjugate_gradient(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
+function conjugate_gradient1(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
     modified_legendre(x) = ((x[2] <= 0 || x[3] <= 0 || x[2] * log(x[3] / x[2]) - x[1] <= 0) ? 1e16 : dot(z, x) + barrier(x)) # TODO bad feas check - need constraints
     res = Optim.optimize(modified_legendre, s, Optim.Newton())
     minimizer = Optim.minimizer(res)
     @assert !any(isnan, minimizer)
     return -minimizer
+end
+
+function conjugate_gradient2(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
+    nc = NewtonCache(barrier, z)
+    nc.x = [-1.0, 1.0, 1.0]
+    damped_newton_method(nc)
+    return -nc.x
 end
 
 # correction
