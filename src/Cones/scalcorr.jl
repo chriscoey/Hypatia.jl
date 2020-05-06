@@ -3,7 +3,7 @@
 
 import Optim
 import ForwardDiff
-include("damped_newton.jl")
+include("newton.jl")
 
 use_scaling(cone::Cone) = false
 
@@ -24,6 +24,7 @@ function update_scal_hess(
     # z = cone.dual_point
 
     scal_hess = mu * hess(cone)
+    println("##########################################")
 
     if use_update_1
         # first update
@@ -37,40 +38,57 @@ function update_scal_hess(
         if denom_b > 0
             scal_hess -= Symmetric(muHs * muHs') / denom_b
         end
-
         @show norm(scal_hess * s - z)
     end
 
     if use_update_2
         # second update
         g = grad(cone)
-        @show conjugate_gradient1(barrier(cone), s, z)
-        @show conjugate_gradient2(barrier(cone), s, z)
-        # @assert isapprox(conjugate_gradient1(barrier(cone), s, z), conjugate_gradient2(barrier(cone), s, z))
         conj_g = conjugate_gradient2(barrier(cone), s, z)
+        # check gradient of the optimization problem is small
+        @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
+        @show g
+        @show conj_g
 
         mu_cone = dot(s, z) / get_nu(cone)
         # @show mu_cone
         dual_gap = z + mu_cone * g
+        # @show z
+        # @show g
+        # @show dual_gap
         primal_gap = s + mu_cone * conj_g
+        # @show s
+        # @show g2
+        # @show primal_gap
         # dual_gap = z + mu * g
         # primal_gap = s + mu * conj_g
 
         denom_a = dot(primal_gap, dual_gap)
         H1prgap = scal_hess * primal_gap
         denom_b = dot(primal_gap, H1prgap)
-
         if denom_a > 0
+            # @show scal_hess
+            # @show denom_a
+            # @show Symmetric(dual_gap * dual_gap') / denom_a
             scal_hess += Symmetric(dual_gap * dual_gap') / denom_a
+        else
+            println("DENOM A BAD")
+            @show denom_a
         end
         if denom_b > 0
+            # @show scal_hess
+            # @show denom_b
+            # @show Symmetric(H1prgap * H1prgap') / denom_b
             scal_hess -= Symmetric(H1prgap * H1prgap') / denom_b
+        else
+            println("DENOM B BAD")
+            @show denom_b
         end
 
-        # @show primal_gap, dual_gap
         @show norm(scal_hess * s - z)
         @show norm(scal_hess * -conj_g + g)
         @show norm(scal_hess * primal_gap - dual_gap)
+        norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
     end
 
     copyto!(cone.scal_hess, scal_hess)
@@ -85,15 +103,18 @@ end
 function conjugate_gradient1(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
     modified_legendre(x) = ((x[2] <= 0 || x[3] <= 0 || x[2] * log(x[3] / x[2]) - x[1] <= 0) ? 1e16 : dot(z, x) + barrier(x)) # TODO bad feas check - need constraints
     res = Optim.optimize(modified_legendre, s, Optim.Newton())
+    # res = Optim.optimize(modified_legendre, [-0.827838399, 0.805102005, 1.290927713], Optim.Newton())
     minimizer = Optim.minimizer(res)
     @assert !any(isnan, minimizer)
     return -minimizer
 end
 
 function conjugate_gradient2(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
-    nc = NewtonCache(barrier, z)
-    nc.x = [-1.0, 1.0, 1.0]
-    damped_newton_method(nc)
+    nc = NewtonCache{T}(barrier, z)
+    # nc.x = copy(s)
+    nc.x = T[-0.827838399, 0.805102005, 1.290927713]
+    # damped_newton_method(nc)
+    switched_newton_method(nc)
     return -nc.x
 end
 
