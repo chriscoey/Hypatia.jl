@@ -82,7 +82,7 @@ end
 function switched_newton_method(nc::NewtonCache{T}) where {T <: Real}
     max_iter = 500
     iter = 0
-    eta_1 = eps(T) * 1000 # 1e-14
+    eta_1 = eps(T) * 10 # 1e-14
     eta_2 = sqrt(eps(T)) / 1000
     step!(nc)
     # damped Newton
