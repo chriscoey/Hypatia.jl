@@ -375,6 +375,7 @@ function find_max_alpha(
                     cone_k = cones[k]
                     time_k = time_ns()
                     Cones.load_point(cone_k, primals_linesearch[k])
+                    Cones.load_dual_point(cone_k, duals_linesearch[k])
                     Cones.reset_data(cone_k)
                     in_nbhd_k = (Cones.is_feas(cone_k) && Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp))
                     cone_times[k] = time_ns() - time_k

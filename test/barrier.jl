@@ -31,9 +31,12 @@ function test_barrier_oracles(
     CO.set_timer(cone, timer)
     dim = CO.dimension(cone)
     point = Vector{T}(undef, dim)
+    dual_point = copy(point)
     CO.set_initial_point(point, cone)
-    @test load_reset_check(cone, point)
+    CO.set_initial_point(dual_point, cone)
+    @test load_reset_check(cone, point, dual_point)
     @test cone.point == point
+    @test cone.dual_point == dual_point
 
     if isfinite(init_tol)
         # tests for centrality of initial point
@@ -45,11 +48,11 @@ function test_barrier_oracles(
     init_only && return
 
     # perturb and scale the initial point and check feasible
-    perturb_scale(point, noise, scale)
-    @test load_reset_check(cone, point)
+    perturb_scale(point, dual_point, noise, scale)
+    @test load_reset_check(cone, point, dual_point)
 
     # test gradient and Hessian oracles
-    test_grad_hess(cone, point, tol = tol)
+    test_grad_hess(cone, point, dual_point, tol = tol)
 
     # check gradient and Hessian agree with ForwardDiff
     if dim < 10 # too slow if dimension is large
@@ -80,7 +83,7 @@ function test_barrier_oracles(
     return
 end
 
-function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}; tol::Real = 1000eps(T)) where {T <: Real}
+function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T}; tol::Real = 1000eps(T)) where {T <: Real}
     nu = CO.get_nu(cone)
     dim = length(point)
     grad = CO.grad(cone)
@@ -104,21 +107,28 @@ function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}; tol::Real = 1000eps(
     CO.inv_hess_sqrt_prod!(prod_mat2, Matrix(one(T) * I, dim, dim), cone)
     @test prod_mat2' * prod_mat2 ≈ inv_hess atol=tol rtol=tol
 
-    dual_point = -grad + T(1e-3) * randn(length(grad))
-    @test CO.in_neighborhood(cone, dual_point, one(T))
+    if cone isa CO.HypoPerLog
+        dual_grad = CO.update_dual_grad(cone)
+        @test dot(cone.dual_point, dual_grad) ≈ -nu atol=1000*tol rtol=1000*tol
+    end
+
+    mock_dual_point = -grad + T(1e-3) * randn(length(grad))
+    @test CO.in_neighborhood(cone, mock_dual_point, one(T))
 
     return
 end
 
-function load_reset_check(cone::CO.Cone{T}, point::Vector{T}) where {T <: Real}
+function load_reset_check(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     CO.load_point(cone, point)
+    CO.load_dual_point(cone, dual_point)
     CO.reset_data(cone)
     return CO.is_feas(cone)
 end
 
-function perturb_scale(point::Vector{T}, noise::T, scale::T) where {T <: Real}
+function perturb_scale(point::Vector{T}, dual_point::Vector{T}, noise::T, scale::T) where {T <: Real}
     if !iszero(noise)
         @. point += 2 * noise * rand(T) - noise
+        @. dual_point += 2 * noise * rand(T) - noise
     end
     if !isone(scale)
         point .*= scale

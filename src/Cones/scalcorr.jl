@@ -3,7 +3,7 @@
 
 import Optim
 import ForwardDiff
-include("newton.jl")
+# include("newton.jl")
 
 use_scaling(cone::Cone) = false
 
@@ -15,13 +15,12 @@ function update_scal_hess(
     cone::Cone{T},
     mu::T,
     z::AbstractVector{T}; # dual point
-    use_update_1::Bool = false, # easy update
-    use_update_2::Bool = false, # hard update
+    use_update_1::Bool = true, # easy update
+    use_update_2::Bool = true, # hard update
     ) where {T}
     @assert is_feas(cone)
     @assert !cone.scal_hess_updated
     s = cone.point
-    # z = cone.dual_point
 
     scal_hess = mu * hess(cone)
     F = cholesky(scal_hess)
@@ -48,9 +47,9 @@ function update_scal_hess(
     if use_update_2
         # second update
         g = grad(cone)
-        conj_g = conjugate_gradient2(barrier(cone), s, z)
+        conj_g = update_dual_grad(cone)
         # check gradient of the optimization problem is small
-        # @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
+        # @show norm(ForwardDiff.gradient(cone.barrier, -conj_g) + z)
 
         mu_cone = dot(s, z) / get_nu(cone)
         # @show mu_cone
@@ -167,25 +166,6 @@ function conjugate_gradient1(barrier::Function, s::AbstractVector{T}, z::Abstrac
     minimizer = Optim.minimizer(res)
     @assert !any(isnan, minimizer)
     return -minimizer
-end
-
-function conjugate_gradient2(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
-    nc = NewtonCache{T}(barrier, z)
-    nc.x = copy(s)
-    # nc.x = T[-0.827838399, 0.805102005, 1.290927713]
-    # damped_newton_method(nc)
-    switched_newton_method(nc)
-    return -nc.x
-end
-
-# for solving optimization problem only in BF
-function conjugate_gradient3(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
-    nc = NewtonCache{BigFloat}(barrier, BigFloat.(z))
-    @show nc
-    nc.x = BigFloat[-0.827838399, 0.805102005, 1.290927713]
-    # damped_newton_method(nc)
-    switched_newton_method(nc)
-    return -Float64.(nc.x)
 end
 
 # correction

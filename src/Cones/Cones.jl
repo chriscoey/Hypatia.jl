@@ -55,6 +55,7 @@ include("scalcorr.jl")
 use_dual_barrier(cone::Cone) = cone.use_dual_barrier
 use_3order_corr(cone::Cone) = false
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
+load_dual_point(cone::Cone, point::AbstractVector) = copyto!(cone.dual_point, point)
 dimension(cone::Cone) = cone.dim
 set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 
@@ -62,6 +63,36 @@ is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
+
+function newton_step(cone::Cone)
+    cone.newton_grad .= ForwardDiff.gradient(cone.barrier, cone.newton_point) + cone.dual_point
+    cone.newton_hess .= ForwardDiff.hessian(cone.barrier, cone.newton_point)
+    # cone.newton_grad .= update_newton_grad(cone) + cone.dual_point
+    # cone.newton_hess .= update_newton_hess(cone)
+    cone.newton_stepdir .= -Symmetric(cone.newton_hess) \ cone.newton_grad
+    cone.newton_norm = -dot(cone.newton_grad, cone.newton_stepdir)
+    return
+end
+
+function update_dual_grad(cone::Cone{T}) where {T <: Real}
+    @assert cone.is_feas
+    max_iter = 500 # shouldn't really take > 40
+    eta = eps(T) / 10
+    iter = 0
+    # initial iterate
+    copyto!(cone.newton_point, cone.point)
+    newton_step(cone)
+    # damped Newton
+    while cone.newton_norm > eta
+        @. cone.newton_point += cone.newton_stepdir / (1 + cone.newton_norm)
+        newton_step(cone)
+        iter += 1
+        iter > max_iter && error("iteration limit in Newton method")
+    end
+    # leave as two fields in case we want to bring back switched Newton
+    @. cone.newton_point *= -1
+    return cone.newton_point
+end
 
 # fallbacks
 

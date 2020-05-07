@@ -14,6 +14,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
     max_neighborhood::T
     dim::Int
     point::Vector{T}
+    dual_point::Vector{T}
     timer::TimerOutput
 
     feas_updated::Bool
@@ -53,6 +54,7 @@ function setup_data(cone::Nonnegative{T}) where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
+    cone.dual_point = zeros(T, dim)
     cone.grad = zeros(T, dim)
     cone.hess = Diagonal(zeros(T, dim))
     cone.inv_hess = Diagonal(zeros(T, dim))

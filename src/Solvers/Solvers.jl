@@ -217,6 +217,7 @@ function solve(solver::Solver{T}) where {T <: Real}
             @warn("initial mu is $(solver.mu) but should be 1 (this could indicate a problem with cone barrier oracles)")
         end
         Cones.load_point.(model.cones, point.primal_views)
+        Cones.load_dual_point.(model.cones, point.dual_views)
     end
 
     # setup iteration helpers
@@ -270,6 +271,7 @@ function solve(solver::Solver{T}) where {T <: Real}
     point.z ./= solver.tau
     point.s ./= solver.tau
     Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(model.cones, point.dual_views)
 
     solver.solve_time = time() - start_time
 

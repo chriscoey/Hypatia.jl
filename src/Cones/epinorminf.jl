@@ -47,6 +47,8 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     schur::T
     rtdiag::Vector{T}
 
+    barrier::Function
+
     function EpiNormInf{T, R}(
         dim::Int;
         use_dual::Bool = false,
@@ -59,6 +61,8 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         cone.dim = dim
         cone.is_complex = (R <: Complex)
         cone.n = (cone.is_complex ? div(dim - 1, 2) : dim - 1)
+
+        cone.barrier = (x -> -sum(log(abs2(x[1]) - abs2(wi)) for wi in x[2:end]) + (cone.n - 1) * log(x[1]))
         return cone
     end
 end
@@ -98,8 +102,6 @@ end
 use_scaling(cone::EpiNormInf) = true
 
 use_correction(cone::EpiNormInf) = false
-
-barrier(cone::EpiNormInf) = (x -> -sum(log(abs2(x[1]) - abs2(wi)) for wi in x[2:end]) + (cone.n - 1) * log(x[1]))
 
 get_nu(cone::EpiNormInf) = cone.n + 1
 

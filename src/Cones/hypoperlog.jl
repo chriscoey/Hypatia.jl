@@ -14,6 +14,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     max_neighborhood::T
     dim::Int
     point::Vector{T}
+    dual_point::Vector{T}
     timer::TimerOutput
 
     feas_updated::Bool
@@ -24,6 +25,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     hess_fact_updated::Bool
     is_feas::Bool
     grad::Vector{T}
+    dual_grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
     scal_hess::Symmetric{T, Matrix{T}}
@@ -35,6 +37,13 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     vlwvu::T
     lvwnivlwvu::T
     vwivlwvu::Vector{T}
+
+    barrier::Function
+    newton_point::Vector{T}
+    newton_grad::Vector{T}
+    newton_stepdir::Vector{T}
+    newton_hess::Matrix{T}
+    newton_norm::T
 
     function HypoPerLog{T}(
         dim::Int;
@@ -55,6 +64,8 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
         cone.max_neighborhood = max_neighborhood
         cone.dim = dim
         cone.hess_fact_cache = hess_fact_cache
+
+        cone.barrier = (x -> -log(x[2] * log(x[3] / x[2]) - x[1]) - log(x[3]) - log(x[2]))
         return cone
     end
 end
@@ -72,14 +83,18 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     cone.nbhd_tmp = zeros(T, dim)
     cone.nbhd_tmp2 = zeros(T, dim)
     cone.vwivlwvu = zeros(T, dim - 2)
+
+    cone.dual_point = zeros(T, dim)
+    cone.newton_point = zeros(T, dim)
+    cone.newton_grad = zeros(T, dim)
+    cone.newton_stepdir = zeros(T, dim)
+    cone.newton_hess = zeros(T, dim, dim)
     return
 end
 
 use_scaling(cone::HypoPerLog) = true
 
 use_correction(cone::HypoPerLog) = false
-
-barrier(cone::HypoPerLog) = (x -> -log(x[2] * log(x[3] / x[2]) - x[1]) - log(x[3]) - log(x[2]))
 
 get_nu(cone::HypoPerLog) = 1 + 2 * (cone.dim - 2)
 
