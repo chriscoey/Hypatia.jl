@@ -11,6 +11,7 @@ using Printf
 using TimerOutputs
 
 struct ExpInstances <: InstanceSet end
+struct PolyhedralInstances <: InstanceSet end
 
 # options to solvers
 timer = TimerOutput()
@@ -19,22 +20,24 @@ default_solver_options = (
     iter_limit = 100,
     timer = timer,
     system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
+    # max_nbhd = 0.2,
     )
 
 # instance sets and real types to run and corresponding time limits (seconds)
 instance_sets = [
     (ExpInstances, Float64, 60),
+    (PolyhedralInstances, Float64, 30),
     ]
 
 # types of models to run and corresponding options and example names
 model_types = [
-    # "native",
+    "native",
     "JuMP",
     ]
 
 # list of names of native examples to run
 native_example_names = [
-    "densityest",
+    # "densityest",
     ]
 
 # list of names of JuMP examples to run
@@ -42,8 +45,9 @@ JuMP_example_names = [
     # "centralpolymat",
     # "expdesign",
     # # "maxvolume", # TODO uncoment when geomean -> exp bridge is in
+    "portfolio",
     # "robustgeomprog",
-    "signomialmin",
+    # "signomialmin",
     ]
 
 # start the tests
@@ -80,6 +84,8 @@ perf = DataFrame(
 
 all_tests_time = time()
 
+run_in_bf = false
+
 @testset "examples tests" begin
     for (ex_name, ex_type) in example_types, (inst_set, real_T, time_limit) in instance_sets
         ex_type_T = ex_type{real_T}
@@ -88,17 +94,21 @@ all_tests_time = time()
         println("\nstarting $(length(instances)) instances for $ex_type_T $inst_set\n")
         solver_options = (default_solver_options..., time_limit = time_limit)
         for (inst_num, inst) in enumerate(instances)
-            test_info = "$ex_type_T $inst_set $inst_num: $inst"
-            @testset "$test_info" begin
-                println(test_info, "...")
-                test_time = @elapsed (extender, build_time, r) = test(ex_type_T, inst..., default_solver_options = solver_options)
-                push!(perf, (
-                    ex_type, inst_set, real_T, inst_num, inst[1], extender, test_time, build_time,
-                    r.status, r.solve_time, r.num_iters, r.primal_obj, r.dual_obj,
-                    r.obj_diff, r.compl, r.x_viol, r.y_viol, r.z_viol,
-                    r.n, r.p, r.q,
-                    ))
-                @printf("... %8.2e seconds\n", test_time)
+            if run_in_bf
+                write_and_run(ex_type_T, inst...)
+            else
+                test_info = "$ex_type_T $inst_set $inst_num: $inst"
+                @testset "$test_info" begin
+                    println(test_info, "...")
+                    test_time = @elapsed (extender, build_time, r) = test(ex_type_T, inst..., default_solver_options = solver_options)
+                    push!(perf, (
+                        ex_type, inst_set, real_T, inst_num, inst[1], extender, test_time, build_time,
+                        r.status, r.solve_time, r.num_iters, r.primal_obj, r.dual_obj,
+                        r.obj_diff, r.compl, r.x_viol, r.y_viol, r.z_viol,
+                        r.n, r.p, r.q,
+                        ))
+                    @printf("... %8.2e seconds\n", test_time)
+                end # write_only
             end
         end
     end

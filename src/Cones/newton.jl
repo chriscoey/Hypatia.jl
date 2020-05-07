@@ -12,7 +12,7 @@ mutable struct NewtonCache{T <: Real}
     gradnorm::T
 
     function NewtonCache{T}(barrier, z::AbstractVector{T}) where {T <: Real}
-        n = 3
+        n = length(z)
         nc = new{T}()
         nc.barrier = barrier
         nc.z = z
@@ -25,23 +25,31 @@ mutable struct NewtonCache{T <: Real}
 end
 
 # hacks
+# function update_grad(nc::NewtonCache{T}) where {T <: Real}
+#     cone = Hypatia.Cones.HypoPerLog{T}(3)
+#     Hypatia.Cones.setup_data(cone)
+#     cone.point = nc.x
+#     Hypatia.Cones.update_feas(cone)
+#     Hypatia.Cones.update_grad(cone)
+#     nc.grad .= cone.grad
+#     return nc.grad
+# end
+# function update_hess(nc::NewtonCache{T}) where {T <: Real}
+#     cone = Hypatia.Cones.HypoPerLog{T}(3)
+#     Hypatia.Cones.setup_data(cone)
+#     cone.point = nc.x
+#     Hypatia.Cones.update_feas(cone)
+#     Hypatia.Cones.update_grad(cone)
+#     Hypatia.Cones.update_hess(cone)
+#     nc.hess .= cone.hess.data
+#     return nc.hess
+# end
 function update_grad(nc::NewtonCache{T}) where {T <: Real}
-    cone = Hypatia.Cones.HypoPerLog{T}(3)
-    Hypatia.Cones.setup_data(cone)
-    cone.point = nc.x
-    Hypatia.Cones.update_feas(cone)
-    Hypatia.Cones.update_grad(cone)
-    nc.grad .= cone.grad
+    nc.grad .= ForwardDiff.gradient(nc.barrier, nc.x)
     return nc.grad
 end
 function update_hess(nc::NewtonCache{T}) where {T <: Real}
-    cone = Hypatia.Cones.HypoPerLog{T}(3)
-    Hypatia.Cones.setup_data(cone)
-    cone.point = nc.x
-    Hypatia.Cones.update_feas(cone)
-    Hypatia.Cones.update_grad(cone)
-    Hypatia.Cones.update_hess(cone)
-    nc.hess .= cone.hess.data
+    nc.hess .= ForwardDiff.hessian(nc.barrier, nc.x)
     return nc.hess
 end
 

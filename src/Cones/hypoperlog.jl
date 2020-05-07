@@ -77,7 +77,7 @@ end
 
 use_scaling(cone::HypoPerLog) = true
 
-use_correction(cone::HypoPerLog) = true
+use_correction(cone::HypoPerLog) = false
 
 barrier(cone::HypoPerLog) = (x -> -log(x[2] * log(x[3] / x[2]) - x[1]) - log(x[3]) - log(x[2]))
 

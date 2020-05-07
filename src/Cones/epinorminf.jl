@@ -23,10 +23,12 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     hess_updated::Bool
     inv_hess_updated::Bool
     hess_inv_hess_updated::Bool
+    scal_hess_updated::Bool
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, SparseMatrixCSC{T, Int}}
     inv_hess::Symmetric{T, Matrix{T}}
+    scal_hess::Symmetric{T, Matrix{T}}
     nbhd_tmp::Vector{T}
     nbhd_tmp2::Vector{T}
 
@@ -63,7 +65,7 @@ end
 
 use_heuristic_neighborhood(cone::EpiNormInf) = false
 
-reset_data(cone::EpiNormInf) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_inv_hess_updated = false)
+reset_data(cone::EpiNormInf) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_inv_hess_updated = cone.scal_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
@@ -72,6 +74,7 @@ function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where 
     cone.point = zeros(T, dim)
     cone.grad = zeros(T, dim)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
+    cone.scal_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.nbhd_tmp = zeros(T, dim)
     cone.nbhd_tmp2 = zeros(T, dim)
     n = cone.n
@@ -91,6 +94,12 @@ function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where 
     end
     return
 end
+
+use_scaling(cone::EpiNormInf) = true
+
+use_correction(cone::EpiNormInf) = false
+
+barrier(cone::EpiNormInf) = (x -> -sum(log(abs2(x[1]) - abs2(wi)) for wi in x[2:end]) + (cone.n - 1) * log(x[1]))
 
 get_nu(cone::EpiNormInf) = cone.n + 1
 

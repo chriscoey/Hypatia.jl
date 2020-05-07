@@ -45,6 +45,10 @@ example_tests(::Type{PortfolioJuMP{Float64}}, ::SlowInstances) = [
     ((3000, true, true),),
     ]
 
+example_tests(::Type{PortfolioJuMP{Float64}}, ::PolyhedralInstances) = [
+    ((40, false, true),),
+    ]
+
 function build(inst::PortfolioJuMP{T}) where {T <: Float64} # TODO generic reals
     num_stocks = inst.num_stocks
     returns = rand(num_stocks)
