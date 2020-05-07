@@ -55,23 +55,15 @@ function update_scal_hess(
         mu_cone = dot(s, z) / get_nu(cone)
         # @show mu_cone
         dual_gap = z + mu_cone * g
-        # @show z
         # @show log(-z[3] / z[1]) * z[1] + z[1] - z[2]
         # @show g
         # @show dual_gap
         primal_gap = s + mu_cone * conj_g
-        # @show s
         # @show s[2] * log(s[3] / s[2]) - s[1]
-        # @show g2
-        # @show primal_gap
-        # dual_gap = z + mu * g
-        # primal_gap = s + mu * conj_g
 
         denom_a = dot(primal_gap, dual_gap)
         H1prgap = scal_hess * primal_gap
         denom_b = dot(primal_gap, H1prgap)
-        # @show denom_b
-        # @show isapprox(sqrt(denom_b), sqrt(sum(abs2, cholesky(scal_hess).U * primal_gap)))
 
         if denom_a > 0
             scal_hess += Symmetric(dual_gap * dual_gap') / denom_a
