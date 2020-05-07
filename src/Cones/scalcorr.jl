@@ -3,7 +3,6 @@
 
 import Optim
 import ForwardDiff
-# include("newton.jl")
 
 use_scaling(cone::Cone) = false
 

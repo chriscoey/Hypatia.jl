@@ -25,7 +25,6 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     hess_fact_updated::Bool
     is_feas::Bool
     grad::Vector{T}
-    dual_grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
     scal_hess::Symmetric{T, Matrix{T}}

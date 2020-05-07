@@ -89,7 +89,6 @@ function update_dual_grad(cone::Cone{T}) where {T <: Real}
         iter += 1
         iter > max_iter && error("iteration limit in Newton method")
     end
-    # leave as two fields in case we want to bring back switched Newton
     @. cone.newton_point *= -1
     return cone.newton_point
 end
