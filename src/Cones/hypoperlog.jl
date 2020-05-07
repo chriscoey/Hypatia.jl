@@ -25,6 +25,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     hess_fact_updated::Bool
     is_feas::Bool
     grad::Vector{T}
+    dual_grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
     scal_hess::Symmetric{T, Matrix{T}}
@@ -75,6 +76,7 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     dim = cone.dim
     cone.point = zeros(T, dim)
     cone.grad = zeros(T, dim)
+    cone.dual_grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.scal_hess = Symmetric(zeros(T, dim, dim), :U)

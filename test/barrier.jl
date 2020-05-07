@@ -107,7 +107,7 @@ function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T
     CO.inv_hess_sqrt_prod!(prod_mat2, Matrix(one(T) * I, dim, dim), cone)
     @test prod_mat2' * prod_mat2 ≈ inv_hess atol=tol rtol=tol
 
-    if cone isa CO.HypoPerLog
+    if cone isa CO.HypoPerLog || cone isa CO.Nonnegative
         dual_grad = CO.update_dual_grad(cone)
         @test dot(cone.dual_point, dual_grad) ≈ -nu atol=1000*tol rtol=1000*tol
     end
