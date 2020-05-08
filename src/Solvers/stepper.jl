@@ -390,7 +390,7 @@ function find_max_alpha(
     duals_linesearch = stepper.dual_views_linesearch
     timer = solver.timer
 
-    alpha = max(T(0.1), min(prev_alpha * T(1.4), one(T))) # TODO option for parameter
+    alpha = one(T)
     if tau_dir < zero(T)
         alpha = min(alpha, -tau / tau_dir)
     end
@@ -429,7 +429,11 @@ function find_max_alpha(
                     Cones.load_point(cone_k, primals_linesearch[k])
                     Cones.load_dual_point(cone_k, duals_linesearch[k])
                     Cones.reset_data(cone_k)
-                    in_nbhd_k = (Cones.is_feas(cone_k) && Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp))
+                    if affine_phase
+                        in_nbhd_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k))
+                    else
+                        in_nbhd_k = (Cones.is_feas(cone_k) && Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp))
+                    end
                     cone_times[k] = time_ns() - time_k
 
                     if !in_nbhd_k
@@ -451,7 +455,7 @@ function find_max_alpha(
         end
 
         # iterate is outside the neighborhood: decrease alpha
-        alpha *= T(0.9) # TODO option for parameter
+        alpha *= T(0.99)
     end
 
     return alpha

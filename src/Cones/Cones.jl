@@ -60,9 +60,11 @@ dimension(cone::Cone) = cone.dim
 set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
+is_dual_feas(cone::Cone) = update_dual_feas(cone)
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
+barrier(cone::Cone) = cone.barrier
 
 function newton_step(cone::Cone)
     cone.newton_grad .= ForwardDiff.gradient(cone.barrier, cone.newton_point) + cone.dual_point
@@ -194,6 +196,7 @@ function in_neighborhood(cone::Cone{T}, dual_point::AbstractVector, mu::Real) wh
     @. nbhd_tmp = dual_point + mu * g
 
     if use_heuristic_neighborhood(cone)
+        error("shouldn't be using heuristic nbhd")
         nbhd = norm(nbhd_tmp, Inf) / norm(g, Inf)
         # nbhd = maximum(abs(dj / gj) for (dj, gj) in zip(nbhd_tmp, g)) # TODO try this neighborhood
     else

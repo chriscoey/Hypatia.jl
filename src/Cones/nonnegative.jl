@@ -75,6 +75,8 @@ function update_feas(cone::Nonnegative)
     return cone.is_feas
 end
 
+update_dual_feas(cone::Nonnegative) = all(u -> (u > 0), cone.dual_point)
+
 function update_grad(cone::Nonnegative)
     @assert cone.is_feas
     @. cone.grad = -inv(cone.point)

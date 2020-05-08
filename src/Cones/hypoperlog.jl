@@ -95,7 +95,7 @@ end
 
 use_scaling(cone::HypoPerLog) = true
 
-use_correction(cone::HypoPerLog) = false
+use_correction(cone::HypoPerLog) = true
 
 get_nu(cone::HypoPerLog) = 1 + 2 * (cone.dim - 2)
 
@@ -124,6 +124,20 @@ function update_feas(cone::HypoPerLog)
     cone.feas_updated = true
     return cone.is_feas
 end
+
+function update_dual_feas(cone::HypoPerLog)
+    @assert cone.dim == 3
+    u = cone.dual_point[1]
+    v = cone.dual_point[2]
+    w = cone.dual_point[3]
+
+    if u < 0 && w > 0
+        return v - u - u * log(-w / u) > 0
+    else
+        return false
+    end
+end
+
 
 function update_grad(cone::HypoPerLog)
     @assert cone.is_feas
