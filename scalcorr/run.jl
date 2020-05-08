@@ -20,7 +20,7 @@ default_solver_options = (
     iter_limit = 100,
     timer = timer,
     system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
-    # max_nbhd = 0.2,
+    # max_nbhd = 0.02,
     )
 
 # instance sets and real types to run and corresponding time limits (seconds)
@@ -45,9 +45,9 @@ JuMP_example_names = [
     # "centralpolymat",
     # "expdesign",
     # # "maxvolume", # TODO uncoment when geomean -> exp bridge is in
-    "portfolio",
+    # "portfolio",
     # "robustgeomprog",
-    # "signomialmin",
+    "signomialmin",
     ]
 
 # start the tests
