@@ -116,7 +116,7 @@ end
 #     @timeit timer "update_lhs" update_lhs(solver.system_solver, solver)
 #
 #     # calculate correction direction and keep in dir_corr
-#     @timeit timer "rhs_corr" update_rhs_correction(stepper, solver)
+#     @timeit timer "rhs_corr" update_rhs_final(stepper, solver)
 #     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
 #     copyto!(stepper.dir_corr, stepper.dir)
 #
@@ -181,6 +181,8 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     # calculate affine/prediction direction and keep in dir
     @timeit timer "rhs_aff" update_rhs_affine(stepper, solver)
     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
+    @show stepper.x_dir
+    @show stepper.s_dir
 
     # get alpha for affine direction
     @timeit timer "alpha_aff" stepper.prev_aff_alpha = aff_alpha = find_max_alpha(
@@ -189,7 +191,7 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     stepper.prev_gamma = gamma = (one(T) - aff_alpha) * min(abs2(one(T) - aff_alpha), T(0.25))
 
     # calculate correction direction and keep in dir
-    @timeit timer "rhs_corr" update_rhs_correction(stepper, solver, gamma)
+    @timeit timer "rhs_corr" update_rhs_final(stepper, solver, gamma)
     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
     # copyto!(stepper.dir_corr, stepper.dir)
 
@@ -242,13 +244,14 @@ function update_rhs_affine(stepper::CombinedStepper{T}, solver::Solver{T}) where
 end
 
 # update the RHS for correction direction
-function update_rhs_correction(stepper::CombinedStepper{T}, solver::Solver{T}, gamma::T) where {T <: Real}
+function update_rhs_final(stepper::CombinedStepper{T}, solver::Solver{T}, gamma::T) where {T <: Real}
     rhs = stepper.rhs
 
-    # x, y, z
+    # x, y, z, tau
     stepper.x_rhs .= solver.x_residual * (1 - gamma)
     stepper.y_rhs .= solver.y_residual * (1 - gamma)
     stepper.z_rhs .= solver.z_residual * (1 - gamma)
+    rhs[stepper.tau_row] = (solver.kap + solver.primal_obj_t - solver.dual_obj_t) * (1 - gamma)
 
     # s
     for (k, cone_k) in enumerate(solver.model.cones)
@@ -264,8 +267,6 @@ function update_rhs_correction(stepper::CombinedStepper{T}, solver::Solver{T}, g
 
     # kap (corrector reuses kappa/tau affine directions)
     rhs[end] = -solver.kap + solver.mu / solver.tau * gamma - stepper.dir[stepper.tau_row] * stepper.dir[stepper.kap_row] / solver.tau
-    # tau
-    rhs[stepper.tau_row] = (solver.kap + solver.primal_obj_t - solver.dual_obj_t) * (1 - gamma)
     return rhs
 end
 
@@ -402,6 +403,7 @@ function find_max_alpha(
     nup1 = solver.model.nu + 1
     while true
         in_nbhd = true
+        @show alpha
 
         @. z_linesearch = z + alpha * z_dir
         @. s_linesearch = s + alpha * s_dir
@@ -430,6 +432,8 @@ function find_max_alpha(
                     Cones.load_dual_point(cone_k, duals_linesearch[k])
                     Cones.reset_data(cone_k)
                     if affine_phase
+                        @show cone_k.point
+                        @show cone_k.dual_point
                         in_nbhd_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k))
                     else
                         in_nbhd_k = (Cones.is_feas(cone_k) && Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp))
