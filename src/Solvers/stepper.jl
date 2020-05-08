@@ -108,6 +108,69 @@ function load(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     return stepper
 end
 
+# function step_old(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
+#     point = solver.point
+#     timer = solver.timer
+#
+#     # update linear system solver factorization and helpers
+#     @timeit timer "update_lhs" update_lhs(solver.system_solver, solver)
+#
+#     # calculate correction direction and keep in dir_corr
+#     @timeit timer "rhs_corr" update_rhs_correction(stepper, solver)
+#     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
+#     copyto!(stepper.dir_corr, stepper.dir)
+#
+#     # calculate affine/prediction direction and keep in dir
+#     @timeit timer "rhs_aff" update_rhs_affine(stepper, solver)
+#     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
+#
+#     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
+#     @timeit timer "alpha_aff" stepper.prev_aff_alpha = aff_alpha = find_max_alpha(
+#         stepper, solver, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
+#     stepper.prev_gamma = gamma = abs2(one(T) - aff_alpha) # TODO allow different function (heuristic) as option?
+#
+#     # calculate combined direction and keep in dir
+#     axpby!(gamma, stepper.dir_corr, 1 - gamma, stepper.dir)
+#
+#     # find distance alpha for stepping in combined direction
+#     @timeit timer "alpha_comb" alpha = find_max_alpha(
+#         stepper, solver, prev_alpha = stepper.prev_alpha, min_alpha = T(1e-3))
+#
+#     if iszero(alpha)
+#         # could not step far in combined direction, so attempt a pure correction step
+#         solver.verbose && println("performing correction step")
+#         copyto!(stepper.dir, stepper.dir_corr)
+#
+#         # find distance alpha for stepping in correction direction
+#         @timeit timer "alpha_corr" alpha = find_max_alpha(
+#             stepper, solver, prev_alpha = one(T), min_alpha = T(1e-6))
+#
+#         if iszero(alpha)
+#             @warn("numerical failure: could not step in correction direction; terminating")
+#             solver.status = :NumericalFailure
+#             return false
+#         end
+#     end
+#     stepper.prev_alpha = alpha
+#
+#     # step distance alpha in combined direction
+#     @. point.x += alpha * stepper.x_dir
+#     @. point.y += alpha * stepper.y_dir
+#     @. point.z += alpha * stepper.z_dir
+#     @. point.s += alpha * stepper.s_dir
+#     solver.tau += alpha * stepper.dir[stepper.tau_row]
+#     solver.kap += alpha * stepper.dir[stepper.kap_row]
+#     calc_mu(solver)
+#
+#     if solver.tau <= zero(T) || solver.kap <= zero(T) || solver.mu <= zero(T)
+#         @warn("numerical failure: tau is $(solver.tau), kappa is $(solver.kap), mu is $(solver.mu); terminating")
+#         solver.status = :NumericalFailure
+#         return false
+#     end
+#
+#     return true # step succeeded
+# end
+
 function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
     timer = solver.timer
@@ -115,42 +178,26 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     # update linear system solver factorization and helpers
     @timeit timer "update_lhs" update_lhs(solver.system_solver, solver)
 
-    # calculate correction direction and keep in dir_corr
-    @timeit timer "rhs_corr" update_rhs_correction(stepper, solver)
-    @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
-    copyto!(stepper.dir_corr, stepper.dir)
-
     # calculate affine/prediction direction and keep in dir
     @timeit timer "rhs_aff" update_rhs_affine(stepper, solver)
     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
 
-    # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
+    # get alpha for affine direction
     @timeit timer "alpha_aff" stepper.prev_aff_alpha = aff_alpha = find_max_alpha(
-        stepper, solver, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
-    stepper.prev_gamma = gamma = abs2(one(T) - aff_alpha) # TODO allow different function (heuristic) as option?
+        stepper, solver, true, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
+    # calculate correction factor gamma
+    stepper.prev_gamma = gamma = (one(T) - aff_alpha) * min(abs2(one(T) - aff_alpha), T(0.25))
 
-    # calculate combined direction and keep in dir
-    axpby!(gamma, stepper.dir_corr, 1 - gamma, stepper.dir)
+    # calculate correction direction and keep in dir
+    @timeit timer "rhs_corr" update_rhs_correction(stepper, solver, gamma)
+    @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
+    # copyto!(stepper.dir_corr, stepper.dir)
 
     # find distance alpha for stepping in combined direction
     @timeit timer "alpha_comb" alpha = find_max_alpha(
-        stepper, solver, prev_alpha = stepper.prev_alpha, min_alpha = T(1e-3))
+        stepper, solver, false, prev_alpha = stepper.prev_alpha, min_alpha = T(1e-3))
 
-    if iszero(alpha)
-        # could not step far in combined direction, so attempt a pure correction step
-        solver.verbose && println("performing correction step")
-        copyto!(stepper.dir, stepper.dir_corr)
-
-        # find distance alpha for stepping in correction direction
-        @timeit timer "alpha_corr" alpha = find_max_alpha(
-            stepper, solver, prev_alpha = one(T), min_alpha = T(1e-6))
-
-        if iszero(alpha)
-            @warn("numerical failure: could not step in correction direction; terminating")
-            solver.status = :NumericalFailure
-            return false
-        end
-    end
+    iszero(alpha) && error()
     stepper.prev_alpha = alpha
 
     # step distance alpha in combined direction
@@ -195,26 +242,30 @@ function update_rhs_affine(stepper::CombinedStepper{T}, solver::Solver{T}) where
 end
 
 # update the RHS for correction direction
-function update_rhs_correction(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
+function update_rhs_correction(stepper::CombinedStepper{T}, solver::Solver{T}, gamma::T) where {T <: Real}
     rhs = stepper.rhs
 
-    # x, y, z, tau
-    stepper.rhs[1:stepper.tau_row] .= 0
+    # x, y, z
+    stepper.x_rhs .= solver.x_residual * (1 - gamma)
+    stepper.y_rhs .= solver.y_residual * (1 - gamma)
+    stepper.z_rhs .= solver.z_residual * (1 - gamma)
 
     # s
     for (k, cone_k) in enumerate(solver.model.cones)
         duals_k = solver.point.dual_views[k]
         grad_k = Cones.grad(cone_k)
-        @. stepper.s_rhs_k[k] = -duals_k - solver.mu * grad_k
+        @. stepper.s_rhs_k[k] = -duals_k - solver.mu * grad_k * gamma
         if Cones.use_correction(cone_k)
+            # (reuses affine direction)
             # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
             stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k])
         end
     end
 
-    # kap
-    rhs[end] = -solver.kap + solver.mu / solver.tau
-
+    # kap (corrector reuses kappa/tau affine directions)
+    rhs[end] = -solver.kap + solver.mu / solver.tau * gamma - stepper.dir[stepper.tau_row] * stepper.dir[stepper.kap_row] / solver.tau
+    # tau
+    rhs[stepper.tau_row] = (solver.kap + solver.primal_obj_t - solver.dual_obj_t) * (1 - gamma)
     return rhs
 end
 
@@ -317,7 +368,8 @@ end
 # backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
 function find_max_alpha(
     stepper::CombinedStepper{T},
-    solver::Solver{T};
+    solver::Solver{T},
+    affine_phase::Bool;
     prev_alpha::T,
     min_alpha::T,
     ) where {T <: Real}
