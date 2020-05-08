@@ -14,8 +14,8 @@ function update_scal_hess(
     cone::Cone{T},
     mu::T,
     z::AbstractVector{T}; # dual point
-    use_update_1::Bool = true, # easy update
-    use_update_2::Bool = true, # hard update
+    use_update_1::Bool = false, # easy update
+    use_update_2::Bool = false, # hard update
     ) where {T}
     @assert is_feas(cone)
     @assert !cone.scal_hess_updated
@@ -40,7 +40,7 @@ function update_scal_hess(
             # mul!(scal_hess.data, muHs, muHs', -inv(denom_b), 1)
             scal_hess -= Symmetric(muHs * muHs') / denom_b
         end
-        @show norm(scal_hess * s - z)
+        # @show norm(scal_hess * s - z)
     end
 
     if use_update_2
@@ -75,10 +75,10 @@ function update_scal_hess(
             println("DENOM B BAD")
             @show denom_b
         end
-        @show norm(scal_hess * s - z)
-        @show norm(scal_hess * -conj_g + g)
-        @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
-        @show norm(scal_hess * primal_gap - dual_gap)
+        # @show norm(scal_hess * s - z)
+        # @show norm(scal_hess * -conj_g + g)
+        # @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
+        # @show norm(scal_hess * primal_gap - dual_gap)
         # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
     end
 

@@ -181,18 +181,22 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     # calculate affine/prediction direction and keep in dir
     @timeit timer "rhs_aff" update_rhs_affine(stepper, solver)
     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
-    @show stepper.x_dir
-    @show stepper.s_dir
+    # @show stepper.z_dir
+    # @show stepper.s_dir
 
     # get alpha for affine direction
     @timeit timer "alpha_aff" stepper.prev_aff_alpha = aff_alpha = find_max_alpha(
         stepper, solver, true, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
     # calculate correction factor gamma
+    @show aff_alpha
+    @show  "--------------------------------------"
     stepper.prev_gamma = gamma = (one(T) - aff_alpha) * min(abs2(one(T) - aff_alpha), T(0.25))
 
     # calculate correction direction and keep in dir
     @timeit timer "rhs_corr" update_rhs_final(stepper, solver, gamma)
     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
+    @show stepper.z_dir
+    @show stepper.s_dir
     # copyto!(stepper.dir_corr, stepper.dir)
 
     # find distance alpha for stepping in combined direction
@@ -399,11 +403,12 @@ function find_max_alpha(
         alpha = min(alpha, -kap / kap_dir)
     end
     alpha *= T(0.9999)
+    @show alpha
+    @show affine_phase
 
     nup1 = solver.model.nu + 1
     while true
         in_nbhd = true
-        @show alpha
 
         @. z_linesearch = z + alpha * z_dir
         @. s_linesearch = s + alpha * s_dir
@@ -411,6 +416,7 @@ function find_max_alpha(
         for k in cone_order
             dot_s_z_k = dot(primals_linesearch[k], duals_linesearch[k])
             if dot_s_z_k < eps(T)
+                @show "in dot_s_z_k", typeof(cones[k])
                 in_nbhd = false
                 break
             end
@@ -432,15 +438,15 @@ function find_max_alpha(
                     Cones.load_dual_point(cone_k, duals_linesearch[k])
                     Cones.reset_data(cone_k)
                     if affine_phase
-                        @show cone_k.point
-                        @show cone_k.dual_point
                         in_nbhd_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k))
                     else
                         in_nbhd_k = (Cones.is_feas(cone_k) && Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp))
+                        @show Cones.is_feas(cone_k), Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp)
                     end
                     cone_times[k] = time_ns() - time_k
 
                     if !in_nbhd_k
+                        @show typeof(cone_k)
                         in_nbhd = false
                         break
                     end
