@@ -226,7 +226,7 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 
 function in_neighborhood(cone::Cone{T}, mu::Real) where {T <: Real}
     @assert !use_heuristic_neighborhood(cone)
-    beta = 0.5 # TODO change
+    beta = 0.1 # TODO change
     return (get_nu(cone) / dot(grad(cone), dual_grad(cone)) > beta * mu)
 end
 

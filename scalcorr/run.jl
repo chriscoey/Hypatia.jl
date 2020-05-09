@@ -13,6 +13,8 @@ using TimerOutputs
 struct ExpInstances <: InstanceSet end
 struct PolyhedralInstances <: InstanceSet end
 
+run_in_bf = false
+
 # options to solvers
 timer = TimerOutput()
 default_solver_options = (
@@ -21,6 +23,9 @@ default_solver_options = (
     timer = timer,
     system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
     # max_nbhd = 0.02,
+    # tol_rel_opt = 1e-7,
+    # tol_abs_opt = 1e-7,
+    # tol_feas = 1e-7,
     )
 
 # instance sets and real types to run and corresponding time limits (seconds)
@@ -83,8 +88,6 @@ perf = DataFrame(
     )
 
 all_tests_time = time()
-
-run_in_bf = false
 
 @testset "examples tests" begin
     for (ex_name, ex_type) in example_types, (inst_set, real_T, time_limit) in instance_sets
