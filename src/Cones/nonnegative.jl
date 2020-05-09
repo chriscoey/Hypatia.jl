@@ -149,7 +149,6 @@ inv_hess_nz_idxs_col_tril(cone::Nonnegative, j::Int) = [j]
 #     return all(abs(si * zi - mu) < mu_nbhd for (si, zi) in zip(cone.point, dual_point))
 # end
 
-
 function update_scal_hess(
     cone::Nonnegative{T},
     mu::T,

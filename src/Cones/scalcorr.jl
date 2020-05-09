@@ -101,14 +101,13 @@ function update_scal_hess(
     # z = cone.dual_point
 
     scal_hess = mu * hess(cone)
-    F = cholesky(scal_hess)
-    println("##########################################")
+    F = cholesky(Symmetric(scal_hess, :U))
 
     if use_update_1
         # first update
         denom_a = dot(s, z)
         muHs = scal_hess * s
-        denom_b_sqrt = sqrt(sum(abs2, F.U * s))
+        denom_b_sqrt = norm(F.U * s)
 
         if denom_a > 0
             lowrankupdate!(F, z / sqrt(denom_a))
@@ -116,8 +115,8 @@ function update_scal_hess(
         if denom_b_sqrt > 0
             lowrankdowndate!(F, muHs / denom_b_sqrt)
         end
-        scal_hess_1 = Symmetric(F.L * F.U)
-        # @show norm(scal_hess_1 * s - z)
+
+        # @show norm(F.U' * (F.U * s) - z)
     end
 
     if use_update_2
@@ -125,15 +124,16 @@ function update_scal_hess(
         g = grad(cone)
         conj_g = dual_grad(cone)
         # check gradient of the optimization problem is small
-        @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
+        # @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
 
         mu_cone = dot(s, z) / get_nu(cone)
         dual_gap = z + mu_cone * g
         primal_gap = s + mu_cone * conj_g
 
         denom_a = dot(primal_gap, dual_gap)
-        H1prgap = scal_hess_1 * primal_gap
-        denom_b_sqrt = sqrt(sum(abs2, F.U * primal_gap))
+        Uprgap = F.U * primal_gap
+        H1prgap = F.U' * Uprgap
+        denom_b_sqrt = norm(Uprgap)
         if denom_a > 0
             lowrankupdate!(F, dual_gap / sqrt(denom_a))
         end
@@ -141,7 +141,7 @@ function update_scal_hess(
             lowrankdowndate!(F, H1prgap / denom_b_sqrt)
         end
 
-        scal_hess = Symmetric(F.L * F.U)
+        scal_hess = Symmetric(F.U' * F.U)
         # @show norm(scal_hess * s - z)
         # @show norm(scal_hess * -conj_g + g)
         # @show norm(scal_hess * primal_gap - dual_gap)
