@@ -19,6 +19,7 @@ mutable struct Nonnegative{T <: Real} <: Cone{T}
 
     feas_updated::Bool
     grad_updated::Bool
+    dual_grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
     is_feas::Bool
@@ -50,7 +51,7 @@ use_correction(cone::Nonnegative) = false
 
 use_3order_corr(cone::Nonnegative) = cone.use_3order_corr
 
-reset_data(cone::Nonnegative) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
+reset_data(cone::Nonnegative) = (cone.feas_updated = cone.grad_updated = cone.dual_grad_updated = cone.hess_updated = cone.inv_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::Nonnegative{T}) where {T <: Real}
@@ -141,10 +142,11 @@ hess_nz_idxs_col_tril(cone::Nonnegative, j::Int) = [j]
 inv_hess_nz_idxs_col(cone::Nonnegative, j::Int) = [j]
 inv_hess_nz_idxs_col_tril(cone::Nonnegative, j::Int) = [j]
 
-function in_neighborhood(cone::Nonnegative, dual_point::AbstractVector, mu::Real)
-    mu_nbhd = mu * cone.max_neighborhood
-    return all(abs(si * zi - mu) < mu_nbhd for (si, zi) in zip(cone.point, dual_point))
-end
+# TODO
+# function in_neighborhood(cone::Nonnegative, dual_point::AbstractVector, mu::Real)
+#     mu_nbhd = mu * cone.max_neighborhood
+#     return all(abs(si * zi - mu) < mu_nbhd for (si, zi) in zip(cone.point, dual_point))
+# end
 
 function correction(cone::Nonnegative, primal_dir::AbstractVector, dual_dir::AbstractVector)
     @. cone.correction = primal_dir * dual_dir / cone.point

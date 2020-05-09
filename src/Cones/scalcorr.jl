@@ -23,7 +23,6 @@ function update_scal_hess(
 
     scal_hess = mu * hess(cone)
     F = cholesky(scal_hess)
-    # println("##########################################")
     # @show mu
 
     if use_update_1
