@@ -95,6 +95,11 @@ function update_dual_grad(cone::Cone{T}) where {T <: Real}
     # can avoid a field unless we want to use switched Newton later
     @. cone.dual_grad = -cone.newton_point
     cone.dual_grad_updated = true
+
+    # TODO remove check
+    if norm(ForwardDiff.gradient(cone.barrier, cone.newton_point) + cone.dual_point) > sqrt(eps(T))
+        @warn "conjugate grad calculation inaccurate"
+    end
     return cone.dual_grad
 end
 

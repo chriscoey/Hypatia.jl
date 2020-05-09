@@ -43,7 +43,8 @@ function test_barrier_oracles(
         minus_grad = -CO.grad(cone)
         @test dot(point, minus_grad) ≈ norm(point) * norm(minus_grad) atol=init_tol rtol=init_tol
         @test point ≈ minus_grad atol=init_tol rtol=init_tol
-        @test CO.in_neighborhood(cone, minus_grad, one(T))
+        # @test CO.in_neighborhood(cone, minus_grad, one(T))
+        @test CO.in_neighborhood(cone, zero(T))
     end
     init_only && return
 
@@ -108,12 +109,21 @@ function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T
     @test prod_mat2' * prod_mat2 ≈ inv_hess atol=tol rtol=tol
 
     if cone isa CO.HypoPerLog || cone isa CO.Nonnegative
-        dual_grad = CO.update_dual_grad(cone)
-        @test dot(cone.dual_point, dual_grad) ≈ -nu atol=1000*tol rtol=1000*tol
+        dual_grad = CO.dual_grad(cone)
+        @test dot(dual_point, dual_grad) ≈ -nu atol=1000*tol rtol=1000*tol
+
+        scal_hess = CO.scal_hess(cone, one(T))
+        @test scal_hess * point ≈ dual_point
+        @test scal_hess * dual_grad ≈ grad
+
+        prod = similar(point)
+        @test CO.scal_hess_prod!(prod, point, cone, one(T)) ≈ dual_point
+        @test CO.scal_hess_prod!(prod, dual_grad, cone, one(T)) ≈ grad
     end
 
     mock_dual_point = -grad + T(1e-3) * randn(length(grad))
-    @test CO.in_neighborhood(cone, mock_dual_point, one(T))
+    CO.load_dual_point(cone, mock_dual_point)
+    @test CO.in_neighborhood(cone, zero(T))
 
     return
 end

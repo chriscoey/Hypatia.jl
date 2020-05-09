@@ -9,12 +9,13 @@ use_correction(cone::Cone) = false
 
 scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
 
+use_update_1_default() = true
+use_update_2_default() = true
+
 # function update_scal_hess(
 #     cone::Cone{T},
 #     mu::T,
-#     z::AbstractVector{T}; # dual point
-#     use_update_1::Bool = true, # easy update
-#     use_update_2::Bool = true, # hard update
+#     z::AbstractVector{T}, # dual point
 #     ) where {T}
 #     @assert is_feas(cone)
 #     @assert !cone.scal_hess_updated
@@ -24,7 +25,7 @@ scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_
 #     F = cholesky(scal_hess)
 #     # @show mu
 #
-#     if use_update_1
+#     if use_update_1_default()
 #         # first update
 #         denom_a = dot(s, z)
 #         muHs = scal_hess * s
@@ -41,7 +42,7 @@ scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_
 #         # @show norm(scal_hess * s - z)
 #     end
 #
-#     if use_update_2
+#     if use_update_2_default()
 #         # second update
 #         g = grad(cone)
 #         conj_g = dual_grad(cone)
@@ -90,8 +91,8 @@ scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_
 function update_scal_hess(
     cone::Cone{T},
     mu::T;
-    use_update_1::Bool = true, # easy update
-    use_update_2::Bool = true, # hard update
+    use_update_1::Bool = use_update_1_default(),
+    use_update_2::Bool = use_update_2_default(),
     ) where {T}
     @assert is_feas(cone)
     @assert !cone.scal_hess_updated
@@ -152,7 +153,55 @@ function update_scal_hess(
     return cone.scal_hess
 end
 
-function scal_hess_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, cone::Cone{T}, mu::T) where {T}
+function scal_hess_prod!(
+    prod::AbstractVecOrMat{T},
+    arr::AbstractVecOrMat{T},
+    cone::Cone{T},
+    mu::T;
+    use_update_1::Bool = use_update_1_default(),
+    use_update_2::Bool = use_update_2_default(),
+    ) where {T}
+    @assert is_feas(cone)
+    s = cone.point
+    z = cone.dual_point
+
+    hess_prod!(prod, arr, cone)
+    @. prod *= mu
+
+    if use_update_1
+        muHs = similar(s)
+        hess_prod!(muHs, s, cone)
+        @. muHs *= mu
+        denom_a = dot(s, z)
+        denom_b = dot(s, muHs)
+        if denom_a > 0
+            prod += Symmetric(z * z') * arr / denom_a
+        end
+        if denom_b > 0
+            prod -= Symmetric(muHs * muHs') * arr / denom_b
+        end
+    end
+
+    if use_update_2
+        g = grad(cone)
+        conj_g = dual_grad(cone)
+        mu_cone = dot(s, z) / get_nu(cone)
+        primal_gap = s + mu_cone * conj_g
+        dual_gap = z + mu_cone * g
+        H1prgap = similar(s)
+        scal_hess_prod!(H1prgap, primal_gap, cone, mu, use_update_1 = true, use_update_2 = false)
+        # @show isapprox(H1prgap, update_scal_hess(cone, mu, use_update_1 = true, use_update_2 = false) * primal_gap)
+        denom_a = dot(primal_gap, dual_gap)
+        denom_b = dot(primal_gap, H1prgap)
+        if denom_a > 0
+            prod += Symmetric(dual_gap * dual_gap') * arr / denom_a
+        end
+        if denom_b > 0
+            prod -= Symmetric(H1prgap * H1prgap') * arr / denom_b
+        end
+    end
+
+    return prod
 end
 
 # correction
