@@ -120,9 +120,9 @@ function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T
         @test scal_hess * point ≈ dual_point
         @test scal_hess * dual_grad ≈ grad
 
-        # prod = similar(point)
-        # @test CO.scal_hess_prod!(prod, point, cone, one(T)) ≈ dual_point
-        # @test CO.scal_hess_prod!(prod, dual_grad, cone, one(T)) ≈ grad
+        prod = similar(point)
+        @test CO.scal_hess_prod!(prod, point, cone, one(T)) ≈ dual_point
+        @test CO.scal_hess_prod!(prod, dual_grad, cone, one(T)) ≈ grad
     end
 
     mock_dual_point = -grad + T(1e-3) * randn(length(grad))
