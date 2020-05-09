@@ -555,8 +555,8 @@ function find_max_alpha(
                 if in_nbhd
                     break
                 end
-            end
-        end
+            end # condition on mu, kappa, tau
+        end # if in_nbhd
 
         if alpha < min_alpha
             # alpha is very small so finish
@@ -566,7 +566,7 @@ function find_max_alpha(
 
         # iterate is outside the neighborhood: decrease alpha
         alpha *= T(0.99)
-    end
+    end # while true
 
     return alpha
 end
