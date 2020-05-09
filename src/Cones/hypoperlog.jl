@@ -34,6 +34,8 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     nbhd_tmp::Vector{T}
     nbhd_tmp2::Vector{T}
 
+    correction::Vector{T}
+
     lwv::T
     vlwvu::T
     lvwnivlwvu::T
@@ -65,7 +67,6 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
         cone.max_neighborhood = max_neighborhood
         cone.dim = dim
         cone.hess_fact_cache = hess_fact_cache
-
         cone.barrier = (x -> -log(x[2] * log(x[3] / x[2]) - x[1]) - log(x[3]) - log(x[2]))
         return cone
     end
@@ -84,6 +85,7 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     load_matrix(cone.hess_fact_cache, cone.hess)
     cone.nbhd_tmp = zeros(T, dim)
     cone.nbhd_tmp2 = zeros(T, dim)
+    cone.correction = zeros(T, dim)
     cone.vwivlwvu = zeros(T, dim - 2)
 
     cone.dual_point = zeros(T, dim)
@@ -132,13 +134,8 @@ function update_dual_feas(cone::HypoPerLog)
     v = cone.dual_point[2]
     w = cone.dual_point[3]
 
-    if u < 0 && w > 0
-        return v - u - u * log(-w / u) > 0
-    else
-        return false
-    end
+    return u < 0 && w > 0 && v - u - u * log(-w / u) > 0
 end
-
 
 function update_grad(cone::HypoPerLog)
     @assert cone.is_feas
@@ -189,53 +186,52 @@ function update_hess(cone::HypoPerLog)
     return cone.hess
 end
 
+# directional third derivative term
+# TODO make efficient and improve numerics, reuse values stored in cone fields
+function correction(
+    cone::HypoPerLog{T},
+    primal_dir::AbstractVector{T},
+    dual_dir::AbstractVector{T},
+    ) where {T <: Real}
+    update_hess_fact(cone)
+    corr = cone.correction
+    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+
+    Hi_z = similar(dual_dir) # TODO prealloc
+    inv_hess_prod!(Hi_z, dual_dir, cone)
+
+    # -log(v * log(w / v) - u) part
+    vlwvu = cone.vlwvu
+    vlwvup = T[-1, cone.lwv - 1, v / w]
+    gpp = Symmetric(cone.hess - Diagonal(T[0, abs2(inv(v)), abs2(inv(w))]), :U) # TODO improve
+    zz3vlwvup = (dual_dir[2:3] + dual_dir[1] * vlwvup[2:3]) / (vlwvu + 2 * v)
+    vlwvupp_Hi_z = T[0, w * zz3vlwvup[2] - v * zz3vlwvup[1], v * (zz3vlwvup[1] * v / w - zz3vlwvup[2])]
+
+    # term1
+    corr .= dual_dir[1] * 2 * vlwvu * gpp * primal_dir
+    # term2
+    corr[2] += dual_dir[1] * (primal_dir[3] / w - primal_dir[2] / v)
+    corr[3] += dual_dir[1] * (-v * primal_dir[3] / w + primal_dir[2]) / w
+    # term3
+    corr[3] += ((2 * v / w * Hi_z[3] - Hi_z[2]) / w * -primal_dir[3] / w + Hi_z[3] / w * primal_dir[2] / w) / vlwvu
+    corr[2] += (Hi_z[3] / w * primal_dir[3] / w - Hi_z[2] / v * primal_dir[2] / v) / vlwvu
+    # term4
+    corr += (vlwvupp_Hi_z * dot(vlwvup, primal_dir) + vlwvup * dot(vlwvupp_Hi_z, primal_dir)) / vlwvu
+
+    # scale
+    corr /= -2
+
+    # - log(v) - log(w) part
+    corr[2] += Hi_z[2] / v * primal_dir[2] / v / v
+    corr[3] += Hi_z[3] / w * primal_dir[3] / w / w
+
+    return corr
+end
+
+
 # TODO add hess prod, inv hess etc functions
-
-
-
-
-
 # NOTE old EpiPerExp code below may be useful (cone vector is reversed)
 
-# # directional third derivative term
-# # TODO make efficient and improve numerics, reuse values stored in cone fields
-# function correction(cone::EpiPerExp{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
-#     update_hess(cone)
-#     update_inv_hess_prod(cone)
-#     corr = cone.correction
-#     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
-#
-#     Hi_z = similar(dual_dir) # TODO prealloc
-#     inv_hess_prod!(Hi_z, dual_dir, cone)
-#
-#     # -log(v * log(u / v) - w) part
-#     ψ = cone.vluvw
-#     ψp = T[v / u, cone.luv - 1, -one(T)]
-#     gpp = Symmetric(cone.hess - Diagonal(T[abs2(inv(u)), abs2(inv(v)), zero(T)]), :U) # TODO improve
-#     zz3ψp = (dual_dir[1:2] + dual_dir[3] * ψp[1:2]) / (ψ + 2 * v)
-#     ψpp_Hi_z = T[v * (zz3ψp[2] * v / u - zz3ψp[1]), u * zz3ψp[1] - v * zz3ψp[2], zero(T)]
-#
-#     # term1
-#     corr .= dual_dir[3] * 2 * ψ * gpp * primal_dir
-#     # term2
-#     corr[1] += dual_dir[3] * (-v * primal_dir[1] / u + primal_dir[2]) / u
-#     corr[2] += dual_dir[3] * (primal_dir[1] / u - primal_dir[2] / v)
-#     # term3
-#     corr[1] += ((2 * v / u * Hi_z[1] - Hi_z[2]) / u * -primal_dir[1] / u + Hi_z[1] / u * primal_dir[2] / u) / ψ
-#     corr[2] += (Hi_z[1] / u * primal_dir[1] / u - Hi_z[2] / v * primal_dir[2] / v) / ψ
-#     # term4
-#     corr += (ψpp_Hi_z * dot(ψp, primal_dir) + ψp * dot(ψpp_Hi_z, primal_dir)) / ψ
-#
-#     # scale
-#     corr /= -2
-#
-#     # - log(u) - log(v) part
-#     corr[1] += Hi_z[1] / u * primal_dir[1] / u / u
-#     corr[2] += Hi_z[2] / v * primal_dir[2] / v / v
-#
-#     return corr
-# end
-#
 # function update_feas(cone::EpiPerExp)
 #     @assert !cone.feas_updated
 #     (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])

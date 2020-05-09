@@ -144,7 +144,7 @@ function update_scal_hess(
         # @show norm(scal_hess * s - z)
         # @show norm(scal_hess * -conj_g + g)
         # @show norm(scal_hess * primal_gap - dual_gap)
-        # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
+        # (norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3) && error()
     end
 
     copyto!(cone.scal_hess, scal_hess)
@@ -175,10 +175,12 @@ function scal_hess_prod!(
         denom_a = dot(s, z)
         denom_b = dot(s, muHs)
         if denom_a > 0
-            prod += Symmetric(z * z') * arr / denom_a
+            scale_a = dot(z, arr) / denom_a
+            @. prod += scale_a * z
         end
         if denom_b > 0
-            prod -= Symmetric(muHs * muHs') * arr / denom_b
+            scale_b = dot(muHs, arr) / denom_b
+            @. prod -= scale_b * muHs
         end
     end
 
@@ -188,16 +190,19 @@ function scal_hess_prod!(
         mu_cone = dot(s, z) / get_nu(cone)
         primal_gap = s + mu_cone * conj_g
         dual_gap = z + mu_cone * g
+        # TODO do this in a better way
         H1prgap = similar(s)
         scal_hess_prod!(H1prgap, primal_gap, cone, mu, use_update_1 = true, use_update_2 = false)
         # @show isapprox(H1prgap, update_scal_hess(cone, mu, use_update_1 = true, use_update_2 = false) * primal_gap)
         denom_a = dot(primal_gap, dual_gap)
         denom_b = dot(primal_gap, H1prgap)
         if denom_a > 0
-            prod += Symmetric(dual_gap * dual_gap') * arr / denom_a
+            scale_a = dot(dual_gap, arr) / denom_a
+            @. prod += scale_a * dual_gap
         end
         if denom_b > 0
-            prod -= Symmetric(H1prgap * H1prgap') * arr / denom_b
+            scale_b = dot(H1prgap, arr) / denom_b
+            @. prod -= scale_b * H1prgap
         end
     end
 

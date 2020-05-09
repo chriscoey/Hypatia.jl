@@ -59,7 +59,7 @@ dimension(cone::Cone) = cone.dim
 set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
-is_dual_feas(cone::Cone) = update_dual_feas(cone)
+is_dual_feas(cone::Cone) = update_dual_feas(cone) # TODO field? like above
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 dual_grad(cone::Cone) = (cone.dual_grad_updated ? cone.dual_grad : update_dual_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
@@ -230,7 +230,7 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 
 function in_neighborhood(cone::Cone{T}, mu::Real) where {T <: Real}
     @assert !use_heuristic_neighborhood(cone)
-    beta = 0.05 # TODO change
+    beta = 0.1 # TODO change
     return (get_nu(cone) / dot(grad(cone), dual_grad(cone)) > beta * mu)
 end
 

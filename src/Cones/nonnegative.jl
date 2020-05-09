@@ -160,6 +160,15 @@ function update_scal_hess(
     return cone.scal_hess
 end
 
+function scal_hess_prod!(
+    prod::AbstractVecOrMat{T},
+    arr::AbstractVecOrMat{T},
+    cone::Nonnegative{T},
+    mu::T;
+    ) where {T}
+    @. prod = cone.dual_point / cone.point * arr
+end
+
 function correction(cone::Nonnegative, primal_dir::AbstractVector, dual_dir::AbstractVector)
     @. cone.correction = primal_dir * dual_dir / cone.point
     return cone.correction
