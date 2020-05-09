@@ -102,7 +102,7 @@ function update_scal_hess(
 
     scal_hess = mu * hess(cone)
     F = cholesky(scal_hess)
-    println("##########################################")
+    # println("##########################################")
 
     if use_update_1
         # first update
@@ -125,7 +125,7 @@ function update_scal_hess(
         g = grad(cone)
         conj_g = dual_grad(cone)
         # check gradient of the optimization problem is small
-        @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
+        # @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
 
         mu_cone = dot(s, z) / get_nu(cone)
         dual_gap = z + mu_cone * g
