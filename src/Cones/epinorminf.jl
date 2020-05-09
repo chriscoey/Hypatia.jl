@@ -16,16 +16,19 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     n::Int
     is_complex::Bool
     point::Vector{T}
+    dual_point::Vector{T}
     timer::TimerOutput
 
     feas_updated::Bool
     grad_updated::Bool
+    dual_grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
     hess_inv_hess_updated::Bool
     scal_hess_updated::Bool
     is_feas::Bool
     grad::Vector{T}
+    dual_grad::Vector{T}
     hess::Symmetric{T, SparseMatrixCSC{T, Int}}
     inv_hess::Symmetric{T, Matrix{T}}
     scal_hess::Symmetric{T, Matrix{T}}
@@ -48,6 +51,11 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     rtdiag::Vector{T}
 
     barrier::Function
+    newton_point::Vector{T}
+    newton_grad::Vector{T}
+    newton_stepdir::Vector{T}
+    newton_hess::Matrix{T}
+    newton_norm::T
 
     function EpiNormInf{T, R}(
         dim::Int;
@@ -69,14 +77,16 @@ end
 
 use_heuristic_neighborhood(cone::EpiNormInf) = false
 
-reset_data(cone::EpiNormInf) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_inv_hess_updated = cone.scal_hess_updated = false)
+reset_data(cone::EpiNormInf) = (cone.feas_updated = cone.grad_updated = cone.dual_grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_inv_hess_updated = cone.scal_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
+    cone.dual_point = zeros(T, dim)
     cone.grad = zeros(T, dim)
+    cone.dual_grad = zeros(T, dim)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.scal_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.nbhd_tmp = zeros(T, dim)
@@ -96,12 +106,17 @@ function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where 
         cone.edgeR = zeros(R, n)
         cone.invedgeR = zeros(R, n)
     end
+
+    cone.newton_point = zeros(T, dim)
+    cone.newton_grad = zeros(T, dim)
+    cone.newton_stepdir = zeros(T, dim)
+    cone.newton_hess = zeros(T, dim, dim)
     return
 end
 
 use_scaling(cone::EpiNormInf) = true
 
-use_correction(cone::EpiNormInf) = false
+use_correction(cone::EpiNormInf) = true
 
 get_nu(cone::EpiNormInf) = cone.n + 1
 
@@ -364,6 +379,42 @@ function inv_hess_sqrt_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone
     end
 
     return prod
+end
+
+# TODO complex
+function correction(cone::EpiNormInf{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
+    dim = cone.dim
+    point = cone.point
+    u = cone.point[1]
+    w = cone.w
+    den = cone.den
+
+    u_dir = primal_dir[1]
+    w_dir = primal_dir[2:end]
+
+    # TODO instead of forming a tensor store efficiently in just three vectors
+    third_order = zeros(T, dim, dim, dim)
+    third_order[1, 1, 1] = sum(12 * u / abs2(z) - 16 * u ^ 3 / z ^ 3 for z in den) + 2 * (cone.n - 1) / u ^ 3
+    for i in 1:cone.n
+        i1 = i + 1
+        third_order[i1, i1, i1] = 12 * w[i] / abs2(den[i]) + 16 * w[i] ^ 3 / den[i] ^ 3
+        third_order[1, i1, i1] = third_order[i1, 1, i1] = third_order[i1, i1, 1] = -4 * u / abs2(den[i]) - 16 * u * abs2(w[i]) / (den[i] ^ 3)
+        third_order[1, 1, i1] = third_order[1, i1, 1] = third_order[i1, 1, 1] = -4 * w[i] / abs2(den[i]) + 16 * abs2(u) * w[i] / (den[i] ^ 3)
+    end
+
+    # third order derivative multiplied by s
+    deriv3s = zeros(T, dim, dim)
+    deriv3s[1, 1] = dot(third_order[:, 1, 1], primal_dir)
+    for i in 1:cone.n
+        i1 = i + 1
+        deriv3s[1, i1] = deriv3s[i1, 1] = third_order[1, 1, i1] * u_dir + third_order[i1, 1, i1] * w_dir[i]
+        deriv3s[i1, i1] = third_order[1, i1, i1] * u_dir + third_order[i1, i1, i1] * w_dir[i]
+    end
+
+    Hinv_z = inv_hess_prod!(similar(dual_dir), dual_dir, cone)
+    # TODO deriv3s is an arrowhead matrix, can multiply efficiently
+    FD_corr = deriv3s * Hinv_z / -2
+    return FD_corr
 end
 
 hess_nz_count(cone::EpiNormInf{<:Real, <:Real}) = 3 * cone.dim - 2
