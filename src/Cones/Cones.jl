@@ -62,7 +62,7 @@ set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 is_dual_feas(cone::Cone) = update_dual_feas(cone)
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
-dual_grad(cone::Cone) = (cone.dual_grad_updated ? cone.grad : update_dual_grad(cone))
+dual_grad(cone::Cone) = (cone.dual_grad_updated ? cone.dual_grad : update_dual_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
 barrier(cone::Cone) = cone.barrier
