@@ -47,9 +47,9 @@ end
 
 use_heuristic_neighborhood(cone::Nonnegative) = false
 
-use_correction(cone::Nonnegative) = false
+use_correction(cone::Nonnegative) = true
 
-use_scaling(cone::Nonnegative) = false
+use_scaling(cone::Nonnegative) = true
 
 reset_data(cone::Nonnegative) = (cone.feas_updated = cone.grad_updated = cone.dual_grad_updated = cone.hess_updated = cone.scal_hess_updated = cone.inv_hess_updated = false)
 
@@ -158,7 +158,7 @@ function update_scal_hess(
     @assert z == cone.dual_point # TODO redundant to use both
     @assert is_feas(cone)
     @assert !cone.scal_hess_updated
-    @. cone.scal_hess.diag = mu * cone.dual_point / cone.point
+    @. cone.scal_hess.diag = cone.dual_point / cone.point
     cone.scal_hess_updated = true
     return cone.scal_hess
 end
