@@ -1,7 +1,6 @@
 
 # TODO later move to Cones.jl or elsewhere
 
-import Optim
 import ForwardDiff
 
 use_scaling(cone::Cone) = false
@@ -152,18 +151,6 @@ function update_scal_hess(
 
     cone.scal_hess_updated = true
     return cone.scal_hess
-end
-
-# TODO use domain constraints properly
-# TODO use central point as starting point?
-# TODO use constrained method from https://julianlsolvers.github.io/Optim.jl/stable/#examples/generated/ipnewton_basics/#constrained-optimization-with-ipnewton
-function conjugate_gradient1(barrier::Function, s::AbstractVector{T}, z::AbstractVector{T}) where {T}
-    modified_legendre(x) = ((x[2] <= 0 || x[3] <= 0 || x[2] * log(x[3] / x[2]) - x[1] <= 0) ? 1e16 : dot(z, x) + barrier(x)) # TODO bad feas check - need constraints
-    res = Optim.optimize(modified_legendre, s, Optim.Newton())
-    # res = Optim.optimize(modified_legendre, [-0.827838399, 0.805102005, 1.290927713], Optim.Newton())
-    minimizer = Optim.minimizer(res)
-    @assert !any(isnan, minimizer)
-    return -minimizer
 end
 
 # correction
