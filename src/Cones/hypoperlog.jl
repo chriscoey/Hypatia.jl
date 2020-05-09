@@ -19,6 +19,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
 
     feas_updated::Bool
     grad_updated::Bool
+    dual_grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
     scal_hess_updated::Bool
@@ -99,7 +100,7 @@ use_correction(cone::HypoPerLog) = false
 
 get_nu(cone::HypoPerLog) = 1 + 2 * (cone.dim - 2)
 
-reset_data(cone::HypoPerLog) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scal_hess_updated = cone.hess_fact_updated = false)
+reset_data(cone::HypoPerLog) = (cone.feas_updated = cone.grad_updated = cone.dual_grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scal_hess_updated = cone.hess_fact_updated = false)
 
 function set_initial_point(arr::AbstractVector, cone::HypoPerLog)
     (arr[1], arr[2], w) = get_central_ray_hypoperlog(cone.dim - 2)

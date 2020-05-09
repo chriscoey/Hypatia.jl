@@ -23,7 +23,7 @@ import Hypatia.sqrt_prod
 import Hypatia.inv_sqrt_prod
 import Hypatia.invert
 
-default_max_neighborhood() = 0.5
+default_max_neighborhood() = 1e-2 # 0.5
 default_use_heuristic_neighborhood() = false
 
 # hessian_cache(T::Type{<:BlasReal}) = DenseSymCache{T}() # use Bunch Kaufman for BlasReals from start
@@ -62,6 +62,7 @@ set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 is_dual_feas(cone::Cone) = update_dual_feas(cone)
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
+dual_grad(cone::Cone) = (cone.dual_grad_updated ? cone.grad : update_dual_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
 barrier(cone::Cone) = cone.barrier
@@ -93,6 +94,7 @@ function update_dual_grad(cone::Cone{T}) where {T <: Real}
     end
     # can avoid a field unless we want to use switched Newton later
     @. cone.dual_grad = -cone.newton_point
+    cone.dual_grad_updated = true
     return cone.dual_grad
 end
 
@@ -189,37 +191,42 @@ inv_hess_nz_idxs_col_tril(cone::Cone, j::Int) = j:dimension(cone)
 
 use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 
-function in_neighborhood(cone::Cone{T}, dual_point::AbstractVector, mu::Real) where {T <: Real}
-    # norm(H^(-1/2) * (z + mu * grad))
-    nbhd_tmp = cone.nbhd_tmp
-    g = grad(cone)
-    @. nbhd_tmp = dual_point + mu * g
+# function in_neighborhood(cone::Cone{T}, dual_point::AbstractVector, mu::Real) where {T <: Real}
+#     # norm(H^(-1/2) * (z + mu * grad))
+#     nbhd_tmp = cone.nbhd_tmp
+#     g = grad(cone)
+#     @. nbhd_tmp = dual_point + mu * g
+#
+#     if use_heuristic_neighborhood(cone)
+#         error("shouldn't be using heuristic nbhd")
+#         nbhd = norm(nbhd_tmp, Inf) / norm(g, Inf)
+#         # nbhd = maximum(abs(dj / gj) for (dj, gj) in zip(nbhd_tmp, g)) # TODO try this neighborhood
+#     else
+#         has_hess_fact_cache = hasfield(typeof(cone), :hess_fact_cache)
+#         if has_hess_fact_cache && !update_hess_fact(cone)
+#             return false
+#         end
+#         nbhd_tmp2 = cone.nbhd_tmp2
+#         if has_hess_fact_cache && cone.hess_fact_cache isa DenseSymCache{T}
+#             inv_hess_prod!(nbhd_tmp2, nbhd_tmp, cone)
+#             nbhd_sqr = dot(nbhd_tmp2, nbhd_tmp)
+#             if nbhd_sqr < -eps(T) # TODO possibly loosen
+#                 # @warn("numerical failure: cone neighborhood is $nbhd_sqr")
+#                 return false
+#             end
+#             nbhd = sqrt(abs(nbhd_sqr))
+#         else
+#             inv_hess_sqrt_prod!(nbhd_tmp2, nbhd_tmp, cone)
+#             nbhd = norm(nbhd_tmp2)
+#         end
+#     end
+#
+#     return (nbhd < mu * cone.max_neighborhood)
+# end
 
-    if use_heuristic_neighborhood(cone)
-        error("shouldn't be using heuristic nbhd")
-        nbhd = norm(nbhd_tmp, Inf) / norm(g, Inf)
-        # nbhd = maximum(abs(dj / gj) for (dj, gj) in zip(nbhd_tmp, g)) # TODO try this neighborhood
-    else
-        has_hess_fact_cache = hasfield(typeof(cone), :hess_fact_cache)
-        if has_hess_fact_cache && !update_hess_fact(cone)
-            return false
-        end
-        nbhd_tmp2 = cone.nbhd_tmp2
-        if has_hess_fact_cache && cone.hess_fact_cache isa DenseSymCache{T}
-            inv_hess_prod!(nbhd_tmp2, nbhd_tmp, cone)
-            nbhd_sqr = dot(nbhd_tmp2, nbhd_tmp)
-            if nbhd_sqr < -eps(T) # TODO possibly loosen
-                # @warn("numerical failure: cone neighborhood is $nbhd_sqr")
-                return false
-            end
-            nbhd = sqrt(abs(nbhd_sqr))
-        else
-            inv_hess_sqrt_prod!(nbhd_tmp2, nbhd_tmp, cone)
-            nbhd = norm(nbhd_tmp2)
-        end
-    end
-
-    return (nbhd < mu * cone.max_neighborhood)
+function in_neighborhood(cone::Cone{T}, mu::Real) where {T <: Real}
+    @assert !use_heuristic_neighborhood(cone)
+    return get_nu(cone) / dot(grad(cone), dual_grad(cone)) > cone.max_neighborhood * mu
 end
 
 # utilities for arrays
