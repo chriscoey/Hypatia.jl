@@ -270,7 +270,7 @@ function update_lhs(system_solver::NaiveDenseSystemSolver, solver::Solver)
         cone_k = solver.model.cones[k]
         lhs6_H_k = system_solver.lhs6_H_k[k]
         if Cones.use_scaling(cone_k)
-            scal_hess = Cones.scal_hess(cone_k, solver.mu, solver.point.dual_views[k])
+            scal_hess = Cones.scal_hess(cone_k, solver.mu)
             @. lhs6_H_k = scal_hess
         else
             H_k = Cones.hess(cone_k)

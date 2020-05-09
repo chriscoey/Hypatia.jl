@@ -7,7 +7,7 @@ use_scaling(cone::Cone) = false
 
 use_correction(cone::Cone) = false
 
-scal_hess(cone::Cone{T}, mu::T, z::AbstractVector{T}) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu, z))
+scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
 
 # function update_scal_hess(
 #     cone::Cone{T},
@@ -89,15 +89,14 @@ scal_hess(cone::Cone{T}, mu::T, z::AbstractVector{T}) where {T} = (cone.scal_hes
 
 function update_scal_hess(
     cone::Cone{T},
-    mu::T,
-    z::AbstractVector{T}; # dual point
+    mu::T;
     use_update_1::Bool = true, # easy update
     use_update_2::Bool = true, # hard update
     ) where {T}
     @assert is_feas(cone)
     @assert !cone.scal_hess_updated
     s = cone.point
-    # z = cone.dual_point
+    z = cone.dual_point
 
     scal_hess = mu * hess(cone)
     F = cholesky(Symmetric(scal_hess, :U))
@@ -151,6 +150,9 @@ function update_scal_hess(
 
     cone.scal_hess_updated = true
     return cone.scal_hess
+end
+
+function scal_hess_prod!(prod::AbstractVecOrMat{T}, arr::AbstractVecOrMat{T}, cone::Cone{T}, mu::T) where {T}
 end
 
 # correction

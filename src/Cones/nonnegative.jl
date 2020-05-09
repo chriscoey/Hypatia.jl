@@ -151,10 +151,8 @@ inv_hess_nz_idxs_col_tril(cone::Nonnegative, j::Int) = [j]
 
 function update_scal_hess(
     cone::Nonnegative{T},
-    mu::T,
-    z::AbstractVector{T}; # dual point
+    mu::T;
     ) where {T}
-    @assert z == cone.dual_point # TODO redundant to use both
     @assert is_feas(cone)
     @assert !cone.scal_hess_updated
     @. cone.scal_hess.diag = cone.dual_point / cone.point
