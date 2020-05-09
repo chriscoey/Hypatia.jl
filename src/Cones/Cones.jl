@@ -53,14 +53,13 @@ include("wsosinterpepinormeucl.jl")
 include("scalcorr.jl")
 
 use_dual_barrier(cone::Cone) = cone.use_dual_barrier
-use_3order_corr(cone::Cone) = false
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
 load_dual_point(cone::Cone, point::AbstractVector) = copyto!(cone.dual_point, point)
 dimension(cone::Cone) = cone.dim
 set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
-is_dual_feas(cone::Cone) = update_dual_feas(cone)
+is_dual_feas(cone::Cone) = update_dual_feas(cone) # TODO field? like above
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
 dual_grad(cone::Cone) = (cone.dual_grad_updated ? cone.dual_grad : update_dual_grad(cone))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
