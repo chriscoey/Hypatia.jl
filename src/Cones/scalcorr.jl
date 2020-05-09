@@ -14,8 +14,8 @@ function update_scal_hess(
     cone::Cone{T},
     mu::T,
     z::AbstractVector{T}; # dual point
-    use_update_1::Bool = false, # easy update
-    use_update_2::Bool = false, # hard update
+    use_update_1::Bool = true, # easy update
+    use_update_2::Bool = true, # hard update
     ) where {T}
     @assert is_feas(cone)
     @assert !cone.scal_hess_updated
@@ -23,7 +23,7 @@ function update_scal_hess(
 
     scal_hess = mu * hess(cone)
     F = cholesky(scal_hess)
-    println("##########################################")
+    # println("##########################################")
     # @show mu
 
     if use_update_1
@@ -66,14 +66,14 @@ function update_scal_hess(
         if denom_a > 0
             scal_hess += Symmetric(dual_gap * dual_gap') / denom_a
         else
-            println("DENOM A BAD")
-            @show denom_a
+            # println("DENOM A BAD")
+            # @show denom_a
         end
         if denom_b > 0
             scal_hess -= Symmetric(H1prgap * H1prgap') / denom_b
         else
-            println("DENOM B BAD")
-            @show denom_b
+            # println("DENOM B BAD")
+            # @show denom_b
         end
         # @show norm(scal_hess * s - z)
         # @show norm(scal_hess * -conj_g + g)
