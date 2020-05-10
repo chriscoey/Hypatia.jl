@@ -137,13 +137,13 @@ function update_scal_hess(
         if denom_b_sqrt > 0
             lowrankdowndate!(F, H1prgap / denom_b_sqrt)
         end
-
-        scal_hess = Symmetric(F.U' * F.U)
-        # @show norm(scal_hess * s - z)
-        # @show norm(scal_hess * -conj_g + g)
-        # @show norm(scal_hess * primal_gap - dual_gap)
-        # (norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3) && error()
     end
+
+    scal_hess = Symmetric(F.U' * F.U)
+    # @show norm(scal_hess * s - z)
+    # @show norm(scal_hess * -conj_g + g)
+    # @show norm(scal_hess * primal_gap - dual_gap)
+    # (norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3) && error()
 
     copyto!(cone.scal_hess, scal_hess)
 
