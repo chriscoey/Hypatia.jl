@@ -51,6 +51,7 @@ include("wsosinterppossemideftri.jl")
 include("wsosinterpepinormeucl.jl")
 
 include("scalcorr.jl")
+include("newton.jl")
 
 use_dual_barrier(cone::Cone) = cone.use_dual_barrier
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
