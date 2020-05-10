@@ -230,7 +230,6 @@ function correction(
     return corr
 end
 
-
 # TODO add hess prod, inv hess etc functions
 # NOTE old EpiPerExp code below may be useful (cone vector is reversed)
 

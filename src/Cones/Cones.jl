@@ -66,47 +66,6 @@ hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
 barrier(cone::Cone) = cone.barrier
 
-function newton_step(cone::Cone)
-    mock_cone = cone.newton_cone
-    reset_data(mock_cone)
-    load_point(mock_cone, cone.newton_point)
-    @assert update_feas(mock_cone)
-    g = grad(mock_cone)
-    @. cone.newton_grad = -g - cone.dual_point
-    inv_hess_prod!(cone.newton_stepdir, cone.newton_grad, mock_cone)
-    cone.newton_norm = dot(cone.newton_grad, cone.newton_stepdir)
-    return
-end
-
-function update_dual_grad(cone::Cone{T}) where {T <: Real}
-    @assert cone.is_feas
-
-    max_iter = 200 # TODO reduce: shouldn't really take > 40
-    eta = eps(T) / 10 # TODO adjust
-    # initial iterate
-    copyto!(cone.newton_point, cone.point)
-    newton_step(cone)
-    # damped Newton
-    iter = 0
-    while cone.newton_norm > eta
-        @. cone.newton_point += cone.newton_stepdir / (1 + cone.newton_norm)
-        newton_step(cone)
-        iter += 1
-        # iter > max_iter && @warn("iteration limit in Newton method")
-    end
-
-    # can avoid a field unless we want to use switched Newton later
-    @. cone.dual_grad = -cone.newton_point
-    cone.dual_grad_updated = true
-
-    # TODO remove check
-    if norm(ForwardDiff.gradient(cone.barrier, cone.newton_point) + cone.dual_point) > sqrt(eps(T))
-        @warn("conjugate grad calculation inaccurate")
-    end
-
-    return cone.dual_grad
-end
-
 # fallbacks
 
 reset_data(cone::Cone) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_fact_updated = false)
