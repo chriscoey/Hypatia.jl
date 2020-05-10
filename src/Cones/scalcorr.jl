@@ -100,7 +100,11 @@ function update_scal_hess(
     z = cone.dual_point
 
     scal_hess = mu * hess(cone)
-    F = cholesky(Symmetric(Matrix(scal_hess), :U)) # Hess might not be a dense matrix
+    F = cholesky(Symmetric(Matrix(scal_hess), :U), check = false) # Hess might not be a dense matrix
+    if !issuccess(F)
+        error("cholesky did not succeed in update_scal_hess")
+        flush(stdout)
+    end
 
     if use_update_1
         # first update
