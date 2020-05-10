@@ -100,7 +100,7 @@ function update_scal_hess(
     z = cone.dual_point
 
     scal_hess = mu * hess(cone)
-    F = cholesky(Symmetric(scal_hess, :U))
+    F = cholesky(Symmetric(Matrix(scal_hess), :U)) # Hess might not be a dense matrix
 
     if use_update_1
         # first update
