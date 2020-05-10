@@ -3,28 +3,31 @@
 
 # for exp cone barrier
 # TODO combine Hi * g into one
-function newton_dir(u::T, v::T, w::T) where {T <: Real}
-    lvw = log(w / v)
-    vlwv = v * lvw
+function newton_dir(point, dual_point) where {T <: Real}
+    (u, v, w) = point
+
+    lwv = log(w / v)
+    vlwv = v * lwv
     vlwvu = vlwv - u
     denom = vlwvu + 2 * v
-    wvdenom = u * v / denom
+    wvdenom = w * v / denom
     vvdenom = (vlwvu + v) / denom
 
-    g = zeros(T, 3)
-    g[1] = inv(vlwvu)
-    g[2] = (1 - lvw) / vlwvu - inv(v)
-    g[3] = (-1 - v / vlwvu) / w
+    g = copy(dual_point)
+    g[1] += inv(vlwvu)
+    g[2] += (1 - lwv) / vlwvu - inv(v)
+    g[3] += (-1 - v / vlwvu) / w
 
     Hi = zeros(T, 3, 3)
-    Hi[3, 3] = w * vvdenom * w
+    Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
+    Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
+    Hi[1, 3] = wvdenom * (2 * vlwv - u)
     Hi[2, 2] = v * vvdenom * v
-    Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - w)) + abs2(u) - v / denom * abs2(vluv - 2 * v)
     Hi[2, 3] = wvdenom * v
-    Hi[1, 3] = wvdenom * (2 * vluv - u)
-    Hi[1, 2] = (abs2(vluv) + u * (v - vluv)) / denom * v
+    Hi[3, 3] = w * vvdenom * w
+    Hi = Symmetric(Hi, :U)
 
-    newton_dir = -(Symmetric(Hi, :U) * g)
+    newton_dir = -(Hi * g)
 
     return newton_dir
 end
