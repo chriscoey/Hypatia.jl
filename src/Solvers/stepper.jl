@@ -207,7 +207,11 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit timer "alpha_comb" alpha = find_max_alpha(
         stepper, solver, false, prev_alpha = stepper.prev_alpha, min_alpha = T(1e-3))
 
-    iszero(alpha) && error()
+    if iszero(alpha)
+        @warn("very small alpha")
+        solver.status = :NumericalFailure
+        return false
+    end
     stepper.prev_alpha = alpha
 
     # step distance alpha in combined direction
