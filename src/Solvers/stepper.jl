@@ -297,7 +297,7 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}; iter_ref
         res .-= rhs
         norm_inf = norm(res, Inf)
         norm_2 = norm(res, 2)
-        @show norm_inf
+        # @show norm_inf
 
         for i in 1:iter_ref_steps
             if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
