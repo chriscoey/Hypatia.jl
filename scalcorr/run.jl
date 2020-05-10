@@ -52,7 +52,7 @@ JuMP_example_names = [
     # # "maxvolume", # TODO uncomment when geomean -> exp bridge is in
     "portfolio",
     # "robustgeomprog",
-    # "signomialmin",
+    "signomialmin",
     ]
 
 # start the tests

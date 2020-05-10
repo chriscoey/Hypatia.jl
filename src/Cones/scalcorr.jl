@@ -1,8 +1,6 @@
 
 # TODO later move to Cones.jl or elsewhere
 
-import ForwardDiff
-
 use_scaling(cone::Cone) = false
 
 use_correction(cone::Cone) = false
@@ -209,7 +207,9 @@ function scal_hess_prod!(
     return prod
 end
 
-# correction
+# correction fallback (TODO remove later)
+import ForwardDiff
+
 function correction(cone::Cone{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
     dim = cone.dim
     point = cone.point

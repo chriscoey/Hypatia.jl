@@ -48,7 +48,7 @@ example_tests(::Type{PortfolioJuMP{Float64}}, ::SlowInstances) = [
 example_tests(::Type{PortfolioJuMP{Float64}}, ::PolyhedralInstances) = [
     ((10, false, true),),
     ((20, false, true),),
-    ((30, false, true),),
+    # ((30, false, true),),
     ((40, false, true),),
     ]
 

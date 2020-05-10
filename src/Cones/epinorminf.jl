@@ -51,6 +51,7 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     rtdiag::Vector{T}
 
     barrier::Function
+    newton_cone
     newton_point::Vector{T}
     newton_grad::Vector{T}
     newton_stepdir::Vector{T}
@@ -107,6 +108,7 @@ function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where 
         cone.invedgeR = zeros(R, n)
     end
 
+    cone.newton_cone = deepcopy(cone)
     cone.newton_point = zeros(T, dim)
     cone.newton_grad = zeros(T, dim)
     cone.newton_stepdir = zeros(T, dim)
@@ -139,7 +141,7 @@ end
 
 function update_dual_feas(cone::EpiNormInf)
     u = cone.dual_point[1]
-    return (u > 0 && u > sum(abs, view(cone.dual_point, 2:cone.dim)))
+    return (u > 0 && u > norm(view(cone.dual_point, 2:cone.dim), 1)) # TODO fix for complex
 end
 
 function update_grad(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
