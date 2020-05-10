@@ -1,8 +1,6 @@
 
 # TODO later move to Cones.jl or elsewhere
 
-import ForwardDiff
-
 use_scaling(cone::Cone) = false
 
 use_correction(cone::Cone) = false
@@ -143,13 +141,13 @@ function update_scal_hess(
         if denom_b_sqrt > 0
             lowrankdowndate!(F, H1prgap / denom_b_sqrt)
         end
-
-        scal_hess = Symmetric(F.U' * F.U)
-        # @show norm(scal_hess * s - z)
-        # @show norm(scal_hess * -conj_g + g)
-        # @show norm(scal_hess * primal_gap - dual_gap)
-        # (norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3) && error()
     end
+
+    scal_hess = Symmetric(F.U' * F.U)
+    # @show norm(scal_hess * s - z)
+    # @show norm(scal_hess * -conj_g + g)
+    # @show norm(scal_hess * primal_gap - dual_gap)
+    # (norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3) && error()
 
     copyto!(cone.scal_hess, scal_hess)
 
@@ -213,7 +211,9 @@ function scal_hess_prod!(
     return prod
 end
 
-# correction
+# correction fallback (TODO remove later)
+import ForwardDiff
+
 function correction(cone::Cone{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
     dim = cone.dim
     point = cone.point

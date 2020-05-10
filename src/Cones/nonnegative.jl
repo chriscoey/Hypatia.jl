@@ -144,9 +144,9 @@ inv_hess_nz_idxs_col(cone::Nonnegative, j::Int) = [j]
 inv_hess_nz_idxs_col_tril(cone::Nonnegative, j::Int) = [j]
 
 # TODO
-# function in_neighborhood(cone::Nonnegative, dual_point::AbstractVector, mu::Real)
+# function in_neighborhood(cone::Nonnegative, mu::Real)
 #     mu_nbhd = mu * cone.max_neighborhood
-#     return all(abs(si * zi - mu) < mu_nbhd for (si, zi) in zip(cone.point, dual_point))
+#     return all(abs(si * zi - mu) < mu_nbhd for (si, zi) in zip(cone.point, cone.dual_point))
 # end
 
 function update_scal_hess(

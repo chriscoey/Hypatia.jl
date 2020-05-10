@@ -42,6 +42,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     vwivlwvu::Vector{T}
 
     barrier::Function
+    newton_cone
     newton_point::Vector{T}
     newton_grad::Vector{T}
     newton_stepdir::Vector{T}
@@ -88,6 +89,7 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     cone.correction = zeros(T, dim)
     cone.vwivlwvu = zeros(T, dim - 2)
 
+    cone.newton_cone = deepcopy(cone)
     cone.dual_point = zeros(T, dim)
     cone.newton_point = zeros(T, dim)
     cone.newton_grad = zeros(T, dim)

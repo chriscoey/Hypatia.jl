@@ -31,7 +31,7 @@ default_solver_options = (
 # instance sets and real types to run and corresponding time limits (seconds)
 instance_sets = [
     (ExpInstances, Float64, 60),
-    (PolyhedralInstances, Float64, 30),
+    (PolyhedralInstances, Float64, 60),
     ]
 
 # types of models to run and corresponding options and example names
@@ -49,8 +49,8 @@ native_example_names = [
 JuMP_example_names = [
     # "centralpolymat",
     # "expdesign",
-    # # "maxvolume", # TODO uncoment when geomean -> exp bridge is in
-    # "portfolio",
+    # # "maxvolume", # TODO uncomment when geomean -> exp bridge is in
+    "portfolio",
     # "robustgeomprog",
     "signomialmin",
     ]

@@ -51,6 +51,7 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     rtdiag::Vector{T}
 
     barrier::Function
+    newton_cone
     newton_point::Vector{T}
     newton_grad::Vector{T}
     newton_stepdir::Vector{T}
@@ -107,6 +108,7 @@ function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where 
         cone.invedgeR = zeros(R, n)
     end
 
+    cone.newton_cone = deepcopy(cone)
     cone.newton_point = zeros(T, dim)
     cone.newton_grad = zeros(T, dim)
     cone.newton_stepdir = zeros(T, dim)
@@ -135,6 +137,11 @@ function update_feas(cone::EpiNormInf)
 
     cone.feas_updated = true
     return cone.is_feas
+end
+
+function update_dual_feas(cone::EpiNormInf)
+    u = cone.dual_point[1]
+    return (u > 0 && u > norm(view(cone.dual_point, 2:cone.dim), 1)) # TODO fix for complex
 end
 
 function update_grad(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
@@ -382,6 +389,7 @@ function inv_hess_sqrt_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone
 end
 
 # TODO complex
+# TODO in-place, inbounds
 function correction(cone::EpiNormInf{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
     dim = cone.dim
     point = cone.point
@@ -389,32 +397,42 @@ function correction(cone::EpiNormInf{T}, primal_dir::AbstractVector{T}, dual_dir
     w = cone.w
     den = cone.den
 
-    u_dir = primal_dir[1]
-    w_dir = primal_dir[2:end]
+    Hinv_z = inv_hess_prod!(similar(dual_dir), dual_dir, cone)
 
-    # TODO instead of forming a tensor store efficiently in just three vectors
-    third_order = zeros(T, dim, dim, dim)
-    third_order[1, 1, 1] = sum(12 * u / abs2(z) - 16 * u ^ 3 / z ^ 3 for z in den) + 2 * (cone.n - 1) / u ^ 3
+    # third order derivatives
+    uuu = 4 * u * sum((3 - 4 * u / z * u) / z / z for z in den) + 2 * (cone.n - 1) / u / u / u
+    # TODO get below from cone.wden and cone.uden (can do with broadcast)
+    uuw = zeros(cone.n)
+    uww = zeros(cone.n)
+    www = zeros(cone.n)
     for i in 1:cone.n
-        i1 = i + 1
-        third_order[i1, i1, i1] = 12 * w[i] / abs2(den[i]) + 16 * w[i] ^ 3 / den[i] ^ 3
-        third_order[1, i1, i1] = third_order[i1, 1, i1] = third_order[i1, i1, 1] = -4 * u / abs2(den[i]) - 16 * u * abs2(w[i]) / (den[i] ^ 3)
-        third_order[1, 1, i1] = third_order[1, i1, 1] = third_order[i1, 1, 1] = -4 * w[i] / abs2(den[i]) + 16 * abs2(u) * w[i] / (den[i] ^ 3)
+        wi = w[i]
+        deni = den[i]
+        wideni4 = 4 * wi / deni
+        udeni4 = 4 * u / deni
+        www[i] = wideni4 * (3 + wideni4 * wi) / deni
+        uww[i] = -udeni4 * (1 + wideni4 * wi) / deni
+        uuw[i] = wideni4 * (-1 + udeni4 * u) / deni
     end
 
     # third order derivative multiplied by s
-    deriv3s = zeros(T, dim, dim)
-    deriv3s[1, 1] = dot(third_order[:, 1, 1], primal_dir)
+    u_dir = primal_dir[1]
+    Hiz1 = Hinv_z[1]
+    corr = zeros(T, dim)
+    @views corr1 = (uuu * u_dir + dot(uuw, primal_dir[2:end])) * Hiz1
     for i in 1:cone.n
-        i1 = i + 1
-        deriv3s[1, i1] = deriv3s[i1, 1] = third_order[1, 1, i1] * u_dir + third_order[i1, 1, i1] * w_dir[i]
-        deriv3s[i1, i1] = third_order[1, i1, i1] * u_dir + third_order[i1, i1, i1] * w_dir[i]
+        j = i + 1
+        Hizj = Hinv_z[j]
+        pdj = primal_dir[j]
+        uwwi = uww[i]
+        edgei = uuw[i] * u_dir + uwwi * pdj
+        corr1 += edgei * Hizj
+        corr[j] = edgei * Hiz1 + (uwwi * u_dir + www[i] * pdj) * Hizj
     end
+    corr[1] = corr1
+    @. corr /= -2
 
-    Hinv_z = inv_hess_prod!(similar(dual_dir), dual_dir, cone)
-    # TODO deriv3s is an arrowhead matrix, can multiply efficiently
-    FD_corr = deriv3s * Hinv_z / -2
-    return FD_corr
+    return corr
 end
 
 hess_nz_count(cone::EpiNormInf{<:Real, <:Real}) = 3 * cone.dim - 2
