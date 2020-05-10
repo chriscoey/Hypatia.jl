@@ -137,6 +137,12 @@ function update_feas(cone::EpiNormInf)
     return cone.is_feas
 end
 
+function update_dual_feas(cone::EpiNormInf)
+    u = cone.dual_point[1]
+    @views cone.is_feas = (u > 0 && u > sum(abs, cone.dual_point[2:end]))
+    return cone.is_feas
+end
+
 function update_grad(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
     @assert cone.is_feas
     u = cone.point[1]
