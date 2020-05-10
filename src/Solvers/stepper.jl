@@ -188,7 +188,6 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
         stepper, solver, true, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
     # calculate correction factor gamma
     stepper.prev_gamma = gamma = (one(T) - aff_alpha) * min(abs2(one(T) - aff_alpha), T(0.25))
-    # println("--------------------------------------")
 
     # TODO have to reload point after affine alpha line search
     Cones.load_point.(cones, point.primal_views)
@@ -201,13 +200,10 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     # calculate correction direction and keep in dir
     @timeit timer "rhs_corr" update_rhs_final(stepper, solver, gamma)
     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
-    # copyto!(stepper.dir_corr, stepper.dir)
 
     # find distance alpha for stepping in combined direction
     @timeit timer "alpha_comb" alpha = find_max_alpha(
         stepper, solver, false, prev_alpha = stepper.prev_alpha, min_alpha = T(1e-3))
-
-    iszero(alpha) && error()
     stepper.prev_alpha = alpha
 
     # step distance alpha in combined direction
@@ -296,7 +292,7 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}; iter_ref
         res .-= rhs
         norm_inf = norm(res, Inf)
         norm_2 = norm(res, 2)
-        # @show norm_inf
+        @show norm_inf
 
         for i in 1:iter_ref_steps
             if norm_inf < 100 * eps(T) # TODO change tolerance dynamically

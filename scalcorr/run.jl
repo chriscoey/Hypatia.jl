@@ -21,7 +21,8 @@ default_solver_options = (
     verbose = true,
     iter_limit = 100,
     timer = timer,
-    system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
+    # system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
+    system_solver = Solvers.QRCholDenseSystemSolver{Float64}(),
     # max_nbhd = 0.02,
     # tol_rel_opt = 1e-7,
     # tol_abs_opt = 1e-7,
@@ -50,7 +51,7 @@ JuMP_example_names = [
     # "centralpolymat",
     # "expdesign",
     # # "maxvolume", # TODO uncomment when geomean -> exp bridge is in
-    "portfolio",
+    # "portfolio",
     # "robustgeomprog",
     "signomialmin",
     ]

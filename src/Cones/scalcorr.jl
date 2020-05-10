@@ -10,14 +10,83 @@ scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_
 use_update_1_default() = true
 use_update_2_default() = true
 
+
+# updates cone.hess in place, before factorization
+# TODO can't use that cone.hess for the skajaa ye neighborhood
+function update_scal_hess(
+    cone::Cone{T},
+    mu::T,
+    use_update_1::Bool = use_update_1_default(),
+    use_update_2::Bool = use_update_2_default(),
+    ) where {T}
+    @assert is_feas(cone)
+    @assert !cone.scal_hess_updated
+    s = cone.point
+    z = cone.dual_point
+
+    scal_hess = mu * hess(cone)
+
+    if use_update_1_default()
+        # first update
+        denom_a = dot(s, z)
+        Hs = scal_hess * s
+        denom_b = dot(s, Hs)
+        if denom_a > 0
+            za = z / sqrt(denom_a)
+            scal_hess += Symmetric(za * za')
+        end
+        if denom_b > 0
+            Hsb = Hs / sqrt(denom_b)
+            scal_hess -= Symmetric(Hsb * Hsb')
+        end
+        # @show norm(scal_hess * s - z)
+    end
+
+    if use_update_2_default()
+        # second update
+        g = grad(cone)
+        conj_g = dual_grad(cone)
+        # check gradient of the optimization problem is small
+        # @show norm(ForwardDiff.gradient(cone.barrier, -conj_g) + z)
+        mu_cone = dot(s, z) / get_nu(cone)
+        # @show mu_cone
+        dual_gap = z + mu_cone * g
+        primal_gap = s + mu_cone * conj_g
+        denom_a = dot(primal_gap, dual_gap)
+        H1prgap = scal_hess * primal_gap
+        denom_b = dot(primal_gap, H1prgap)
+        if denom_a > 0
+            dga = dual_gap / sqrt(denom_a)
+            scal_hess += Symmetric(dga * dga')
+        end
+        if denom_b > 0
+            Hpga = H1prgap / sqrt(denom_b)
+            scal_hess -= Symmetric(Hpga * Hpga')
+        end
+        # @show norm(scal_hess * s - z)
+        # @show norm(scal_hess * -conj_g + g)
+        # @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
+        # @show norm(scal_hess * primal_gap - dual_gap)
+        # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
+    end
+
+    copyto!(cone.scal_hess, scal_hess)
+
+    cone.scal_hess_updated = true
+    return cone.scal_hess
+end
+
+#
 # function update_scal_hess(
 #     cone::Cone{T},
 #     mu::T,
-#     z::AbstractVector{T}, # dual point
+#     use_update_1::Bool = use_update_1_default(),
+#     use_update_2::Bool = use_update_2_default(),
 #     ) where {T}
 #     @assert is_feas(cone)
 #     @assert !cone.scal_hess_updated
 #     s = cone.point
+#     z = cone.dual_point
 #
 #     scal_hess = mu * hess(cone)
 #     F = cholesky(scal_hess)
@@ -86,74 +155,75 @@ use_update_2_default() = true
 # end
 
 
-function update_scal_hess(
-    cone::Cone{T},
-    mu::T;
-    use_update_1::Bool = use_update_1_default(),
-    use_update_2::Bool = use_update_2_default(),
-    ) where {T}
-    @assert is_feas(cone)
-    @assert !cone.scal_hess_updated
-    s = cone.point
-    z = cone.dual_point
+# function update_scal_hess(
+#     cone::Cone{T},
+#     mu::T;
+#     use_update_1::Bool = use_update_1_default(),
+#     use_update_2::Bool = use_update_2_default(),
+#     ) where {T}
+#     @assert is_feas(cone)
+#     @assert !cone.scal_hess_updated
+#     s = cone.point
+#     z = cone.dual_point
+#
+#     scal_hess = mu * hess(cone)
+#     F = cholesky(Symmetric(Matrix(scal_hess), :U), check = false) # Hess might not be a dense matrix
+#     if !issuccess(F)
+#         error("cholesky did not succeed in update_scal_hess")
+#         flush(stdout)
+#     end
+#
+#     if use_update_1
+#         # first update
+#         denom_a = dot(s, z)
+#         muHs = scal_hess * s
+#         denom_b_sqrt = norm(F.U * s)
+#
+#         if denom_a > 0
+#             lowrankupdate!(F, z / sqrt(denom_a))
+#         end
+#         if denom_b_sqrt > 0
+#             lowrankdowndate!(F, muHs / denom_b_sqrt)
+#         end
+#
+#         # @show norm(F.U' * (F.U * s) - z)
+#     end
+#
+#     if use_update_2
+#         # second update
+#         g = grad(cone)
+#         conj_g = dual_grad(cone)
+#         # check gradient of the optimization problem is small
+#         # @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
+#
+#         mu_cone = dot(s, z) / get_nu(cone)
+#         dual_gap = z + mu_cone * g
+#         primal_gap = s + mu_cone * conj_g
+#
+#         denom_a = dot(primal_gap, dual_gap)
+#         Uprgap = F.U * primal_gap
+#         H1prgap = F.U' * Uprgap
+#         denom_b_sqrt = norm(Uprgap)
+#         if denom_a > 0
+#             lowrankupdate!(F, dual_gap / sqrt(denom_a))
+#         end
+#         if denom_b_sqrt > 0
+#             lowrankdowndate!(F, H1prgap / denom_b_sqrt)
+#         end
+#     end
+#
+#     scal_hess = Symmetric(F.U' * F.U)
+#     # @show norm(scal_hess * s - z)
+#     # @show norm(scal_hess * -conj_g + g)
+#     # @show norm(scal_hess * primal_gap - dual_gap)
+#     # (norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3) && error()
+#
+#     copyto!(cone.scal_hess, scal_hess)
+#
+#     cone.scal_hess_updated = true
+#     return cone.scal_hess
+# end
 
-    scal_hess = mu * hess(cone)
-    F = cholesky(Symmetric(Matrix(scal_hess), :U), check = false) # Hess might not be a dense matrix
-    if !issuccess(F)
-        error("cholesky did not succeed in update_scal_hess")
-        flush(stdout)
-    end
-
-    if use_update_1
-        # first update
-        denom_a = dot(s, z)
-        muHs = scal_hess * s
-        denom_b_sqrt = norm(F.U * s)
-
-        if denom_a > 0
-            lowrankupdate!(F, z / sqrt(denom_a))
-        end
-        if denom_b_sqrt > 0
-            lowrankdowndate!(F, muHs / denom_b_sqrt)
-        end
-
-        # @show norm(F.U' * (F.U * s) - z)
-    end
-
-    if use_update_2
-        # second update
-        g = grad(cone)
-        conj_g = dual_grad(cone)
-        # check gradient of the optimization problem is small
-        # @show norm(ForwardDiff.gradient(barrier(cone), -conj_g) + z)
-
-        mu_cone = dot(s, z) / get_nu(cone)
-        dual_gap = z + mu_cone * g
-        primal_gap = s + mu_cone * conj_g
-
-        denom_a = dot(primal_gap, dual_gap)
-        Uprgap = F.U * primal_gap
-        H1prgap = F.U' * Uprgap
-        denom_b_sqrt = norm(Uprgap)
-        if denom_a > 0
-            lowrankupdate!(F, dual_gap / sqrt(denom_a))
-        end
-        if denom_b_sqrt > 0
-            lowrankdowndate!(F, H1prgap / denom_b_sqrt)
-        end
-    end
-
-    scal_hess = Symmetric(F.U' * F.U)
-    # @show norm(scal_hess * s - z)
-    # @show norm(scal_hess * -conj_g + g)
-    # @show norm(scal_hess * primal_gap - dual_gap)
-    # (norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3) && error()
-
-    copyto!(cone.scal_hess, scal_hess)
-
-    cone.scal_hess_updated = true
-    return cone.scal_hess
-end
 
 function scal_hess_prod!(
     prod::AbstractVecOrMat{T},
@@ -163,53 +233,67 @@ function scal_hess_prod!(
     use_update_1::Bool = use_update_1_default(),
     use_update_2::Bool = use_update_2_default(),
     ) where {T}
-    @assert is_feas(cone)
-    s = cone.point
-    z = cone.dual_point
-
-    hess_prod!(prod, arr, cone)
-    @. prod *= mu
-
-    if use_update_1
-        muHs = similar(s)
-        hess_prod!(muHs, s, cone)
-        @. muHs *= mu
-        denom_a = dot(s, z)
-        denom_b = dot(s, muHs)
-        if denom_a > 0
-            scale_a = dot(z, arr) / denom_a
-            @. prod += scale_a * z
-        end
-        if denom_b > 0
-            scale_b = dot(muHs, arr) / denom_b
-            @. prod -= scale_b * muHs
-        end
-    end
-
-    if use_update_2
-        g = grad(cone)
-        conj_g = dual_grad(cone)
-        mu_cone = dot(s, z) / get_nu(cone)
-        primal_gap = s + mu_cone * conj_g
-        dual_gap = z + mu_cone * g
-        # TODO do this in a better way
-        H1prgap = similar(s)
-        scal_hess_prod!(H1prgap, primal_gap, cone, mu, use_update_1 = true, use_update_2 = false)
-        # @show isapprox(H1prgap, update_scal_hess(cone, mu, use_update_1 = true, use_update_2 = false) * primal_gap)
-        denom_a = dot(primal_gap, dual_gap)
-        denom_b = dot(primal_gap, H1prgap)
-        if denom_a > 0
-            scale_a = dot(dual_gap, arr) / denom_a
-            @. prod += scale_a * dual_gap
-        end
-        if denom_b > 0
-            scale_b = dot(H1prgap, arr) / denom_b
-            @. prod -= scale_b * H1prgap
-        end
-    end
-
+    mul!(prod, scal_hess(cone, mu), arr)
     return prod
 end
+
+# function scal_hess_prod!(
+#     prod::AbstractVecOrMat{T},
+#     arr::AbstractVecOrMat{T},
+#     cone::Cone{T},
+#     mu::T;
+#     use_update_1::Bool = use_update_1_default(),
+#     use_update_2::Bool = use_update_2_default(),
+#     ) where {T}
+#     @assert is_feas(cone)
+#     s = cone.point
+#     z = cone.dual_point
+#
+#     hess_prod!(prod, arr, cone)
+#     @. prod *= mu
+#
+#     if use_update_1
+#         muHs = similar(s)
+#         hess_prod!(muHs, s, cone)
+#         @. muHs *= mu
+#         denom_a = dot(s, z)
+#         denom_b = dot(s, muHs)
+#         if denom_a > 0 && denom_b > 0
+#             for j in 1:size(arr, 2)
+#                 @views arrj = arr[:, j]
+#                 scale_a = dot(z, arrj) / denom_a
+#                 scale_b = dot(muHs, arrj) / denom_b
+#                 @. prod[:, j] += scale_a * z
+#                 @. prod[:, j] -= scale_b * muHs
+#             end
+#         end
+#     end
+#
+#     if use_update_2
+#         g = grad(cone)
+#         conj_g = dual_grad(cone)
+#         mu_cone = dot(s, z) / get_nu(cone)
+#         primal_gap = s + mu_cone * conj_g
+#         dual_gap = z + mu_cone * g
+#         # TODO do this in a better way
+#         H1prgap = similar(s)
+#         scal_hess_prod!(H1prgap, primal_gap, cone, mu, use_update_1 = true, use_update_2 = false)
+#         # @show isapprox(H1prgap, update_scal_hess(cone, mu, use_update_1 = true, use_update_2 = false) * primal_gap)
+#         denom_a = dot(primal_gap, dual_gap)
+#         denom_b = dot(primal_gap, H1prgap)
+#         if denom_a > 0 && denom_b > 0
+#             for j in 1:size(arr, 2)
+#                 @views arrj = arr[:, j]
+#                 scale_a = dot(dual_gap, arrj) / denom_a
+#                 scale_b = dot(H1prgap, arrj) / denom_b
+#                 @. prod[:, j] += scale_a * dual_gap
+#                 @. prod[:, j] -= scale_b * H1prgap
+#             end
+#         end
+#     end
+#
+#     return prod
+# end
 
 # correction fallback (TODO remove later)
 import ForwardDiff
