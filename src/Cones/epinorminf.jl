@@ -397,23 +397,24 @@ function correction(cone::EpiNormInf{T}, primal_dir::AbstractVector{T}, dual_dir
     u_dir = primal_dir[1]
     w_dir = primal_dir[2:end]
 
-    # TODO instead of forming a tensor store efficiently in just three vectors
-    third_order = zeros(T, dim, dim, dim)
-    third_order[1, 1, 1] = sum(12 * u / abs2(z) - 16 * u ^ 3 / z ^ 3 for z in den) + 2 * (cone.n - 1) / u ^ 3
+    # third order derivatives
+    uuu = sum(12 * u / abs2(z) - 16 * u ^ 3 / z ^ 3 for z in den) + 2 * (cone.n - 1) / u ^ 3
+    uuw = zeros(cone.n)
+    uww = zeros(cone.n)
+    www = zeros(cone.n)
     for i in 1:cone.n
-        i1 = i + 1
-        third_order[i1, i1, i1] = 12 * w[i] / abs2(den[i]) + 16 * w[i] ^ 3 / den[i] ^ 3
-        third_order[1, i1, i1] = third_order[i1, 1, i1] = third_order[i1, i1, 1] = -4 * u / abs2(den[i]) - 16 * u * abs2(w[i]) / (den[i] ^ 3)
-        third_order[1, 1, i1] = third_order[1, i1, 1] = third_order[i1, 1, 1] = -4 * w[i] / abs2(den[i]) + 16 * abs2(u) * w[i] / (den[i] ^ 3)
+        www[i] = 12 * w[i] / abs2(den[i]) + 16 * w[i] ^ 3 / den[i] ^ 3
+        uww[i] = -4 * u / abs2(den[i]) - 16 * u * abs2(w[i]) / (den[i] ^ 3)
+        uuw[i] = -4 * w[i] / abs2(den[i]) + 16 * abs2(u) * w[i] / (den[i] ^ 3)
     end
 
     # third order derivative multiplied by s
     deriv3s = zeros(T, dim, dim)
-    deriv3s[1, 1] = dot(third_order[:, 1, 1], primal_dir)
+    deriv3s[1, 1] = uuu * u_dir + dot(uuw, w_dir)
     for i in 1:cone.n
         i1 = i + 1
-        deriv3s[1, i1] = deriv3s[i1, 1] = third_order[1, 1, i1] * u_dir + third_order[i1, 1, i1] * w_dir[i]
-        deriv3s[i1, i1] = third_order[1, i1, i1] * u_dir + third_order[i1, i1, i1] * w_dir[i]
+        deriv3s[1, i1] = deriv3s[i1, 1] = uuw[i] * u_dir + uww[i] * w_dir[i]
+        deriv3s[i1, i1] = uww[i] * u_dir + www[i] * w_dir[i]
     end
 
     Hinv_z = inv_hess_prod!(similar(dual_dir), dual_dir, cone)
