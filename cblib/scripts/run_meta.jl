@@ -118,7 +118,7 @@ for instname in instances, solver in moi_solvers, ss in system_solvers
     try
         t = time()
         # process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) --trace-compile=snoop scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
-        process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
+        process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) cblib/scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
         # process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) --trace-compile=snoop --sysimage=sc_img.so scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
         sleep(3.0)
         pid = parse(Int, chomp(readline(open("mypid", "r"))))

@@ -182,10 +182,12 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     # calculate affine/prediction direction and keep in dir
     @timeit timer "rhs_aff" update_rhs_affine(stepper, solver)
     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
+    # @show stepper.dir
 
     # get alpha for affine direction
     @timeit timer "alpha_aff" stepper.prev_aff_alpha = aff_alpha = find_max_alpha(
         stepper, solver, true, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
+    # @show aff_alpha
     # calculate correction factor gamma
     stepper.prev_gamma = gamma = (one(T) - aff_alpha) * min(abs2(one(T) - aff_alpha), T(0.25))
 
@@ -200,6 +202,7 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     # calculate correction direction and keep in dir
     @timeit timer "rhs_corr" update_rhs_final(stepper, solver, gamma)
     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
+    # @show stepper.dir
 
     # find distance alpha for stepping in combined direction
     @timeit timer "alpha_comb" alpha = find_max_alpha(
@@ -210,6 +213,7 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
         return false
     end
     stepper.prev_alpha = alpha
+    # @show alpha
 
     # step distance alpha in combined direction
     @. point.x += alpha * stepper.x_dir
@@ -517,7 +521,8 @@ function find_max_alpha(
         dot_s_z = zero(T)
         for k in cone_order
             dot_s_z_k = dot(primals_linesearch[k], duals_linesearch[k])
-            if dot_s_z_k < eps(T)
+            # TODO change back
+            if dot_s_z_k < eps(Float64)
                 in_nbhd = false
                 break
             end
@@ -528,7 +533,9 @@ function find_max_alpha(
             taukap_temp = (tau + alpha * tau_dir) * (kap + alpha * kap_dir)
             mu_temp = (dot_s_z + taukap_temp) / nup1
 
-            if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-3 # solver.max_nbhd
+            # TODO change back
+            if mu_temp > eps(Float64) && taukap_temp > mu_temp * solver.max_nbhd
+            # if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-4 # solver.max_nbhd
                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
                 sortperm!(cone_order, cone_times, initialized = true)
 
