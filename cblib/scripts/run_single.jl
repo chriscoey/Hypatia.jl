@@ -24,11 +24,12 @@ include(joinpath(@__DIR__, "read_instances.jl"))
 # system_solver_name = (solver_name == "hypatia" ? ARGS[4] : "")
 # bss1 solved with nbhds 1e-2
 # demb782 solved with 1e-3
-instname = "demb782"
+instname = "bss2"
 csvfile =  "dummy_results.txt"
 solver_name = "hypatia"
-system_solver_name = "qrchol_dense"
-# system_solver_name = "naive_dense"
+# system_solver_name = "qrchol_dense"
+system_solver_name = "naive_dense"
+model_type = BigFloat
 
 println()
 println("instance $instname")
@@ -47,9 +48,9 @@ end
     # for instname in read_instances(joinpath(@__DIR__, "../sets", "compile.txt"))
     #     println("solving small instance: $instname...")
     #     flush(stdout)
-    #     single_moi(instname, csvfile, solver_name, system_solver_name, print_timer = false, precompiling = true)
+    #     single_moi(instname, csvfile, system_solver_name, print_timer = false, precompiling = true)
     # end
 # end
-single_moi(instname, csvfile, solver_name, system_solver_name, print_timer = true, precompiling = false)
+single_moi(instname, csvfile, system_solver_name, print_timer = true, precompiling = false, out_type = model_type)
 
 println()
