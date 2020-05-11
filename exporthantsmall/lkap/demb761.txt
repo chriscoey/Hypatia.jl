@@ -39,3 +39,32 @@ took 37.818705273 seconds
 ┌ Warning: Hypatia status NumericalFailure not handled
 └ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
 
+
+instance demb761
+ran at: 2020-05-11T18:55:11.247
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but F64 for dual grad tol
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.152445381 seconds
+building model...
+took 9.210318184 seconds
+
+solving model...
+
+signal (2): Interrupt
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:61
+_ZN4llvm17MachineModuleInfo26getOrCreateMachineFunctionERKNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+unknown function (ip: (nil))
+Allocations: 115502124 (Pool: 115481520; Big: 20604); GC: 86
+<unknown>:0: error: starting new .cfi frame before finishing the previous one
+<unknown>:0: error: starting new .cfi frame before finishing the previous one
+LLVM ERROR: Error parsing inline asm
+

@@ -58,43 +58,85 @@ syn20m02m
 
 
 starting bss1 hypatia qrchol_dense
-...took 61.507416009902954 seconds
+...took 65.51820111274719 seconds
 
 starting demb782 hypatia qrchol_dense
-...took 61.18942618370056 seconds
+...took 65.20203804969788 seconds
 
 starting bss2 hypatia qrchol_dense
-...took 61.18614888191223 seconds
+...took 65.19990110397339 seconds
 
 starting demb781 hypatia qrchol_dense
-...took 61.18917489051819 seconds
+...took 65.20165205001831 seconds
 
 starting synthes1 hypatia qrchol_dense
-...took 62.193397998809814 seconds
+...took 65.19854712486267 seconds
 
 starting gptest hypatia qrchol_dense
-...error in memory check: ProcessFailedException(Base.Process[Process(`grep RSS`, ProcessExited(1))])
-...took 62.453893184661865 seconds
+...took 65.1987841129303 seconds
 
 starting rijc781 hypatia qrchol_dense
-...took 61.18836688995361 seconds
+...took 65.20040106773376 seconds
 
 starting synthes2 hypatia qrchol_dense
-...took 62.19389200210571 seconds
+...took 66.20646977424622 seconds
 
 starting rijc784 hypatia qrchol_dense
-...took 61.18758988380432 seconds
+...took 71.22389888763428 seconds
 
 starting rijc785 hypatia qrchol_dense
-...took 61.18740892410278 seconds
+...took 69.2166121006012 seconds
 
 starting rijc786 hypatia qrchol_dense
-...took 61.194416999816895 seconds
+...took 66.2064380645752 seconds
 
 starting syn05m hypatia qrchol_dense
-...took 62.19320487976074 seconds
+...took 66.2047119140625 seconds
 
 starting rijc782 hypatia qrchol_dense
-...took 62.19347786903381 seconds
+...took 69.21460008621216 seconds
 
 starting batchdes hypatia qrchol_dense
+...took 73.23410391807556 seconds
+
+starting synthes3 hypatia qrchol_dense
+...took 67.20640897750854 seconds
+
+starting rijc783 hypatia qrchol_dense
+...error in memory check: ProcessFailedException(Base.Process[Process(`grep RSS`, ProcessExited(1))])
+...took 66.45979905128479 seconds
+
+starting syn10m hypatia qrchol_dense
+...took 67.21096110343933 seconds
+
+starting syn05h hypatia qrchol_dense
+...took 66.20570182800293 seconds
+
+starting beck751 hypatia qrchol_dense
+...took 66.20472717285156 seconds
+
+starting beck752 hypatia qrchol_dense
+...took 67.20895099639893 seconds
+
+starting beck753 hypatia qrchol_dense
+...took 95.29869794845581 seconds
+
+starting fiac81b hypatia qrchol_dense
+...took 67.20770001411438 seconds
+
+starting batch hypatia qrchol_dense
+...took 79.24672102928162 seconds
+
+starting syn05m02m hypatia qrchol_dense
+...took 70.21753096580505 seconds
+
+starting syn15m hypatia qrchol_dense
+...took 70.2197630405426 seconds
+
+starting fang88 hypatia qrchol_dense
+...took 69.21594309806824 seconds
+
+starting syn10h hypatia qrchol_dense
+...took 67.20678091049194 seconds
+
+starting demb761 hypatia qrchol_dense
