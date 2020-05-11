@@ -36,7 +36,7 @@ options = (
     tol_rel_opt = tol,
     tol_abs_opt = tol,
     tol_feas = tol,
-)
+    )
 # couldn't get general version to work
 convert_cone(cone::Hypatia.Cones.Nonnegative, out_type::Type) = Hypatia.Cones.Nonnegative{out_type}(cone.dim)
 convert_cone(cone::Hypatia.Cones.HypoPerLog, out_type::Type) = Hypatia.Cones.HypoPerLog{out_type}(cone.dim)
@@ -116,9 +116,10 @@ function single_moi(
         out_type.(model.h),
         convert_cone.(model.cones, out_type),
         )
-    solver = SO.Solver{out_type}(system_solver = system_solver_dict[system_solver_name]{out_type}())
+    solver = SO.Solver{out_type}(; options..., system_solver = system_solver_dict[system_solver_name]{out_type}())
     SO.load(solver, new_model)
-    optimizer = Hypatia.Optimizer{out_type}(; options...)
+    # TODO there is no need to attach solver to an Optimizer
+    optimizer = Hypatia.Optimizer{out_type}()
     optimizer.model = new_model
     optimizer.solver = solver
 
@@ -130,7 +131,7 @@ function single_moi(
     # try
         (val, moitime, bytes, gctime, memallocs) = (0.0, 0.0, 0.0, 0.0, 0.0)
         try
-            (val, moitime, bytes, gctime, memallocs) = @timed MOI.optimize!(optimizer)
+            (val, moitime, bytes, gctime, memallocs) = @timed SO.solve(solver)
         catch e
             println(e)
             flush(stdout)
