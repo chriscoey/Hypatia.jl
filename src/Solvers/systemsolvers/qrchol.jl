@@ -96,7 +96,9 @@ function solve_subsystem(system_solver::QRCholSystemSolver{T}, solver::Solver{T}
 
     if !isempty(system_solver.Q2div)
         @views x_sub2 = copyto!(rhs3[(p + 1):n], system_solver.Q2div)
+        @show "99", x_sub2
         inv_prod(system_solver.fact_cache, x_sub2)
+        @show "101" x_sub2
     end
 
     lmul!(solver.Ap_Q, x)

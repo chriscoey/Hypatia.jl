@@ -528,7 +528,7 @@ function find_max_alpha(
             taukap_temp = (tau + alpha * tau_dir) * (kap + alpha * kap_dir)
             mu_temp = (dot_s_z + taukap_temp) / nup1
 
-            if mu_temp > eps(T) && taukap_temp > mu_temp * solver.max_nbhd
+            if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-3 # solver.max_nbhd
                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
                 sortperm!(cone_order, cone_times, initialized = true)
 

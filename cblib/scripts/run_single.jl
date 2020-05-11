@@ -23,6 +23,7 @@ include(joinpath(@__DIR__, "read_instances.jl"))
 # solver_name = ARGS[3]
 # system_solver_name = (solver_name == "hypatia" ? ARGS[4] : "")
 # bss1 solved with nbhds 1e-2
+# demb782 solved with 1e-3
 instname = "demb782"
 csvfile =  "dummy_results.txt"
 solver_name = "hypatia"
