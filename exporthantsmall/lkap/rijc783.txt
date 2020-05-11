@@ -1,0 +1,78 @@
+
+instance rijc783
+ran at: 2020-05-11T15:45:52.446
+with solver: hypatia, system solver: qrchol_dense
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.157642037 seconds
+building model...
+took 9.253556869 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   9.3183e+00   5.5601e+00  3.80e+01  6.83e+00  2.29e+00  0.00e+00  8.73e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.1898e+01   1.1508e+01  4.06e+00  3.52e-01  4.19e-01  0.00e+00  1.60e-01  5.91e-01  2.85e-01  1.08e-01  4.32e-02  9.32e-01
+    2   1.2062e+01   1.1978e+01  5.54e-01  4.62e-02  4.82e-02  0.00e+00  1.84e-02  6.83e-01  1.12e-02  1.44e-02  1.19e-02  8.78e-01
+    3   1.1808e+01   1.1784e+01  1.76e-01  1.49e-02  1.43e-02  0.00e+00  5.47e-03  7.30e-01  3.93e-03  4.57e-03  4.92e-02  7.18e-01
+    4   1.1748e+01   1.1747e+01  1.26e-02  1.07e-03  1.01e-03  0.00e+00  3.85e-04  7.52e-01  4.45e-04  3.32e-04  7.24e-02  1.00e+00
+    5   1.1747e+01   1.1746e+01  5.09e-04  4.33e-05  4.06e-05  0.00e+00  1.55e-05  7.55e-01  1.76e-05  1.34e-05  5.05e-04  9.60e-01
+    6   1.1746e+01   1.1746e+01  7.39e-05  6.29e-06  5.89e-06  0.00e+00  2.25e-06  7.55e-01  2.55e-06  1.94e-06  6.06e-03  8.60e-01
+    7   1.1746e+01   1.1746e+01  6.38e-06  5.43e-07  5.09e-07  0.00e+00  1.94e-07  7.55e-01  2.22e-07  1.68e-07  8.62e-02  1.00e+00
+    8   1.1746e+01   1.1746e+01  8.53e-07  7.26e-08  6.80e-08  0.00e+00  2.60e-08  7.55e-01  2.97e-08  2.25e-08  2.75e-03  8.69e-01
+    9   1.1746e+01   1.1746e+01  2.06e-07  1.75e-08  1.64e-08  0.00e+00  6.27e-09  7.55e-01  7.17e-09  5.42e-09  1.48e-02  7.70e-01
+   10   1.1746e+01   1.1746e+01  2.04e-07  1.73e-08  1.62e-08  0.00e+00  6.20e-09  7.55e-01  7.09e-09  5.36e-09  2.19e-01  1.48e-02
+
+status is NumericalFailure after 10 iterations and 10.287 seconds
+
+took 15.541228828 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance rijc783
+ran at: 2020-05-11T16:28:38.66
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.1531352 seconds
+building model...
+took 9.231852401 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   9.3183e+00   5.5601e+00  3.80e+01  6.83e+00  2.29e+00  0.00e+00  8.73e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.1898e+01   1.1508e+01  4.06e+00  3.52e-01  4.19e-01  0.00e+00  1.60e-01  5.91e-01  2.85e-01  1.08e-01  4.32e-02  9.32e-01
+    2   1.2060e+01   1.1974e+01  5.89e-01  4.92e-02  5.14e-02  0.00e+00  1.96e-02  6.82e-01  1.40e-02  1.53e-02  1.19e-02  8.69e-01
+    3   1.1814e+01   1.1787e+01  1.97e-01  1.67e-02  1.61e-02  0.00e+00  6.15e-03  7.31e-01  4.89e-03  5.15e-03  3.60e-02  6.89e-01
+    4   1.1749e+01   1.1747e+01  1.61e-02  1.37e-03  1.28e-03  0.00e+00  4.91e-04  7.53e-01  5.51e-04  4.23e-04  7.29e-02  9.90e-01
+    5   1.1747e+01   1.1746e+01  9.62e-04  8.19e-05  7.66e-05  0.00e+00  2.92e-05  7.55e-01  3.26e-05  2.53e-05  1.22e-03  9.41e-01
+    6   1.1746e+01   1.1746e+01  1.02e-04  8.71e-06  8.15e-06  0.00e+00  3.11e-06  7.55e-01  3.48e-06  2.69e-06  1.84e-03  8.95e-01
+    7   1.1746e+01   1.1746e+01  1.60e-05  1.36e-06  1.27e-06  0.00e+00  4.87e-07  7.55e-01  5.47e-07  4.21e-07  3.85e-02  8.77e-01
+    8   1.1746e+01   1.1746e+01  3.48e-06  2.97e-07  2.78e-07  0.00e+00  1.06e-07  7.55e-01  1.20e-07  9.17e-08  1.26e-01  8.95e-01
+    9   1.1746e+01   1.1746e+01  4.63e-07  3.94e-08  3.69e-08  0.00e+00  1.41e-08  7.55e-01  1.60e-08  1.22e-08  1.84e-03  8.69e-01
+   10   1.1746e+01   1.1746e+01  9.27e-09  7.89e-10  7.39e-10  0.00e+00  2.82e-10  7.55e-01  3.20e-10  2.44e-10  8.00e-06  9.80e-01
+optimal solution found; terminating
+
+status is Optimal after 10 iterations and 9.91 seconds
+
+took 15.12077817 seconds
+

@@ -1,0 +1,121 @@
+
+instance beck752
+ran at: 2020-05-11T15:50:16.297
+with solver: hypatia, system solver: qrchol_dense
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.147472806 seconds
+building model...
+took 9.186485683 seconds
+
+solving model...
+
+signal (2): Interrupt
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:56
+_ZNK4llvm13AttributeList16hasAttrSomewhereENS_9Attribute8AttrKindEPj at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZNK4llvm8CallBase21getReturnedArgOperandEv at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm36getArgumentAliasingToReturnedPointerEPKNS_8CallBaseE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm19GetUnderlyingObjectEPNS_5ValueERKNS_10DataLayoutEj at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13BasicAAResult22pointsToConstantMemoryERKNS_14MemoryLocationERNS_11AAQueryInfoEb at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm9AAResults22pointsToConstantMemoryERKNS_14MemoryLocationERNS_11AAQueryInfoEb at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm9AAResults22pointsToConstantMemoryERKNS_14MemoryLocationEb at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZNK4llvm12MachineInstr30isDereferenceableInvariantLoadEPNS_9AAResultsE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZNK4llvm12MachineInstr12isSafeToMoveEPNS_9AAResultsERb at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN12_GLOBAL__N_114MachineSinking20runOnMachineFunctionERN4llvm15MachineFunctionE.part.304 at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm19MachineFunctionPass13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager11runOnModuleERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm6legacy15PassManagerImpl3runERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+operator() at /home/lea/julia/src/jitlayers.cpp:491
+addModule at /home/lea/julia/usr/include/llvm/ExecutionEngine/Orc/IRCompileLayer.h:93 [inlined]
+addModule at /home/lea/julia/src/jitlayers.cpp:619
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:864 [inlined]
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:926
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:948 [inlined]
+_jl_compile_codeinst at /home/lea/julia/src/jitlayers.cpp:126
+jl_generate_fptr at /home/lea/julia/src/jitlayers.cpp:277
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1968
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1935 [inlined]
+_jl_invoke at /home/lea/julia/src/gf.c:2228 [inlined]
+jl_apply_generic at /home/lea/julia/src/gf.c:2402
+mul! at /home/lea/julia/usr/share/julia/stdlib/v1.5/LinearAlgebra/src/matmul.jl:129
+unknown function (ip: 0x7f282579be3a)
+calc_residual at /home/lea/.julia/dev/Hypatia/src/Solvers/Solvers.jl:299
+macro expansion at /home/lea/.julia/packages/TimerOutputs/7Id5J/src/TimerOutput.jl:214 [inlined]
+solve at /home/lea/.julia/dev/Hypatia/src/Solvers/Solvers.jl:245
+macro expansion at ./timing.jl:310 [inlined]
+#single_moi#3 at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:134
+unknown function (ip: 0x7f284de7aaf9)
+single_moi##kw at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:107
+jl_apply at /home/lea/julia/src/julia.h:1691 [inlined]
+do_call at /home/lea/julia/src/interpreter.c:369
+eval_value at /home/lea/julia/src/interpreter.c:458
+eval_stmt_value at /home/lea/julia/src/interpreter.c:409 [inlined]
+eval_body at /home/lea/julia/src/interpreter.c:809
+jl_interpret_toplevel_thunk at /home/lea/julia/src/interpreter.c:921
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:823
+jl_parse_eval_all at /home/lea/julia/src/ast.c:913
+jl_load_rewrite at /home/lea/julia/src/toplevel.c:894
+include at ./Base.jl:382
+include at ./Base.jl:370
+exec_options at ./client.jl:289
+_start at ./client.jl:491
+jfptr__start_53796 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jl_apply at /home/lea/julia/ui/../src/julia.h:1691 [inlined]
+true_main at /home/lea/julia/ui/repl.c:96
+main at /home/lea/julia/ui/repl.c:217
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   3.7044e+00  -2.1085e+01  5.90e+01       NaN  2.28e+00  0.00e+00  9.39e-01  1.00e+00  1.00e+00  1.00e+00
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+_start at /home/lea/julia/usr/bin/julia (unknown line)
+unknown function (ip: (nil))
+Allocations: 124345977 (Pool: 124324014; Big: 21963); GC: 92
+
+instance beck752
+ran at: 2020-05-11T16:33:03.516
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.156065232 seconds
+building model...
+took 9.252527742 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   3.7044e+00  -2.1085e+01  5.90e+01       NaN  2.28e+00  0.00e+00  9.39e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.7729e+00  -4.1427e+00  1.49e+01       NaN  8.38e-01  0.00e+00  3.45e-01  6.86e-01  3.90e-01  2.52e-01  1.92e-02  7.62e-01
+    2   6.8233e+00   4.9476e+00  2.88e+00  5.81e-01  1.74e-01  0.00e+00  7.15e-02  6.37e-01  5.63e-02  4.85e-02  1.07e-01  9.04e-01
+    3   6.7947e+00   6.4592e+00  5.43e-01  8.41e-02  3.09e-02  0.00e+00  1.27e-02  6.75e-01  9.79e-03  9.16e-03  1.68e-02  8.25e-01
+    4   6.8001e+00   6.6086e+00  3.10e-01  4.70e-02  1.77e-02  0.00e+00  7.28e-03  6.75e-01  5.84e-03  5.24e-03  1.35e-01  4.95e-01
+    5   6.8186e+00   6.7370e+00  1.31e-01  1.95e-02  7.56e-03  0.00e+00  3.11e-03  6.69e-01  2.66e-03  2.22e-03  1.30e-01  6.62e-01
+    6   6.8127e+00   6.7849e+00  4.49e-02  6.62e-03  2.59e-03  0.00e+00  1.06e-03  6.70e-01  9.83e-04  7.60e-04  1.46e-01  7.70e-01
+    7   6.8147e+00   6.7976e+00  2.76e-02  4.06e-03  1.59e-03  0.00e+00  6.54e-04  6.70e-01  6.14e-04  4.67e-04  1.38e-01  4.47e-01
+    8   6.8155e+00   6.8137e+00  2.95e-03  4.33e-04  1.71e-04  0.00e+00  7.03e-05  6.68e-01  7.26e-05  5.00e-05  7.98e-02  9.70e-01
+    9   6.8155e+00   6.8152e+00  4.93e-04  7.23e-05  2.85e-05  0.00e+00  1.17e-05  6.68e-01  1.22e-05  8.35e-06  4.09e-02  8.69e-01
+   10   6.8155e+00   6.8154e+00  1.49e-04  2.18e-05  8.60e-06  0.00e+00  3.54e-06  6.68e-01  3.70e-06  2.52e-06  5.61e-02  7.40e-01
+   11   6.8155e+00   6.8155e+00  2.47e-05  3.63e-06  1.43e-06  0.00e+00  5.89e-07  6.68e-01  6.16e-07  4.19e-07  1.10e-02  8.43e-01
+   12   6.8155e+00   6.8155e+00  5.16e-07  7.57e-08  2.99e-08  0.00e+00  1.23e-08  6.68e-01  1.29e-08  8.75e-09  8.78e-04  9.80e-01
+   13   6.8155e+00   6.8155e+00  2.04e-08  2.99e-09  1.18e-09  0.00e+00  4.86e-10  6.68e-01  5.08e-10  3.46e-10  2.65e-05  9.60e-01
+optimal solution found; terminating
+
+status is Optimal after 13 iterations and 10.905 seconds
+
+took 16.144948339 seconds
+

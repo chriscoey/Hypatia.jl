@@ -1,0 +1,88 @@
+#INSTANCES#
+instance set exporthantsmall contains 55 instances
+bss1
+demb782
+bss2
+demb781
+synthes1
+gptest
+rijc781
+synthes2
+rijc784
+rijc785
+rijc786
+syn05m
+rijc782
+batchdes
+synthes3
+rijc783
+syn10m
+syn05h
+beck751
+beck752
+beck753
+fiac81b
+batch
+syn05m02m
+syn15m
+fang88
+syn10h
+demb761
+demb762
+demb763
+syn20m
+syn05m02h
+syn05m03m
+fiac81a
+syn30m
+syn10m02m
+rijc787
+syn15h
+ravem
+syn05m04m
+enpro56
+syn05m03h
+syn20h
+syn40m
+rsyn0805m
+enpro48
+syn10m02h
+syn15m02m
+syn10m03m
+rsyn0810m
+syn05m04h
+rsyn0815m
+syn30h
+rsyn0820m
+syn20m02m
+
+
+starting bss1 hypatia qrchol_dense
+...took 61.507416009902954 seconds
+
+starting demb782 hypatia qrchol_dense
+...took 61.18942618370056 seconds
+
+starting bss2 hypatia qrchol_dense
+...took 61.18614888191223 seconds
+
+starting demb781 hypatia qrchol_dense
+...took 61.18917489051819 seconds
+
+starting synthes1 hypatia qrchol_dense
+...took 62.193397998809814 seconds
+
+starting gptest hypatia qrchol_dense
+...error in memory check: ProcessFailedException(Base.Process[Process(`grep RSS`, ProcessExited(1))])
+...took 62.453893184661865 seconds
+
+starting rijc781 hypatia qrchol_dense
+...took 61.18836688995361 seconds
+
+starting synthes2 hypatia qrchol_dense
+...took 62.19389200210571 seconds
+
+starting rijc784 hypatia qrchol_dense
+...took 61.18758988380432 seconds
+
+starting rijc785 hypatia qrchol_dense

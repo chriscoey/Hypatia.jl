@@ -1,0 +1,107 @@
+
+instance bss2
+ran at: 2020-05-11T15:31:42.456
+with solver: hypatia, system solver: qrchol_dense
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.147013795 seconds
+building model...
+took 9.152808723 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1560e+00   4.1227e+00  1.11e-01  2.70e-02  9.01e-03  0.00e+00  5.10e-03  9.67e-01  5.81e-03  9.76e-03  1.52e-02  8.18e-01
+    3   4.1092e+00   4.1088e+00  1.30e-03  3.17e-04  1.03e-04  0.00e+00  5.83e-05  9.82e-01  5.86e-05  1.13e-04  8.19e-05  9.88e-01
+    4   4.1086e+00   4.1086e+00  1.02e-04  2.48e-05  8.04e-06  0.00e+00  4.55e-06  9.84e-01  4.61e-06  8.85e-06  8.98e-04  9.23e-01
+    5   4.1085e+00   4.1085e+00  1.61e-06  3.92e-07  1.29e-07  0.00e+00  7.33e-08  9.84e-01  1.00e-07  1.43e-07  6.06e-03  9.90e-01
+    6   4.1085e+00   4.1085e+00  1.71e-07  4.16e-08  1.37e-08  0.00e+00  7.77e-09  9.84e-01  1.07e-08  1.51e-08  1.47e-03  8.95e-01
+    7   4.1085e+00   4.1085e+00  1.07e-08  2.62e-09  8.87e-10  0.00e+00  5.02e-10  9.84e-01  9.93e-10  9.77e-10  6.45e-02  1.00e+00
+optimal solution found; terminating
+
+status is Optimal after 7 iterations and 9.308 seconds
+
+took 14.526111671 seconds
+
+
+instance bss2
+ran at: 2020-05-11T16:14:10.623
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.151128523 seconds
+building model...
+took 9.152295601 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.96e-06  7.19e-07  2.46e-07  0.00e+00  1.39e-07  9.84e-01  3.03e-07  2.71e-07  1.92e-02  8.10e-01
+    7   4.1085e+00   4.1085e+00  2.09e-07  5.08e-08  1.74e-08  0.00e+00  9.84e-09  9.84e-01  2.13e-08  1.91e-08  2.75e-03  9.32e-01
+    8   4.1085e+00   4.1085e+00  5.11e-08  1.24e-08  4.25e-09  0.00e+00  2.41e-09  9.84e-01  5.15e-09  4.68e-09  4.82e-02  7.94e-01
+optimal solution found; terminating
+
+status is Optimal after 8 iterations and 9.425 seconds
+
+took 14.563176679 seconds
+
+
+instance bss2
+ran at: 2020-05-11T16:56:21.186
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.153718217 seconds
+building model...
+took 9.252329035 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.49e-06  6.06e-07  2.07e-07  0.00e+00  1.17e-07  9.84e-01  2.55e-07  2.28e-07  1.92e-02  8.43e-01
+
+status is NumericalFailure after 6 iterations and 8.505 seconds
+
+took 12.434851199 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
