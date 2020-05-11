@@ -1,0 +1,14 @@
+# a selection of CBF instances that solve reliably and quickly
+
+# expdesign_D_8_4 # psd, exp
+port_12_9_3_a_1 # psd, soc, exp
+# tls4 # soc, OK but avoiding second soc
+# ck_n25_m10_o1_1 # rsoc, slower than archtziger
+# rsyn0805h # exp
+# 2x3_3bars # psd
+# HMCR-n20-m400 # power very slow, deal with power cones later
+# classical_20_0 # soc, orthant, OK but non needed
+achtziger_stolpe06-6.1flowc # rsoc, orthant
+LogExpCR-n100-m400 # log, orthant
+
+
