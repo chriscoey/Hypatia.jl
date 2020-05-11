@@ -78,3 +78,49 @@ status is Optimal after 13 iterations and 9.712 seconds
 
 took 14.939219421 seconds
 
+
+instance syn05m
+ran at: 2020-05-11T17:05:35.23
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+┌ Warning: Package Hypatia does not have ForwardDiff in its dependencies:
+│ - If you have Hypatia checked out for development and have
+│   added ForwardDiff as a dependency but haven't updated your primary
+│   environment's manifest file, try `Pkg.resolve()`.
+│ - Otherwise you may need to report an issue with Hypatia
+└ Loading ForwardDiff into Hypatia from project dependency, future warnings for Hypatia are suppressed.
+
+reading instance and constructing model...
+took 1.243931531 seconds
+building model...
+took 9.60812967 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -3.9061e+02  -5.1914e+01  5.90e+01  1.51e-01  9.43e+00  0.00e+00  5.87e-01  1.00e+00  1.00e+00  1.00e+00
+    1  -7.4304e+02  -4.0252e+02  8.90e+00  1.20e-02  9.33e+00  0.00e+00  5.80e-01  1.53e-01  9.98e-01  1.51e-01  2.25e-02  8.69e-01
+    2  -1.2518e+03  -9.4641e+02  3.08e+00  2.46e-03  8.11e+00  0.00e+00  5.04e-01  6.08e-02  9.12e-01  5.23e-02  8.95e-02  7.18e-01
+    3  -1.2082e+03  -1.0671e+03  8.74e-01  7.23e-04  3.64e+00  0.00e+00  2.26e-01  3.84e-02  4.14e-01  1.48e-02  1.41e-01  8.34e-01
+    4  -1.1912e+03  -1.1430e+03  2.49e-01  2.09e-04  1.24e+00  0.00e+00  7.72e-02  3.20e-02  1.21e-01  4.22e-03  1.34e-01  8.26e-01
+    5  -1.1544e+03  -1.1444e+03  5.01e-02  4.34e-05  2.56e-01  0.00e+00  1.59e-02  3.12e-02  2.46e-02  8.48e-04  6.17e-02  8.51e-01
+    6  -1.1457e+03  -1.1443e+03  7.17e-03  6.25e-06  3.71e-02  0.00e+00  2.31e-03  3.08e-02  3.56e-03  1.21e-04  1.34e-02  8.69e-01
+    7  -1.1446e+03  -1.1445e+03  4.14e-04  3.61e-07  2.15e-03  0.00e+00  1.34e-04  3.08e-02  2.19e-04  7.00e-06  3.85e-02  9.80e-01
+    8  -1.1445e+03  -1.1445e+03  2.05e-05  1.79e-08  1.06e-04  0.00e+00  6.62e-06  3.08e-02  1.09e-05  3.47e-07  4.63e-04  9.51e-01
+    9  -1.1445e+03  -1.1445e+03  1.25e-06  1.10e-09  6.51e-06  0.00e+00  4.05e-07  3.08e-02  6.65e-07  2.12e-08  2.75e-03  9.41e-01
+   10  -1.1445e+03  -1.1445e+03  1.16e-06  1.01e-09  3.08e-04  0.00e+00  3.97e-07  3.08e-02  6.52e-07  1.97e-08  2.80e-02  2.00e-02
+   11  -1.1445e+03  -1.1445e+03  1.02e-06  8.90e-10  7.52e-04  0.00e+00  1.72e-07  3.08e-02  2.81e-07  1.71e-08  2.50e-01  7.55e-01
+   12  -1.1445e+03  -1.1445e+03  3.93e-08  3.43e-11  3.08e-05  0.00e+00  7.02e-09  2.98e-02  1.88e-08  6.64e-10  8.00e-06  9.60e-01
+   13  -1.1445e+03  -1.1445e+03  3.02e-08  2.64e-11  2.88e-05  0.00e+00  6.49e-09  2.98e-02  1.75e-08  5.13e-10  2.00e-01  9.52e-02
+   14  -1.1445e+03  -1.1445e+03  4.84e-09  4.23e-12  4.62e-06  0.00e+00  1.04e-09  2.98e-02  2.81e-09  8.21e-11  3.88e-03  8.43e-01
+   15  -1.1445e+03  -1.1445e+03  3.35e-09  2.93e-12  3.19e-06  0.00e+00  7.20e-10  2.98e-02  1.94e-09  5.68e-11  2.06e-01  3.89e-01
+
+status is NumericalFailure after 15 iterations and 8.47 seconds
+
+took 12.391424754 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+

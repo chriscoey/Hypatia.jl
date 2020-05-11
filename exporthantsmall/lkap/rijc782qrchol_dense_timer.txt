@@ -74,4 +74,43 @@
  setup_stepper           1   6.25ms  0.05%  6.25ms    183KiB  0.00%   183KiB
  calc_conv              15    285μs  0.00%  19.0μs    267KiB  0.01%  17.8KiB
  check_conv             15    130μs  0.00%  8.64μs   80.6KiB  0.00%  5.38KiB
- ───────────────────────────────────────────────────────────────────────────
+ ─────────────────────────────────────────────────────────────────────────── ─────────────────────────────────────────────────────────────────────────────
+                                      Time                   Allocations      
+                              ──────────────────────   ───────────────────────
+       Tot / % measured:           12.9s / 64.8%           1.57GiB / 68.9%    
+
+ Section              ncalls     time   %tot     avg     alloc   %tot      avg
+ ─────────────────────────────────────────────────────────────────────────────
+ step                     15    5.66s  67.7%   377ms    827MiB  74.8%  55.1MiB
+   update_lhs             15    3.44s  41.1%   229ms    513MiB  46.4%  34.2MiB
+   dir_aff                15    859ms  10.3%  57.3ms    111MiB  10.0%  7.38MiB
+     solve_system         15    519ms  6.20%  34.6ms   69.4MiB  6.28%  4.63MiB
+     iter_ref             15    341ms  4.07%  22.7ms   41.3MiB  3.74%  2.76MiB
+       apply_lhs          15    341ms  4.07%  22.7ms   41.3MiB  3.74%  2.75MiB
+       solve_system        2   30.4μs  0.00%  15.2μs   5.78KiB  0.00%  2.89KiB
+   rhs_corr               15    485ms  5.80%  32.3ms   50.5MiB  4.56%  3.36MiB
+   alpha_aff              15    239ms  2.86%  15.9ms   17.7MiB  1.60%  1.18MiB
+   alpha_comb             15    123ms  1.47%  8.20ms   74.8MiB  6.76%  4.99MiB
+   rhs_aff                15   95.4ms  1.14%  6.36ms   9.87MiB  0.89%   674KiB
+   dir_corr               15   2.79ms  0.03%   186μs   2.51MiB  0.23%   171KiB
+     solve_system         15   2.52ms  0.03%   168μs   2.48MiB  0.22%   169KiB
+     iter_ref             15    249μs  0.00%  16.6μs   22.0KiB  0.00%  1.47KiB
+       apply_lhs          15    181μs  0.00%  12.1μs   12.7KiB  0.00%     864B
+       solve_system        2   29.8μs  0.00%  14.9μs   5.78KiB  0.00%  2.89KiB
+ initialize                1    2.23s  26.7%   2.23s    235MiB  21.3%   235MiB
+   init_cone               1    949ms  11.3%   949ms   94.0MiB  8.50%  94.0MiB
+   preproc_init_x          1    637ms  7.61%   637ms   82.1MiB  7.43%  82.1MiB
+     qr_solve              1    637ms  7.61%   637ms   82.1MiB  7.43%  82.1MiB
+     qr_fact               1   20.8μs  0.00%  20.8μs   4.34KiB  0.00%  4.34KiB
+   remove_prim_eq          1    575ms  6.87%   575ms   53.7MiB  4.85%  53.7MiB
+     reduce                1    296ms  3.53%   296ms   35.4MiB  3.20%  35.4MiB
+       mul_G_Q             1   3.20ms  0.04%  3.20ms    191KiB  0.02%   191KiB
+     qr_fact               1   95.1ms  1.14%  95.1ms   13.9MiB  1.25%  13.9MiB
+ setup_system              1    423ms  5.06%   423ms   40.9MiB  3.70%  40.9MiB
+   mul_G_Q                 1   78.7ms  0.94%  78.7ms   11.4MiB  1.03%  11.4MiB
+ print_iter               16   34.4ms  0.41%  2.15ms   1.97MiB  0.18%   126KiB
+ calc_res                 16   9.74ms  0.12%   609μs    796KiB  0.07%  49.7KiB
+ setup_stepper             1   6.37ms  0.08%  6.37ms    181KiB  0.02%   181KiB
+ calc_conv                16   11.7μs  0.00%   731ns     0.00B  0.00%    0.00B
+ check_conv               16   10.9μs  0.00%   680ns     32.0B  0.00%    2.00B
+ ─────────────────────────────────────────────────────────────────────────────

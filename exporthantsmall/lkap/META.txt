@@ -86,3 +86,15 @@ starting rijc784 hypatia qrchol_dense
 ...took 61.18758988380432 seconds
 
 starting rijc785 hypatia qrchol_dense
+...took 61.18740892410278 seconds
+
+starting rijc786 hypatia qrchol_dense
+...took 61.194416999816895 seconds
+
+starting syn05m hypatia qrchol_dense
+...took 62.19320487976074 seconds
+
+starting rijc782 hypatia qrchol_dense
+...took 62.19347786903381 seconds
+
+starting batchdes hypatia qrchol_dense
