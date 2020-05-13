@@ -82,6 +82,57 @@ function update_scal_hess(
     return cone.scal_hess
 end
 
+# function update_scal_hess(
+#     cone::Cone{T},
+#     mu::T,
+#     use_update_1::Bool = use_update_1_default(),
+#     use_update_2::Bool = use_update_2_default(),
+#     ) where {T}
+#     @assert is_feas(cone)
+#     @assert !cone.scal_hess_updated
+#     update_tol = 1e-12
+#
+#     s = cone.point
+#     z = cone.dual_point
+#     sz = dot(s, z)
+#     mu_cone = sz / get_nu(cone)
+#     H = hess(cone)
+#     scal_hess = Symmetric(mu * H)
+#     Hs = scal_hess * s
+#     g = grad(cone)
+#     conj_g = dual_grad(cone)
+#     primal_gap = s + mu_cone * conj_g
+#     dual_gap = z + mu_cone * g
+#     f = cholesky(scal_hess)
+#     U = f.U
+#     s_tilde = -conj_g
+#     rho = s_tilde - (s' * scal_hess * s_tilde) / dot(s, Hs) * s
+#
+#     if norm(rho) > 0 && norm(Hs - z) > update_tol && norm(scal_hess * conj_g - g) > update_tol # TODO
+#         Us = U * s
+#         Urho = U * rho
+#         @assert dot(Us, Urho) <= sqrt(eps(T))
+#         r1term = I - (Us * Us') / sum(abs2, Us) - (Urho * Urho') / sum(abs2, Urho)
+#         # @show diag(qr(r1term).R) #, rank(r1term)
+#         y = r1term[:, 1] / norm(r1term[:, 1])
+#         z = f.L * y
+#
+#         W = vcat(
+#             s' / sqrt(sz),
+#             primal_gap' / sqrt(dot(primal_gap, dual_gap)),
+#             z',
+#             )
+#
+#         scal_hess = Symmetric(W' * W)
+#     end
+#
+#
+#     copyto!(cone.scal_hess, scal_hess)
+#
+#     cone.scal_hess_updated = true
+#     return cone.scal_hess
+# end
+
 # cholesky updates
 # function update_scal_hess(
 #     cone::Cone{T},
