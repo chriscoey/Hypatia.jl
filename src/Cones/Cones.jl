@@ -23,7 +23,8 @@ import Hypatia.sqrt_prod
 import Hypatia.inv_sqrt_prod
 import Hypatia.invert
 
-default_max_neighborhood() = 0.5
+# default_max_neighborhood() = 0.5 # TODO skajaa ye
+default_max_neighborhood() = 0.1 # TODO mosek
 default_use_heuristic_neighborhood() = false
 
 # hessian_cache(T::Type{<:BlasReal}) = DenseSymCache{T}() # use Bunch Kaufman for BlasReals from start
@@ -195,12 +196,7 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 #     return (nbhd < mu * cone.max_neighborhood)
 # end
 
-function in_neighborhood(cone::Cone{T}, mu::Real) where {T <: Real}
-    @assert !use_heuristic_neighborhood(cone)
-    beta = 0.1 # TODO change
-    # beta = 1e-4
-    return (get_nu(cone) / dot(grad(cone), dual_grad(cone)) > beta * mu)
-end
+in_neighborhood(cone::Cone, mu::Real) = (get_nu(cone) > cone.max_neighborhood * mu * dot(grad(cone), dual_grad(cone)))
 
 # utilities for arrays
 
