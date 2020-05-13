@@ -86,8 +86,8 @@ example_tests(::Type{SignomialMinJuMP{Float64}}, ::ExpInstances) = begin
     ((:motzkin2,), ClassicConeOptimizer, options),
     ((:MCW19ex8,), ClassicConeOptimizer, relaxed_options),
     ((3, 2), ClassicConeOptimizer, options),
-    ((20, 3), ClassicConeOptimizer, options),
-    ((10, 10), ClassicConeOptimizer, options),
+    # ((20, 3), ClassicConeOptimizer, options),
+    # ((10, 10), ClassicConeOptimizer, options),
     ]
 end
 

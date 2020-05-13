@@ -265,17 +265,16 @@ function load(system_solver::NaiveDenseSystemSolver{T}, solver::Solver{T}) where
 end
 
 function update_lhs(system_solver::NaiveDenseSystemSolver, solver::Solver)
-    # for (cone_k, lhs6_H_k) in zip(solver.model.cones, system_solver.lhs6_H_k)
-    for k in eachindex(system_solver.lhs6_H_k)
-        cone_k = solver.model.cones[k]
-        lhs6_H_k = system_solver.lhs6_H_k[k]
-        if Cones.use_scaling(cone_k)
-            scal_hess = Cones.scal_hess(cone_k, solver.mu)
-            @. lhs6_H_k = scal_hess
-        else
-            H_k = Cones.hess(cone_k)
-            @. lhs6_H_k = solver.mu * H_k
-        end
+    for (cone_k, lhs6_H_k) in zip(solver.model.cones, system_solver.lhs6_H_k)
+        H_k = Cones.scal_hess(cone_k, solver.mu)
+        @. lhs6_H_k = H_k
+        # if Cones.use_scaling(cone_k)
+        #     scal_hess = Cones.scal_hess(cone_k, solver.mu)
+        #     @. lhs6_H_k = scal_hess
+        # else
+        #     H_k = Cones.hess(cone_k)
+        #     @. lhs6_H_k = solver.mu * H_k
+        # end
     end
     system_solver.lhs6[end, system_solver.tau_row] = solver.kap / solver.tau
 
