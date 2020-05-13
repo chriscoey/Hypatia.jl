@@ -34,13 +34,13 @@ function solve_system(system_solver::QRCholSystemSolver{T}, solver::Solver{T}, s
             Cones.inv_hess_prod!(z3_k, z_temp_k, cone_k)
             z3_k ./= solver.mu
         else
-            if Cones.use_scaling(cone_k)
+            # if Cones.use_scaling(cone_k)
                 Cones.scal_hess_prod!(z3_k, z_k, cone_k, solver.mu)
                 axpby!(-1, s_k, -1, z3_k)
-            else
-                Cones.hess_prod!(z3_k, z_k, cone_k)
-                axpby!(-1, s_k, -solver.mu, z3_k)
-            end
+            # else
+            #     Cones.hess_prod!(z3_k, z_k, cone_k)
+            #     axpby!(-1, s_k, -solver.mu, z3_k)
+            # end
         end
     end
 
@@ -120,12 +120,12 @@ function block_hess_prod(cone_k::Cones.Cone{T}, prod_k::AbstractVecOrMat{T}, arr
         Cones.inv_hess_prod!(prod_k, arr_k, cone_k)
         @. prod_k /= mu
     else
-        if Cones.use_scaling(cone_k)
+        # if Cones.use_scaling(cone_k)
             Cones.scal_hess_prod!(prod_k, arr_k, cone_k, mu)
-        else
-            Cones.hess_prod!(prod_k, arr_k, cone_k)
-            @. prod_k *= mu
-        end
+        # else
+        #     Cones.hess_prod!(prod_k, arr_k, cone_k)
+        #     @. prod_k *= mu
+        # end
     end
     return
 end
@@ -302,13 +302,13 @@ function update_lhs(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}
             arr_k = system_solver.GQ2_k[k]
             prod_k = system_solver.HGQ2_k[k]
             cone_k = model.cones[k]
-            if Cones.use_scaling(cone_k)
+            # if Cones.use_scaling(cone_k)
                 Cones.scal_hess_prod!(prod_k, arr_k, cone_k, solver.mu)
                 mul!(lhs, arr_k', prod_k, true, true)
-            else
-                Cones.hess_prod!(prod_k, arr_k, cone_k)
-                mul!(lhs, arr_k', prod_k, solver.mu, true)
-            end
+            # else
+            #     Cones.hess_prod!(prod_k, arr_k, cone_k)
+            #     mul!(lhs, arr_k', prod_k, solver.mu, true)
+            # end
         end
     end
 
