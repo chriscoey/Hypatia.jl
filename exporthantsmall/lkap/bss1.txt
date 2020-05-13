@@ -483,3 +483,500 @@ status is Optimal after 10 iterations and 9.883 seconds
 
 took 15.12845465 seconds
 
+
+instance beck753
+ran at: 2020-05-12T13:56:35.085
+with solver: hypatia, system solver: naive_dense
+number type : Float64 but congj_g in F64
+
+ERROR: LoadError: LoadError: ArgumentError: Package TimerOutputs not found in current path:
+- Run `import Pkg; Pkg.add("TimerOutputs")` to install the TimerOutputs package.
+
+Stacktrace:
+ [1] require(::Module, ::Symbol) at ./loading.jl:893
+ [2] include(::String) at ./client.jl:446
+ [3] top-level scope at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:11
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+
+instance bss1
+ran at: 2020-05-12T13:58:01.487
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+ERROR: LoadError: LoadError: ArgumentError: Package TimerOutputs not found in current path:
+- Run `import Pkg; Pkg.add("TimerOutputs")` to install the TimerOutputs package.
+
+Stacktrace:
+ [1] require(::Module, ::Symbol) at ./loading.jl:893
+ [2] include(::String) at ./client.jl:446
+ [3] top-level scope at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:11
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+
+instance bss1
+ran at: 2020-05-12T14:02:25.307
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+ERROR: LoadError: LoadError: ArgumentError: Package Hypatia not found in current path:
+- Run `import Pkg; Pkg.add("Hypatia")` to install the Hypatia package.
+
+Stacktrace:
+ [1] require(::Module, ::Symbol) at ./loading.jl:893
+ [2] include(::String) at ./client.jl:446
+ [3] top-level scope at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:12
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+
+instance bss1
+ran at: 2020-05-12T14:05:24.584
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+
+reading instance and constructing model...
+took 1.304872619 seconds
+building model...
+took 9.866349329 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+
+status is NumericalFailure after 0 iterations and 10.334 seconds
+
+took 15.916438866 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss1
+ran at: 2020-05-12T14:23:33.412
+with solver: hypatia, system solver: naive_dense
+number type : BigFloat but congj_g opposite
+
+
+signal (2): Interrupt
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:60
+_ZN4llvm21BranchProbabilityInfo18setEdgeProbabilityEPKNS_10BasicBlockEjNS_17BranchProbabilityE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm21BranchProbabilityInfo18calcZeroHeuristicsEPKNS_10BasicBlockEPKNS_17TargetLibraryInfoE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm21BranchProbabilityInfo9calculateERKNS_8FunctionERKNS_8LoopInfoEPKNS_17TargetLibraryInfoE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm32BranchProbabilityInfoWrapperPass13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager11runOnModuleERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm6legacy15PassManagerImpl3runERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+operator() at /home/lea/julia/src/jitlayers.cpp:520
+addModule at /home/lea/julia/usr/include/llvm/ExecutionEngine/Orc/IRCompileLayer.h:93 [inlined]
+addModule at /home/lea/julia/src/jitlayers.cpp:648
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:893 [inlined]
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:955
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:977 [inlined]
+_jl_compile_codeinst at /home/lea/julia/src/jitlayers.cpp:126
+jl_generate_fptr at /home/lea/julia/src/jitlayers.cpp:302
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1964
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1931 [inlined]
+_jl_invoke at /home/lea/julia/src/gf.c:2224 [inlined]
+jl_invoke at /home/lea/julia/src/gf.c:2238
+single_moi##kw at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:107
+unknown function (ip: 0x7fd9e8b800e1)
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+do_call at /home/lea/julia/src/interpreter.c:117
+eval_value at /home/lea/julia/src/interpreter.c:206
+eval_stmt_value at /home/lea/julia/src/interpreter.c:157 [inlined]
+eval_body at /home/lea/julia/src/interpreter.c:548
+jl_interpret_toplevel_thunk at /home/lea/julia/src/interpreter.c:660
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:840
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:790
+jl_toplevel_eval_in at /home/lea/julia/src/toplevel.c:883
+eval at ./boot.jl:331 [inlined]
+include_string at ./loading.jl:1103
+_include at ./loading.jl:1157
+include at ./Base.jl:368
+exec_options at ./client.jl:295
+_start at ./client.jl:487
+jfptr__start_48545 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jl_apply at /home/lea/julia/ui/../src/julia.h:1700 [inlined]
+true_main at /home/lea/julia/ui/repl.c:106
+main at /home/lea/julia/ui/repl.c:227
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+_start at /home/lea/julia/usr/bin/julia (unknown line)
+unknown function (ip: (nil))
+Allocations: 71539168 (Pool: 71520000; Big: 19168); GC: 67
+
+signal (11): Segmentation fault
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:60
+_ZNK4llvm9LiveRange5QueryENS_9SlotIndexE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN12_GLOBAL__N_117RegisterCoalescer23reMaterializeTrivialDefERKN4llvm13CoalescerPairEPNS1_12MachineInstrERb at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN12_GLOBAL__N_117RegisterCoalescer20copyCoalesceWorkListEN4llvm15MutableArrayRefIPNS1_12MachineInstrEEE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN12_GLOBAL__N_117RegisterCoalescer20runOnMachineFunctionERN4llvm15MachineFunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm19MachineFunctionPass13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager11runOnModuleERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm6legacy15PassManagerImpl3runERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+operator() at /home/lea/julia/src/jitlayers.cpp:520
+addModule at /home/lea/julia/usr/include/llvm/ExecutionEngine/Orc/IRCompileLayer.h:93 [inlined]
+addModule at /home/lea/julia/src/jitlayers.cpp:648
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:893 [inlined]
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:955
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:977 [inlined]
+_jl_compile_codeinst at /home/lea/julia/src/jitlayers.cpp:126
+jl_generate_fptr at /home/lea/julia/src/jitlayers.cpp:302
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1964
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1931 [inlined]
+_jl_invoke at /home/lea/julia/src/gf.c:2224 [inlined]
+jl_apply_generic at /home/lea/julia/src/gf.c:2398
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+jl_atexit_hook at /home/lea/julia/src/init.c:230
+jl_exit at /home/lea/julia/src/jl_uv.c:624
+jl_exit_thread0_cb at /home/lea/julia/src/signals-unix.c:343
+unknown function (ip: (nil))
+Allocations: 73156477 (Pool: 73136694; Big: 19783); GC: 68
+
+instance bss1
+ran at: 2020-05-12T14:24:45.614
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g opposite
+
+
+reading instance and constructing model...
+took 1.254552512 seconds
+building model...
+took 9.811885638 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.41e-06  8.26e-07  9.89e-08  0.00e+00  1.43e-07  1.01e+00  1.53e-07  1.74e-07  1.03e-01  8.60e-01
+    8   1.7112e+00   1.7112e+00  1.93e-07  1.13e-07  1.35e-08  0.00e+00  1.95e-08  1.01e+00  2.14e-08  2.38e-08  2.61e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  4.55e-08  2.66e-08  3.23e-09  0.00e+00  4.67e-09  1.01e+00  5.16e-09  5.64e-09  9.86e-03  7.70e-01
+   10   1.7112e+00   1.7112e+00  1.05e-08  6.11e-09  5.07e-09  0.00e+00  7.32e-09  4.03e-01  5.80e-09  1.42e-09  2.25e-01  4.79e-01
+optimal solution found; terminating
+
+status is Optimal after 10 iterations and 10.163 seconds
+
+took 15.727173781 seconds
+
+
+instance bss1
+ran at: 2020-05-12T15:47:15.964
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64 but congj_g opposite
+
+
+reading instance and constructing model...
+took 1.296173939 seconds
+building model...
+took 9.753177036 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.46e-06  8.54e-07  1.02e-07  0.00e+00  1.48e-07  1.01e+00  1.58e-07  1.80e-07  1.03e-01  8.51e-01
+    8   1.7112e+00   1.7112e+00  1.95e-07  1.14e-07  1.37e-08  0.00e+00  1.97e-08  1.01e+00  2.15e-08  2.41e-08  2.26e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  5.91e-08  3.45e-08  4.16e-09  0.00e+00  5.90e-09  1.02e+00  6.51e-09  7.30e-09  1.58e-02  7.10e-01
+   10   1.7112e+00   1.7112e+00  5.85e-08  3.42e-08  4.11e-09  0.00e+00  5.84e-09  1.02e+00  6.44e-09  7.23e-09  1.80e-01  1.29e-02
+
+status is NumericalFailure after 10 iterations and 12.076 seconds
+
+took 16.289249867 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss1
+ran at: 2020-05-12T16:00:55.07
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64 but congj_g opposite
+
+
+reading instance and constructing model...
+took 1.249061676 seconds
+building model...
+took 9.652243456 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.46e-06  8.54e-07  1.02e-07  0.00e+00  1.48e-07  1.01e+00  1.58e-07  1.80e-07  1.03e-01  8.51e-01
+    8   1.7112e+00   1.7112e+00  1.95e-07  1.14e-07  1.37e-08  0.00e+00  1.97e-08  1.01e+00  2.15e-08  2.41e-08  2.26e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  5.91e-08  3.45e-08  4.16e-09  0.00e+00  5.90e-09  1.02e+00  6.51e-09  7.30e-09  1.58e-02  7.10e-01
+   10   1.7112e+00   1.7112e+00  5.85e-08  3.42e-08  4.11e-09  0.00e+00  5.84e-09  1.02e+00  6.44e-09  7.23e-09  1.80e-01  1.29e-02
+
+status is NumericalFailure after 10 iterations and 12.481 seconds
+
+took 16.634323533 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss1
+ran at: 2020-05-12T16:13:31.75
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.248861018 seconds
+building model...
+took 9.72972425 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.46e-06  8.53e-07  1.02e-07  0.00e+00  1.48e-07  1.01e+00  1.58e-07  1.80e-07  1.03e-01  8.51e-01
+    8   1.7112e+00   1.7112e+00  1.95e-07  1.14e-07  1.37e-08  0.00e+00  1.97e-08  1.01e+00  2.16e-08  2.40e-08  2.25e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  4.99e-08  2.91e-08  3.51e-09  0.00e+00  5.06e-09  1.01e+00  5.56e-09  6.17e-09  1.48e-02  7.55e-01
+   10   1.7112e+00   1.7112e+00  2.92e-08  1.71e-08  2.12e-09  0.00e+00  2.99e-09  1.01e+00  3.33e-09  3.62e-09  1.71e-01  4.95e-01
+   11   1.7112e+00   1.7112e+00  2.91e-08  1.70e-08  2.11e-09  0.00e+00  2.98e-09  1.01e+00  3.32e-09  3.61e-09  2.50e-01  5.11e-03
+
+status is NumericalFailure after 11 iterations and 8.956 seconds
+
+took 13.146935077 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss1
+ran at: 2020-05-12T16:48:04.05
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.287176881 seconds
+building model...
+took 9.794902366 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+ArgumentError("Cannot set a non-diagonal index in a symmetric matrix")
+took 0.0 seconds
+┌ Warning: Hypatia status SolveCalled not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss1
+ran at: 2020-05-12T17:04:51.221
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.247806036 seconds
+building model...
+took 9.742814047 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.46e-06  8.54e-07  1.02e-07  0.00e+00  1.48e-07  1.01e+00  1.58e-07  1.80e-07  1.03e-01  8.51e-01
+    8   1.7112e+00   1.7112e+00  1.95e-07  1.14e-07  1.37e-08  0.00e+00  1.97e-08  1.01e+00  2.15e-08  2.41e-08  2.25e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  5.00e-08  2.92e-08  3.51e-09  0.00e+00  5.06e-09  1.01e+00  5.55e-09  6.17e-09  1.48e-02  7.55e-01
+   10   1.7112e+00   1.7112e+00  3.38e-08  1.98e-08  2.34e-09  0.00e+00  3.44e-09  1.01e+00  3.81e-09  4.18e-09  1.83e-01  3.93e-01
+   11   1.7112e+00   1.7112e+00  3.37e-08  1.97e-08  2.33e-09  0.00e+00  3.42e-09  1.01e+00  3.80e-09  4.17e-09  2.50e-01  4.26e-03
+
+status is NumericalFailure after 11 iterations and 9.368 seconds
+
+took 13.544547249 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss1
+ran at: 2020-05-12T17:38:00.343
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.259550934 seconds
+building model...
+took 9.782467246 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.46e-06  8.54e-07  1.02e-07  0.00e+00  1.48e-07  1.01e+00  1.58e-07  1.80e-07  1.03e-01  8.51e-01
+    8   1.7112e+00   1.7112e+00  2.08e-07  1.21e-07  1.46e-08  0.00e+00  2.10e-08  1.01e+00  2.29e-08  2.56e-08  2.25e-02  8.77e-01
+    9   1.7112e+00   1.7112e+00  4.95e-08  2.89e-08  3.47e-09  0.00e+00  5.01e-09  1.01e+00  5.48e-09  6.11e-09  1.10e-02  7.70e-01
+   10   1.7112e+00   1.7112e+00  2.22e-08  1.29e-08  1.55e-09  0.00e+00  2.24e-09  1.02e+00  2.47e-09  2.74e-09  8.33e-02  5.99e-01
+optimal solution found; terminating
+
+status is Optimal after 10 iterations and 9.766 seconds
+
+took 13.949031375 seconds
+
+
+instance bss1
+ran at: 2020-05-12T20:33:48.512
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.247692832 seconds
+building model...
+took 9.689379186 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.41e-06  8.26e-07  9.89e-08  0.00e+00  1.43e-07  1.01e+00  1.53e-07  1.74e-07  1.03e-01  8.60e-01
+    8   1.7112e+00   1.7112e+00  1.93e-07  1.13e-07  1.35e-08  0.00e+00  1.95e-08  1.01e+00  2.14e-08  2.38e-08  2.61e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  4.27e-08  2.49e-08  3.00e-09  0.00e+00  4.32e-09  1.01e+00  4.76e-09  5.28e-09  8.80e-03  7.86e-01
+   10   1.7112e+00   1.7112e+00  7.85e-09  4.59e-09  5.54e-10  0.00e+00  7.99e-10  1.01e+00  9.17e-10  9.76e-10  8.95e-02  8.95e-01
+optimal solution found; terminating
+
+status is Optimal after 10 iterations and 10.028 seconds
+
+took 15.510419139 seconds
+
+
+instance bss1
+ran at: 2020-05-12T21:55:10.288
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.257419593 seconds
+building model...
+took 9.748566312 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.41e-06  8.26e-07  9.89e-08  0.00e+00  1.43e-07  1.01e+00  1.53e-07  1.74e-07  1.03e-01  8.60e-01
+    8   1.7112e+00   1.7112e+00  1.93e-07  1.13e-07  1.35e-08  0.00e+00  1.95e-08  1.01e+00  2.14e-08  2.38e-08  2.61e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  4.27e-08  2.49e-08  3.00e-09  0.00e+00  4.32e-09  1.01e+00  4.76e-09  5.28e-09  8.80e-03  7.86e-01
+   10   1.7112e+00   1.7112e+00  7.85e-09  4.59e-09  5.54e-10  0.00e+00  7.99e-10  1.01e+00  9.17e-10  9.76e-10  8.95e-02  8.95e-01
+optimal solution found; terminating
+
+status is Optimal after 10 iterations and 10.067 seconds
+
+took 15.65038709 seconds
+
+
+instance bss1
+ran at: 2020-05-12T23:22:01.72
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.25340324 seconds
+building model...
+took 9.82458104 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+"hi" = "hi"
+ErrorException("")
+took 0.0 seconds
+┌ Warning: Hypatia status SolveCalled not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss1
+ran at: 2020-05-12T23:33:00.508
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.248459872 seconds
+building model...
+took 9.691606795 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   2.5692e+00  -1.2663e+00  8.00e+00       NaN  5.74e-01  0.00e+00  8.28e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.8238e+00   1.4409e+00  7.36e-01  5.11e-01  5.14e-02  0.00e+00  7.42e-02  9.71e-01  4.91e-02  8.71e-02  2.27e-03  9.15e-01
+    2   1.7233e+00   1.6947e+00  5.58e-02  3.29e-02  3.79e-03  0.00e+00  5.47e-03  9.94e-01  3.34e-03  6.57e-03  2.50e-03  9.27e-01
+    3   1.7119e+00   1.7106e+00  2.63e-03  1.54e-03  1.83e-04  0.00e+00  2.64e-04  1.00e+00  2.50e-04  3.20e-04  2.93e-02  9.80e-01
+    4   1.7113e+00   1.7112e+00  1.36e-04  7.92e-05  9.42e-06  0.00e+00  1.36e-05  1.01e+00  1.33e-05  1.66e-05  1.27e-02  9.60e-01
+    5   1.7112e+00   1.7112e+00  1.44e-05  8.43e-06  1.00e-06  0.00e+00  1.44e-06  1.01e+00  1.42e-06  1.76e-06  1.87e-03  8.95e-01
+    6   1.7112e+00   1.7112e+00  6.23e-06  3.64e-06  4.32e-07  0.00e+00  6.24e-07  1.01e+00  6.18e-07  7.61e-07  2.26e-02  5.81e-01
+    7   1.7112e+00   1.7112e+00  1.41e-06  8.26e-07  9.89e-08  0.00e+00  1.43e-07  1.01e+00  1.53e-07  1.74e-07  1.03e-01  8.60e-01
+    8   1.7112e+00   1.7112e+00  1.93e-07  1.13e-07  1.35e-08  0.00e+00  1.95e-08  1.01e+00  2.14e-08  2.38e-08  2.61e-02  8.86e-01
+    9   1.7112e+00   1.7112e+00  4.27e-08  2.49e-08  3.00e-09  0.00e+00  4.32e-09  1.01e+00  4.76e-09  5.28e-09  8.80e-03  7.86e-01
+   10   1.7112e+00   1.7112e+00  7.85e-09  4.59e-09  5.54e-10  0.00e+00  7.99e-10  1.01e+00  9.17e-10  9.76e-10  8.95e-02  8.95e-01
+optimal solution found; terminating
+
+status is Optimal after 10 iterations and 10.043 seconds
+
+took 15.580991679 seconds
+

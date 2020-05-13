@@ -569,3 +569,466 @@ took 22.642455226 seconds
 ┌ Warning: Hypatia status NumericalFailure not handled
 └ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
 
+
+instance batchdes
+ran at: 2020-05-12T13:59:32.937
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+ERROR: LoadError: LoadError: ArgumentError: Package TimerOutputs not found in current path:
+- Run `import Pkg; Pkg.add("TimerOutputs")` to install the TimerOutputs package.
+
+Stacktrace:
+ [1] require(::Module, ::Symbol) at ./loading.jl:893
+ [2] include(::String) at ./client.jl:446
+ [3] top-level scope at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:11
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+
+instance batchdes
+ran at: 2020-05-12T14:03:58.761
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+ERROR: LoadError: LoadError: ArgumentError: Package Hypatia not found in current path:
+- Run `import Pkg; Pkg.add("Hypatia")` to install the Hypatia package.
+
+Stacktrace:
+ [1] require(::Module, ::Symbol) at ./loading.jl:893
+ [2] include(::String) at ./client.jl:446
+ [3] top-level scope at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:12
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+
+instance batchdes
+ran at: 2020-05-12T14:37:22.485
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g opposite
+
+
+reading instance and constructing model...
+took 1.377430081 seconds
+building model...
+took 10.125711391 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   1.4071e+03  -6.0094e+03  6.60e+01       NaN  2.50e+05  0.00e+00  1.59e-03  1.00e+00  1.00e+00  1.00e+00
+    1   1.2065e+03  -6.0095e+03  8.75e+00       NaN  2.43e+05  0.00e+00  1.55e-03  1.36e-01  9.93e-01  1.33e-01  4.09e-02  9.04e-01
+    2   9.1384e+02  -5.3182e+03  2.09e+00       NaN  2.11e+05  0.00e+00  1.34e-03  3.76e-02  9.27e-01  3.17e-02  4.09e-02  7.94e-01
+    3   1.4819e+03  -4.1493e+03  6.65e-01       NaN  1.92e+05  0.00e+00  1.22e-03  1.31e-02  8.10e-01  1.01e-02  9.63e-02  7.55e-01
+    4   4.1580e+03   5.8950e+02  1.69e-01  2.87e-04  1.24e+05  0.00e+00  7.91e-04  5.17e-03  5.92e-01  2.57e-03  3.20e-02  7.70e-01
+    5   3.9257e+03   1.8599e+02  1.33e-01  7.13e-04  1.31e+05  0.00e+00  8.37e-04  3.83e-03  6.00e-01  2.01e-03  1.81e-01  2.63e-01
+    6   6.7838e+03   3.9715e+03  7.85e-02  1.98e-05  9.97e+04  0.00e+00  6.35e-04  2.99e-03  4.33e-01  1.19e-03  1.57e-01  4.85e-01
+    7   7.1857e+03   4.3222e+03  3.94e-02  9.12e-06  1.07e+05  0.00e+00  6.81e-04  1.40e-03  4.27e-01  5.97e-04  1.43e-01  5.81e-01
+    8   1.5640e+04   1.4034e+04  1.88e-02  1.34e-06  6.03e+04  0.00e+00  3.84e-04  1.18e-03  2.16e-01  2.84e-04  1.75e-01  6.36e-01
+    9   2.1009e+04   1.9805e+04  6.71e-03  3.39e-07  5.29e+04  0.00e+00  3.37e-04  4.79e-04  1.75e-01  1.01e-04  1.74e-01  7.78e-01
+   10   3.1164e+04   3.0446e+04  3.43e-03  1.13e-07  3.21e+04  0.00e+00  2.05e-04  4.03e-04  9.53e-02  5.18e-05  1.50e-01  5.75e-01
+   11   4.1362e+04   4.0995e+04  1.43e-03  3.50e-08  1.87e+04  0.00e+00  1.19e-04  2.89e-04  5.42e-02  2.16e-05  1.38e-01  6.76e-01
+   12   4.1795e+04   4.1434e+04  1.35e-03  3.27e-08  1.91e+04  0.00e+00  1.22e-04  2.67e-04  5.50e-02  2.04e-05  2.05e-01  7.14e-02
+   13   5.5892e+04   5.5803e+04  4.72e-04  8.46e-09  1.40e+04  0.00e+00  8.94e-05  1.27e-04  4.16e-02  7.13e-06  9.29e-02  7.18e-01
+   14   6.8494e+04   6.8590e+04  1.81e-04  2.64e-09  9.21e+03  0.00e+00  5.87e-05  7.42e-05  2.74e-02  2.73e-06  1.66e-01  7.40e-01
+   15   8.1920e+04   8.2160e+04  7.62e-05  9.28e-10  6.54e+03  0.00e+00  4.17e-05  4.40e-05  1.91e-02  1.15e-06  1.85e-01  7.10e-01
+   16   1.0012e+05   1.0043e+05  2.88e-05  2.87e-10  3.96e+03  0.00e+00  2.53e-05  2.74e-05  1.18e-02  4.35e-07  1.51e-01  7.32e-01
+   17   1.0486e+05   1.0530e+05  2.00e-05  1.90e-10  3.86e+03  0.00e+00  2.46e-05  1.95e-05  1.08e-02  3.01e-07  1.94e-01  3.81e-01
+   18   1.2518e+05   1.2543e+05  7.15e-06  5.70e-11  1.71e+03  0.00e+00  1.09e-05  1.57e-05  4.81e-03  1.08e-07  1.49e-01  7.55e-01
+   19   1.2512e+05   1.2552e+05  6.34e-06  5.05e-11  2.03e+03  0.00e+00  1.29e-05  1.18e-05  5.41e-03  9.55e-08  2.23e-01  1.46e-01
+   20   1.3529e+05   1.3557e+05  3.94e-06  2.90e-11  1.39e+03  0.00e+00  8.85e-06  1.07e-05  3.49e-03  5.93e-08  1.78e-01  4.61e-01
+   21   1.4725e+05   1.4739e+05  1.51e-06  1.03e-11  6.11e+02  0.00e+00  3.90e-06  9.33e-06  1.49e-03  2.28e-08  7.98e-02  6.69e-01
+   22   1.4600e+05   1.4622e+05  1.30e-06  8.92e-12  7.11e+02  0.00e+00  4.54e-06  6.90e-06  1.65e-03  1.96e-08  2.24e-01  1.79e-01
+   23   1.4711e+05   1.4731e+05  1.20e-06  8.12e-12  6.55e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.95e-02  9.14e-02
+   24   1.4712e+05   1.4732e+05  1.20e-06  8.11e-12  6.54e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.30e-02  1.11e-03
+
+status is NumericalFailure after 24 iterations and 11.308 seconds
+
+took 16.821070078 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance batchdes
+ran at: 2020-05-12T16:00:00.863
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64 but congj_g opposite
+
+
+signal (2): Interrupt
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:60
+_ZL24isNonEscapingLocalObjectPKN4llvm5ValueEPNS_13SmallDenseMapIS2_bLj8ENS_12DenseMapInfoIS2_EENS_6detail12DenseMapPairIS2_bEEEE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13BasicAAResult10aliasCheckEPKNS_5ValueENS_12LocationSizeENS_9AAMDNodesES3_S4_S5_RNS_11AAQueryInfoES3_S3_ at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13BasicAAResult8aliasGEPEPKNS_11GEPOperatorENS_12LocationSizeERKNS_9AAMDNodesEPKNS_5ValueES4_S7_SA_SA_RNS_11AAQueryInfoE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13BasicAAResult10aliasCheckEPKNS_5ValueENS_12LocationSizeENS_9AAMDNodesES3_S4_S5_RNS_11AAQueryInfoES3_S3_ at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13BasicAAResult5aliasERKNS_14MemoryLocationES3_RNS_11AAQueryInfoE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm9AAResults5aliasERKNS_14MemoryLocationES3_RNS_11AAQueryInfoE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm9AAResults5aliasERKNS_14MemoryLocationES3_ at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZNK4llvm8AliasSet14aliasesPointerEPKNS_5ValueENS_12LocationSizeERKNS_9AAMDNodesERNS_9AAResultsE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm15AliasSetTracker24mergeAliasSetsForPointerEPKNS_5ValueENS_12LocationSizeERKNS_9AAMDNodesERb at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm15AliasSetTracker14getAliasSetForERKNS_14MemoryLocationE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm15AliasSetTracker10addPointerENS_14MemoryLocationENS_8AliasSet13AccessLatticeE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm15AliasSetTracker3addEPNS_9StoreInstE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm15AliasSetTracker3addERNS_10BasicBlockE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN12_GLOBAL__N_123LoopInvariantCodeMotion9runOnLoopEPN4llvm4LoopEPNS1_9AAResultsEPNS1_8LoopInfoEPNS1_13DominatorTreeEPNS1_17TargetLibraryInfoEPNS1_19TargetTransformInfoEPNS1_15ScalarEvolutionEPNS1_9MemorySSAEPNS1_25OptimizationRemarkEmitterEb at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN12_GLOBAL__N_114LegacyLICMPass9runOnLoopEPN4llvm4LoopERNS1_13LPPassManagerE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13LPPassManager13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm13FPPassManager11runOnModuleERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+_ZN4llvm6legacy15PassManagerImpl3runERNS_6ModuleE at /home/lea/julia/usr/bin/../lib/libLLVM-9jl.so (unknown line)
+operator() at /home/lea/julia/src/jitlayers.cpp:520
+addModule at /home/lea/julia/usr/include/llvm/ExecutionEngine/Orc/IRCompileLayer.h:93 [inlined]
+addModule at /home/lea/julia/src/jitlayers.cpp:648
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:893 [inlined]
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:955
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:940
+jl_add_to_ee at /home/lea/julia/src/jitlayers.cpp:977 [inlined]
+_jl_compile_codeinst at /home/lea/julia/src/jitlayers.cpp:126
+jl_generate_fptr at /home/lea/julia/src/jitlayers.cpp:302
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1964
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1931 [inlined]
+_jl_invoke at /home/lea/julia/src/gf.c:2224 [inlined]
+jl_apply_generic at /home/lea/julia/src/gf.c:2398
+compressed_open at /home/lea/.julia/packages/MathOptInterface/RmalA/src/FileFormats/utils.jl:174
+compressed_open at /home/lea/.julia/packages/MathOptInterface/RmalA/src/FileFormats/utils.jl:200
+read_from_file at /home/lea/.julia/packages/MathOptInterface/RmalA/src/FileFormats/FileFormats.jl:105 [inlined]
+macro expansion at ./timing.jl:233 [inlined]
+read_model at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:66
+#single_moi#3 at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:107
+unknown function (ip: 0x7f604740f009)
+single_moi##kw at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:107
+unknown function (ip: 0x7f60473e6131)
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+do_call at /home/lea/julia/src/interpreter.c:117
+eval_value at /home/lea/julia/src/interpreter.c:206
+eval_stmt_value at /home/lea/julia/src/interpreter.c:157 [inlined]
+eval_body at /home/lea/julia/src/interpreter.c:548
+jl_interpret_toplevel_thunk at /home/lea/julia/src/interpreter.c:660
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:840
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:790
+jl_toplevel_eval_in at /home/lea/julia/src/toplevel.c:883
+eval at ./boot.jl:331 [inlined]
+include_string at ./loading.jl:1103
+_include at ./loading.jl:1157
+include at ./Base.jl:368
+exec_options at ./client.jl:295
+_start at ./client.jl:487
+jfptr__start_48545 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jl_apply at /home/lea/julia/ui/../src/julia.h:1700 [inlined]
+true_main at /home/lea/julia/ui/repl.c:106
+main at /home/lea/julia/ui/repl.c:227
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+_start at /home/lea/julia/usr/bin/julia (unknown line)
+unknown function (ip: (nil))
+Allocations: 70949642 (Pool: 70930776; Big: 18866); GC: 66
+<unknown>:0: error: starting new .cfi frame before finishing the previous one
+LLVM ERROR: Error parsing inline asm
+
+
+instance batchdes
+ran at: 2020-05-12T16:25:38.255
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.349127845 seconds
+building model...
+took 10.090366534 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   1.4071e+03  -6.0094e+03  6.60e+01       NaN  2.50e+05  0.00e+00  1.59e-03  1.00e+00  1.00e+00  1.00e+00
+    1   1.2065e+03  -6.0095e+03  8.75e+00       NaN  2.43e+05  0.00e+00  1.55e-03  1.36e-01  9.93e-01  1.33e-01  4.09e-02  9.04e-01
+    2   9.1384e+02  -5.3182e+03  2.09e+00       NaN  2.11e+05  0.00e+00  1.34e-03  3.76e-02  9.27e-01  3.17e-02  4.09e-02  7.94e-01
+    3   1.4819e+03  -4.1493e+03  6.65e-01       NaN  1.92e+05  0.00e+00  1.22e-03  1.31e-02  8.10e-01  1.01e-02  9.63e-02  7.55e-01
+    4   4.1580e+03   5.8950e+02  1.69e-01  2.87e-04  1.24e+05  0.00e+00  7.91e-04  5.17e-03  5.92e-01  2.57e-03  3.20e-02  7.70e-01
+    5   3.9257e+03   1.8599e+02  1.33e-01  7.13e-04  1.31e+05  0.00e+00  8.37e-04  3.83e-03  6.00e-01  2.01e-03  1.81e-01  2.63e-01
+    6   6.7838e+03   3.9715e+03  7.85e-02  1.98e-05  9.97e+04  0.00e+00  6.35e-04  2.99e-03  4.33e-01  1.19e-03  1.57e-01  4.85e-01
+    7   7.1857e+03   4.3222e+03  3.94e-02  9.12e-06  1.07e+05  0.00e+00  6.81e-04  1.40e-03  4.27e-01  5.97e-04  1.43e-01  5.81e-01
+    8   1.5640e+04   1.4034e+04  1.88e-02  1.34e-06  6.03e+04  0.00e+00  3.84e-04  1.18e-03  2.16e-01  2.84e-04  1.75e-01  6.36e-01
+    9   2.1009e+04   1.9805e+04  6.71e-03  3.39e-07  5.29e+04  0.00e+00  3.37e-04  4.79e-04  1.75e-01  1.01e-04  1.74e-01  7.78e-01
+   10   3.1164e+04   3.0446e+04  3.43e-03  1.13e-07  3.21e+04  0.00e+00  2.05e-04  4.03e-04  9.53e-02  5.18e-05  1.50e-01  5.75e-01
+   11   4.1362e+04   4.0995e+04  1.43e-03  3.50e-08  1.87e+04  0.00e+00  1.19e-04  2.89e-04  5.42e-02  2.16e-05  1.38e-01  6.76e-01
+   12   4.1795e+04   4.1434e+04  1.35e-03  3.27e-08  1.91e+04  0.00e+00  1.22e-04  2.67e-04  5.50e-02  2.04e-05  2.05e-01  7.14e-02
+   13   5.5892e+04   5.5803e+04  4.72e-04  8.46e-09  1.40e+04  0.00e+00  8.94e-05  1.27e-04  4.16e-02  7.13e-06  9.29e-02  7.18e-01
+   14   6.8494e+04   6.8590e+04  1.81e-04  2.64e-09  9.21e+03  0.00e+00  5.87e-05  7.42e-05  2.74e-02  2.73e-06  1.66e-01  7.40e-01
+   15   8.1920e+04   8.2160e+04  7.62e-05  9.28e-10  6.54e+03  0.00e+00  4.17e-05  4.40e-05  1.91e-02  1.15e-06  1.85e-01  7.10e-01
+   16   1.0012e+05   1.0043e+05  2.88e-05  2.87e-10  3.96e+03  0.00e+00  2.53e-05  2.74e-05  1.18e-02  4.35e-07  1.51e-01  7.32e-01
+   17   1.0486e+05   1.0530e+05  2.00e-05  1.90e-10  3.86e+03  0.00e+00  2.46e-05  1.95e-05  1.08e-02  3.01e-07  1.94e-01  3.81e-01
+   18   1.2518e+05   1.2543e+05  7.15e-06  5.70e-11  1.71e+03  0.00e+00  1.09e-05  1.57e-05  4.81e-03  1.08e-07  1.49e-01  7.55e-01
+   19   1.2512e+05   1.2552e+05  6.34e-06  5.05e-11  2.03e+03  0.00e+00  1.29e-05  1.18e-05  5.41e-03  9.55e-08  2.23e-01  1.46e-01
+   20   1.3529e+05   1.3557e+05  3.94e-06  2.90e-11  1.39e+03  0.00e+00  8.85e-06  1.07e-05  3.49e-03  5.93e-08  1.78e-01  4.61e-01
+   21   1.4725e+05   1.4739e+05  1.51e-06  1.03e-11  6.11e+02  0.00e+00  3.90e-06  9.33e-06  1.49e-03  2.28e-08  7.98e-02  6.69e-01
+   22   1.4600e+05   1.4622e+05  1.31e-06  8.92e-12  7.11e+02  0.00e+00  4.54e-06  6.90e-06  1.65e-03  1.96e-08  2.24e-01  1.79e-01
+   23   1.4711e+05   1.4731e+05  1.20e-06  8.12e-12  6.55e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.95e-02  9.14e-02
+   24   1.4713e+05   1.4733e+05  1.19e-06  8.10e-12  6.54e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.30e-02  2.07e-03
+
+status is NumericalFailure after 24 iterations and 9.134 seconds
+
+took 13.325404489 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance batchdes
+ran at: 2020-05-12T17:17:01.771
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.379541504 seconds
+building model...
+took 10.159906857 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   1.4071e+03  -6.0094e+03  6.60e+01       NaN  2.50e+05  0.00e+00  1.59e-03  1.00e+00  1.00e+00  1.00e+00
+    1   1.2065e+03  -6.0095e+03  8.75e+00       NaN  2.43e+05  0.00e+00  1.55e-03  1.36e-01  9.93e-01  1.33e-01  4.09e-02  9.04e-01
+    2   9.1384e+02  -5.3182e+03  2.09e+00       NaN  2.11e+05  0.00e+00  1.34e-03  3.76e-02  9.27e-01  3.17e-02  4.09e-02  7.94e-01
+    3   1.4819e+03  -4.1493e+03  6.65e-01       NaN  1.92e+05  0.00e+00  1.22e-03  1.31e-02  8.10e-01  1.01e-02  9.63e-02  7.55e-01
+    4   4.1580e+03   5.8950e+02  1.69e-01  2.87e-04  1.24e+05  0.00e+00  7.91e-04  5.17e-03  5.92e-01  2.57e-03  3.20e-02  7.70e-01
+    5   3.9257e+03   1.8599e+02  1.33e-01  7.13e-04  1.31e+05  0.00e+00  8.37e-04  3.83e-03  6.00e-01  2.01e-03  1.81e-01  2.63e-01
+    6   6.7838e+03   3.9715e+03  7.85e-02  1.98e-05  9.97e+04  0.00e+00  6.35e-04  2.99e-03  4.33e-01  1.19e-03  1.57e-01  4.85e-01
+    7   7.1857e+03   4.3222e+03  3.94e-02  9.12e-06  1.07e+05  0.00e+00  6.81e-04  1.40e-03  4.27e-01  5.97e-04  1.43e-01  5.81e-01
+    8   1.5640e+04   1.4034e+04  1.88e-02  1.34e-06  6.03e+04  0.00e+00  3.84e-04  1.18e-03  2.16e-01  2.84e-04  1.75e-01  6.36e-01
+    9   2.1009e+04   1.9805e+04  6.71e-03  3.39e-07  5.29e+04  0.00e+00  3.37e-04  4.79e-04  1.75e-01  1.01e-04  1.74e-01  7.78e-01
+   10   3.1164e+04   3.0446e+04  3.43e-03  1.13e-07  3.21e+04  0.00e+00  2.05e-04  4.03e-04  9.53e-02  5.18e-05  1.50e-01  5.75e-01
+   11   4.1362e+04   4.0995e+04  1.43e-03  3.50e-08  1.87e+04  0.00e+00  1.19e-04  2.89e-04  5.42e-02  2.16e-05  1.38e-01  6.76e-01
+   12   4.1795e+04   4.1434e+04  1.35e-03  3.27e-08  1.91e+04  0.00e+00  1.22e-04  2.67e-04  5.50e-02  2.04e-05  2.05e-01  7.14e-02
+   13   5.5892e+04   5.5803e+04  4.72e-04  8.46e-09  1.40e+04  0.00e+00  8.94e-05  1.27e-04  4.16e-02  7.13e-06  9.29e-02  7.18e-01
+   14   6.8494e+04   6.8590e+04  1.81e-04  2.64e-09  9.21e+03  0.00e+00  5.87e-05  7.42e-05  2.74e-02  2.73e-06  1.66e-01  7.40e-01
+   15   8.1920e+04   8.2160e+04  7.62e-05  9.28e-10  6.54e+03  0.00e+00  4.17e-05  4.40e-05  1.91e-02  1.15e-06  1.85e-01  7.10e-01
+   16   1.0012e+05   1.0043e+05  2.88e-05  2.87e-10  3.96e+03  0.00e+00  2.53e-05  2.74e-05  1.18e-02  4.35e-07  1.51e-01  7.32e-01
+   17   1.0486e+05   1.0530e+05  2.00e-05  1.90e-10  3.86e+03  0.00e+00  2.46e-05  1.95e-05  1.08e-02  3.01e-07  1.94e-01  3.81e-01
+   18   1.2518e+05   1.2543e+05  7.15e-06  5.70e-11  1.71e+03  0.00e+00  1.09e-05  1.57e-05  4.81e-03  1.08e-07  1.49e-01  7.55e-01
+   19   1.2512e+05   1.2552e+05  6.34e-06  5.05e-11  2.03e+03  0.00e+00  1.29e-05  1.18e-05  5.41e-03  9.55e-08  2.23e-01  1.46e-01
+   20   1.3529e+05   1.3557e+05  3.94e-06  2.90e-11  1.39e+03  0.00e+00  8.85e-06  1.07e-05  3.49e-03  5.93e-08  1.78e-01  4.61e-01
+   21   1.4725e+05   1.4739e+05  1.51e-06  1.03e-11  6.11e+02  0.00e+00  3.90e-06  9.33e-06  1.49e-03  2.28e-08  7.98e-02  6.69e-01
+   22   1.4600e+05   1.4622e+05  1.30e-06  8.92e-12  7.11e+02  0.00e+00  4.54e-06  6.90e-06  1.65e-03  1.96e-08  2.24e-01  1.79e-01
+   23   1.4711e+05   1.4731e+05  1.20e-06  8.12e-12  6.55e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.95e-02  9.14e-02
+   24   1.4712e+05   1.4733e+05  1.19e-06  8.11e-12  6.54e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.30e-02  1.29e-03
+
+status is NumericalFailure after 24 iterations and 9.805 seconds
+
+took 13.973774688 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance batchdes
+ran at: 2020-05-12T17:50:35.212
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.386402855 seconds
+building model...
+took 10.198654736 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   1.4071e+03  -6.0094e+03  6.60e+01       NaN  2.50e+05  0.00e+00  1.59e-03  1.00e+00  1.00e+00  1.00e+00
+    1   1.2065e+03  -6.0095e+03  8.75e+00       NaN  2.43e+05  0.00e+00  1.55e-03  1.36e-01  9.93e-01  1.33e-01  4.09e-02  9.04e-01
+    2   9.1384e+02  -5.3182e+03  2.09e+00       NaN  2.11e+05  0.00e+00  1.34e-03  3.76e-02  9.27e-01  3.17e-02  4.09e-02  7.94e-01
+    3   1.4819e+03  -4.1493e+03  6.65e-01       NaN  1.92e+05  0.00e+00  1.22e-03  1.31e-02  8.10e-01  1.01e-02  9.63e-02  7.55e-01
+    4   4.1580e+03   5.8950e+02  1.69e-01  2.87e-04  1.24e+05  0.00e+00  7.91e-04  5.17e-03  5.92e-01  2.57e-03  3.20e-02  7.70e-01
+    5   3.9257e+03   1.8599e+02  1.33e-01  7.13e-04  1.31e+05  0.00e+00  8.37e-04  3.83e-03  6.00e-01  2.01e-03  1.81e-01  2.63e-01
+    6   6.7838e+03   3.9715e+03  7.85e-02  1.98e-05  9.97e+04  0.00e+00  6.35e-04  2.99e-03  4.33e-01  1.19e-03  1.57e-01  4.85e-01
+    7   7.1857e+03   4.3222e+03  3.94e-02  9.12e-06  1.07e+05  0.00e+00  6.81e-04  1.40e-03  4.27e-01  5.97e-04  1.43e-01  5.81e-01
+    8   1.5640e+04   1.4034e+04  1.88e-02  1.34e-06  6.03e+04  0.00e+00  3.84e-04  1.18e-03  2.16e-01  2.84e-04  1.75e-01  6.36e-01
+    9   2.1009e+04   1.9805e+04  6.71e-03  3.39e-07  5.29e+04  0.00e+00  3.37e-04  4.79e-04  1.75e-01  1.01e-04  1.74e-01  7.78e-01
+   10   3.1164e+04   3.0446e+04  3.43e-03  1.13e-07  3.21e+04  0.00e+00  2.05e-04  4.03e-04  9.53e-02  5.18e-05  1.50e-01  5.75e-01
+   11   4.1362e+04   4.0995e+04  1.43e-03  3.50e-08  1.87e+04  0.00e+00  1.19e-04  2.89e-04  5.42e-02  2.16e-05  1.38e-01  6.76e-01
+   12   4.1795e+04   4.1434e+04  1.35e-03  3.27e-08  1.91e+04  0.00e+00  1.22e-04  2.67e-04  5.50e-02  2.04e-05  2.05e-01  7.14e-02
+   13   5.5892e+04   5.5803e+04  4.72e-04  8.46e-09  1.40e+04  0.00e+00  8.94e-05  1.27e-04  4.16e-02  7.13e-06  9.29e-02  7.18e-01
+   14   6.8494e+04   6.8590e+04  1.81e-04  2.64e-09  9.21e+03  0.00e+00  5.87e-05  7.42e-05  2.74e-02  2.73e-06  1.66e-01  7.40e-01
+   15   8.1920e+04   8.2160e+04  7.62e-05  9.28e-10  6.54e+03  0.00e+00  4.17e-05  4.40e-05  1.91e-02  1.15e-06  1.85e-01  7.10e-01
+   16   1.0012e+05   1.0043e+05  2.88e-05  2.87e-10  3.96e+03  0.00e+00  2.53e-05  2.74e-05  1.18e-02  4.35e-07  1.51e-01  7.32e-01
+   17   1.0486e+05   1.0530e+05  2.00e-05  1.90e-10  3.86e+03  0.00e+00  2.46e-05  1.95e-05  1.08e-02  3.01e-07  1.94e-01  3.81e-01
+   18   1.2518e+05   1.2543e+05  7.15e-06  5.70e-11  1.71e+03  0.00e+00  1.09e-05  1.57e-05  4.81e-03  1.08e-07  1.49e-01  7.55e-01
+   19   1.2512e+05   1.2552e+05  6.34e-06  5.05e-11  2.03e+03  0.00e+00  1.29e-05  1.18e-05  5.41e-03  9.55e-08  2.23e-01  1.46e-01
+   20   1.3529e+05   1.3557e+05  3.94e-06  2.90e-11  1.39e+03  0.00e+00  8.85e-06  1.07e-05  3.49e-03  5.93e-08  1.78e-01  4.61e-01
+   21   1.4725e+05   1.4739e+05  1.51e-06  1.03e-11  6.11e+02  0.00e+00  3.90e-06  9.33e-06  1.49e-03  2.28e-08  7.98e-02  6.69e-01
+   22   1.4600e+05   1.4622e+05  1.30e-06  8.92e-12  7.11e+02  0.00e+00  4.54e-06  6.90e-06  1.65e-03  1.96e-08  2.24e-01  1.79e-01
+   23   1.4711e+05   1.4731e+05  1.20e-06  8.12e-12  6.55e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.95e-02  9.14e-02
+   24   1.4712e+05   1.4733e+05  1.19e-06  8.11e-12  6.54e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.30e-02  1.32e-03
+
+status is NumericalFailure after 24 iterations and 16.902 seconds
+
+took 21.097731402 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance batchdes
+ran at: 2020-05-12T20:46:51.52
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.387411672 seconds
+building model...
+took 10.226995492 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   1.4071e+03  -6.0094e+03  6.60e+01       NaN  2.50e+05  0.00e+00  1.59e-03  1.00e+00  1.00e+00  1.00e+00
+    1   1.2065e+03  -6.0095e+03  8.75e+00       NaN  2.43e+05  0.00e+00  1.55e-03  1.36e-01  9.93e-01  1.33e-01  4.09e-02  9.04e-01
+    2   9.1384e+02  -5.3182e+03  2.09e+00       NaN  2.11e+05  0.00e+00  1.34e-03  3.76e-02  9.27e-01  3.17e-02  4.09e-02  7.94e-01
+    3   1.4819e+03  -4.1493e+03  6.65e-01       NaN  1.92e+05  0.00e+00  1.22e-03  1.31e-02  8.10e-01  1.01e-02  9.63e-02  7.55e-01
+    4   4.1580e+03   5.8950e+02  1.69e-01  2.87e-04  1.24e+05  0.00e+00  7.91e-04  5.17e-03  5.92e-01  2.57e-03  3.20e-02  7.70e-01
+    5   3.9257e+03   1.8599e+02  1.33e-01  7.13e-04  1.31e+05  0.00e+00  8.37e-04  3.83e-03  6.00e-01  2.01e-03  1.81e-01  2.63e-01
+    6   6.7838e+03   3.9715e+03  7.85e-02  1.98e-05  9.97e+04  0.00e+00  6.35e-04  2.99e-03  4.33e-01  1.19e-03  1.57e-01  4.85e-01
+    7   7.1857e+03   4.3222e+03  3.94e-02  9.12e-06  1.07e+05  0.00e+00  6.81e-04  1.40e-03  4.27e-01  5.97e-04  1.43e-01  5.81e-01
+    8   1.5640e+04   1.4034e+04  1.88e-02  1.34e-06  6.03e+04  0.00e+00  3.84e-04  1.18e-03  2.16e-01  2.84e-04  1.75e-01  6.36e-01
+    9   2.1009e+04   1.9805e+04  6.71e-03  3.39e-07  5.29e+04  0.00e+00  3.37e-04  4.79e-04  1.75e-01  1.01e-04  1.74e-01  7.78e-01
+   10   3.1164e+04   3.0446e+04  3.43e-03  1.13e-07  3.21e+04  0.00e+00  2.05e-04  4.03e-04  9.53e-02  5.18e-05  1.50e-01  5.75e-01
+   11   4.1362e+04   4.0995e+04  1.43e-03  3.50e-08  1.87e+04  0.00e+00  1.19e-04  2.89e-04  5.42e-02  2.16e-05  1.38e-01  6.76e-01
+   12   4.1795e+04   4.1434e+04  1.35e-03  3.27e-08  1.91e+04  0.00e+00  1.22e-04  2.67e-04  5.50e-02  2.04e-05  2.05e-01  7.14e-02
+   13   5.5892e+04   5.5803e+04  4.72e-04  8.46e-09  1.40e+04  0.00e+00  8.94e-05  1.27e-04  4.16e-02  7.13e-06  9.29e-02  7.18e-01
+   14   6.8494e+04   6.8590e+04  1.81e-04  2.64e-09  9.21e+03  0.00e+00  5.87e-05  7.42e-05  2.74e-02  2.73e-06  1.66e-01  7.40e-01
+   15   8.1920e+04   8.2160e+04  7.62e-05  9.28e-10  6.54e+03  0.00e+00  4.17e-05  4.40e-05  1.91e-02  1.15e-06  1.85e-01  7.10e-01
+   16   1.0012e+05   1.0043e+05  2.88e-05  2.87e-10  3.96e+03  0.00e+00  2.53e-05  2.74e-05  1.18e-02  4.35e-07  1.51e-01  7.32e-01
+   17   1.0486e+05   1.0530e+05  2.00e-05  1.90e-10  3.86e+03  0.00e+00  2.46e-05  1.95e-05  1.08e-02  3.01e-07  1.94e-01  3.81e-01
+   18   1.2518e+05   1.2543e+05  7.15e-06  5.70e-11  1.71e+03  0.00e+00  1.09e-05  1.57e-05  4.81e-03  1.08e-07  1.49e-01  7.55e-01
+   19   1.2512e+05   1.2552e+05  6.34e-06  5.05e-11  2.03e+03  0.00e+00  1.29e-05  1.18e-05  5.41e-03  9.55e-08  2.23e-01  1.46e-01
+   20   1.3529e+05   1.3557e+05  3.94e-06  2.90e-11  1.39e+03  0.00e+00  8.85e-06  1.07e-05  3.49e-03  5.93e-08  1.78e-01  4.61e-01
+   21   1.4725e+05   1.4739e+05  1.51e-06  1.03e-11  6.11e+02  0.00e+00  3.90e-06  9.33e-06  1.49e-03  2.28e-08  7.98e-02  6.69e-01
+   22   1.4600e+05   1.4622e+05  1.30e-06  8.92e-12  7.11e+02  0.00e+00  4.54e-06  6.90e-06  1.65e-03  1.96e-08  2.24e-01  1.79e-01
+   23   1.4711e+05   1.4731e+05  1.20e-06  8.12e-12  6.55e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.95e-02  9.14e-02
+   24   1.4712e+05   1.4732e+05  1.20e-06  8.11e-12  6.54e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.30e-02  1.09e-03
+
+status is NumericalFailure after 24 iterations and 18.006 seconds
+
+took 23.571137446 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance batchdes
+ran at: 2020-05-12T22:08:11.95
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.377651867 seconds
+building model...
+took 10.099570211 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   1.4071e+03  -6.0094e+03  6.60e+01       NaN  2.50e+05  0.00e+00  1.59e-03  1.00e+00  1.00e+00  1.00e+00
+    1   1.2065e+03  -6.0095e+03  8.75e+00       NaN  2.43e+05  0.00e+00  1.55e-03  1.36e-01  9.93e-01  1.33e-01  4.09e-02  9.04e-01
+    2   9.1384e+02  -5.3182e+03  2.09e+00       NaN  2.11e+05  0.00e+00  1.34e-03  3.76e-02  9.27e-01  3.17e-02  4.09e-02  7.94e-01
+    3   1.4819e+03  -4.1493e+03  6.65e-01       NaN  1.92e+05  0.00e+00  1.22e-03  1.31e-02  8.10e-01  1.01e-02  9.63e-02  7.55e-01
+    4   4.1580e+03   5.8950e+02  1.69e-01  2.87e-04  1.24e+05  0.00e+00  7.91e-04  5.17e-03  5.92e-01  2.57e-03  3.20e-02  7.70e-01
+    5   3.9257e+03   1.8599e+02  1.33e-01  7.13e-04  1.31e+05  0.00e+00  8.37e-04  3.83e-03  6.00e-01  2.01e-03  1.81e-01  2.63e-01
+    6   6.7838e+03   3.9715e+03  7.85e-02  1.98e-05  9.97e+04  0.00e+00  6.35e-04  2.99e-03  4.33e-01  1.19e-03  1.57e-01  4.85e-01
+    7   7.1857e+03   4.3222e+03  3.94e-02  9.12e-06  1.07e+05  0.00e+00  6.81e-04  1.40e-03  4.27e-01  5.97e-04  1.43e-01  5.81e-01
+    8   1.5640e+04   1.4034e+04  1.88e-02  1.34e-06  6.03e+04  0.00e+00  3.84e-04  1.18e-03  2.16e-01  2.84e-04  1.75e-01  6.36e-01
+    9   2.1009e+04   1.9805e+04  6.71e-03  3.39e-07  5.29e+04  0.00e+00  3.37e-04  4.79e-04  1.75e-01  1.01e-04  1.74e-01  7.78e-01
+   10   3.1164e+04   3.0446e+04  3.43e-03  1.13e-07  3.21e+04  0.00e+00  2.05e-04  4.03e-04  9.53e-02  5.18e-05  1.50e-01  5.75e-01
+   11   4.1362e+04   4.0995e+04  1.43e-03  3.50e-08  1.87e+04  0.00e+00  1.19e-04  2.89e-04  5.42e-02  2.16e-05  1.38e-01  6.76e-01
+   12   4.1795e+04   4.1434e+04  1.35e-03  3.27e-08  1.91e+04  0.00e+00  1.22e-04  2.67e-04  5.50e-02  2.04e-05  2.05e-01  7.14e-02
+   13   5.5892e+04   5.5803e+04  4.72e-04  8.46e-09  1.40e+04  0.00e+00  8.94e-05  1.27e-04  4.16e-02  7.13e-06  9.29e-02  7.18e-01
+   14   6.8494e+04   6.8590e+04  1.81e-04  2.64e-09  9.21e+03  0.00e+00  5.87e-05  7.42e-05  2.74e-02  2.73e-06  1.66e-01  7.40e-01
+   15   8.1920e+04   8.2160e+04  7.62e-05  9.28e-10  6.54e+03  0.00e+00  4.17e-05  4.40e-05  1.91e-02  1.15e-06  1.85e-01  7.10e-01
+   16   1.0012e+05   1.0043e+05  2.88e-05  2.87e-10  3.96e+03  0.00e+00  2.53e-05  2.74e-05  1.18e-02  4.35e-07  1.51e-01  7.32e-01
+   17   1.0486e+05   1.0530e+05  2.00e-05  1.90e-10  3.86e+03  0.00e+00  2.46e-05  1.95e-05  1.08e-02  3.01e-07  1.94e-01  3.81e-01
+   18   1.2518e+05   1.2543e+05  7.15e-06  5.70e-11  1.71e+03  0.00e+00  1.09e-05  1.57e-05  4.81e-03  1.08e-07  1.49e-01  7.55e-01
+   19   1.2512e+05   1.2552e+05  6.34e-06  5.05e-11  2.03e+03  0.00e+00  1.29e-05  1.18e-05  5.41e-03  9.55e-08  2.23e-01  1.46e-01
+   20   1.3529e+05   1.3557e+05  3.94e-06  2.90e-11  1.39e+03  0.00e+00  8.85e-06  1.07e-05  3.49e-03  5.93e-08  1.78e-01  4.61e-01
+   21   1.4725e+05   1.4739e+05  1.51e-06  1.03e-11  6.11e+02  0.00e+00  3.90e-06  9.33e-06  1.49e-03  2.28e-08  7.98e-02  6.69e-01
+   22   1.4600e+05   1.4622e+05  1.30e-06  8.92e-12  7.11e+02  0.00e+00  4.54e-06  6.90e-06  1.65e-03  1.96e-08  2.24e-01  1.79e-01
+   23   1.4711e+05   1.4731e+05  1.20e-06  8.12e-12  6.55e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.95e-02  9.14e-02
+   24   1.4712e+05   1.4732e+05  1.20e-06  8.11e-12  6.54e+02  0.00e+00  4.17e-06  6.88e-06  1.52e-03  1.80e-08  8.30e-02  1.02e-03
+
+status is NumericalFailure after 24 iterations and 17.755 seconds
+
+took 23.25672493 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance batchdes
+ran at: 2020-05-12T23:46:02.192
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.381696638 seconds
+building model...
+took 10.200241225 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   1.4071e+03  -6.0094e+03  6.60e+01       NaN  2.50e+05  0.00e+00  1.59e-03  1.00e+00  1.00e+00  1.00e+00
+    1   1.2065e+03  -6.0095e+03  8.75e+00       NaN  2.43e+05  0.00e+00  1.55e-03  1.36e-01  9.93e-01  1.33e-01  4.09e-02  9.04e-01
+    2   9.1384e+02  -5.3182e+03  2.09e+00       NaN  2.11e+05  0.00e+00  1.34e-03  3.76e-02  9.27e-01  3.17e-02  4.09e-02  7.94e-01
+    3   1.4819e+03  -4.1493e+03  6.65e-01       NaN  1.92e+05  0.00e+00  1.22e-03  1.31e-02  8.10e-01  1.01e-02  9.63e-02  7.55e-01
+    4   4.1580e+03   5.8950e+02  1.69e-01  2.87e-04  1.24e+05  0.00e+00  7.91e-04  5.17e-03  5.92e-01  2.57e-03  3.20e-02  7.70e-01
+    5   3.9257e+03   1.8599e+02  1.33e-01  7.13e-04  1.31e+05  0.00e+00  8.37e-04  3.83e-03  6.00e-01  2.01e-03  1.81e-01  2.63e-01
+    6   6.7838e+03   3.9715e+03  7.85e-02  1.98e-05  9.97e+04  0.00e+00  6.35e-04  2.99e-03  4.33e-01  1.19e-03  1.57e-01  4.85e-01
+    7   7.1857e+03   4.3222e+03  3.94e-02  9.12e-06  1.07e+05  0.00e+00  6.81e-04  1.40e-03  4.27e-01  5.97e-04  1.43e-01  5.81e-01
+    8   1.5640e+04   1.4034e+04  1.88e-02  1.34e-06  6.03e+04  0.00e+00  3.84e-04  1.18e-03  2.16e-01  2.84e-04  1.75e-01  6.36e-01
+    9   2.1009e+04   1.9805e+04  6.71e-03  3.39e-07  5.29e+04  0.00e+00  3.37e-04  4.79e-04  1.75e-01  1.01e-04  1.74e-01  7.78e-01
+   10   3.1164e+04   3.0446e+04  3.43e-03  1.13e-07  3.21e+04  0.00e+00  2.05e-04  4.03e-04  9.53e-02  5.18e-05  1.50e-01  5.75e-01
+   11   4.1363e+04   4.0995e+04  1.43e-03  3.50e-08  1.87e+04  0.00e+00  1.19e-04  2.89e-04  5.42e-02  2.16e-05  1.38e-01  6.76e-01
+   12   4.1795e+04   4.1434e+04  1.35e-03  3.27e-08  1.91e+04  0.00e+00  1.22e-04  2.67e-04  5.50e-02  2.04e-05  2.05e-01  7.14e-02
+   13   5.5892e+04   5.5803e+04  4.72e-04  8.46e-09  1.40e+04  0.00e+00  8.94e-05  1.27e-04  4.16e-02  7.13e-06  9.29e-02  7.18e-01
+   14   6.8494e+04   6.8590e+04  1.81e-04  2.64e-09  9.21e+03  0.00e+00  5.87e-05  7.42e-05  2.74e-02  2.73e-06  1.66e-01  7.40e-01
+   15   8.1929e+04   8.2169e+04  7.62e-05  9.28e-10  6.54e+03  0.00e+00  4.17e-05  4.40e-05  1.91e-02  1.15e-06  1.85e-01  7.10e-01
+   16   1.0013e+05   1.0044e+05  2.88e-05  2.87e-10  3.96e+03  0.00e+00  2.53e-05  2.74e-05  1.18e-02  4.35e-07  1.51e-01  7.32e-01
+   17   1.0488e+05   1.0531e+05  2.00e-05  1.90e-10  3.86e+03  0.00e+00  2.46e-05  1.95e-05  1.07e-02  3.01e-07  1.94e-01  3.81e-01
+   18   1.2495e+05   1.2521e+05  7.26e-06  5.80e-11  1.73e+03  0.00e+00  1.10e-05  1.58e-05  4.84e-03  1.10e-07  1.48e-01  7.47e-01
+   19   1.2627e+05   1.2668e+05  6.03e-06  4.76e-11  2.03e+03  0.00e+00  1.29e-05  1.12e-05  5.28e-03  9.08e-08  2.11e-01  2.17e-01
+   20   1.3635e+05   1.3664e+05  3.76e-06  2.75e-11  1.38e+03  0.00e+00  8.82e-06  1.03e-05  3.44e-03  5.67e-08  1.77e-01  4.57e-01
+   21   1.4682e+05   1.4696e+05  1.65e-06  1.12e-11  6.53e+02  0.00e+00  4.16e-06  9.51e-06  1.54e-03  2.48e-08  7.05e-02  6.05e-01
+   22   1.4728e+05   1.4748e+05  1.27e-06  8.63e-12  6.73e+02  0.00e+00  4.29e-06  7.12e-06  1.55e-03  1.92e-08  2.14e-01  2.90e-01
+   23   1.5593e+05   1.5599e+05  3.83e-07  2.46e-12  2.05e+02  0.00e+00  1.31e-06  7.02e-06  4.76e-04  5.77e-09  3.63e-02  7.25e-01
+   24   1.5772e+05   1.5776e+05  2.11e-07  1.34e-12  1.15e+02  0.00e+00  7.30e-07  6.94e-06  2.92e-04  3.18e-09  1.46e-01  5.26e-01
+   25   1.5821e+05   1.5825e+05  1.73e-07  1.09e-12  1.01e+02  0.00e+00  6.45e-07  6.45e-06  2.59e-04  2.61e-09  2.02e-01  2.26e-01
+   26   1.5903e+05   1.5906e+05  1.16e-07  7.29e-13  6.63e+01  0.00e+00  4.22e-07  6.59e-06  1.71e-04  1.75e-09  4.18e-02  3.45e-01
+   27   1.5990e+05   1.5991e+05  5.82e-08  3.64e-13  3.19e+01  0.00e+00  2.04e-07  6.87e-06  8.57e-05  8.78e-10  1.27e-01  5.70e-01
+   28   1.6005e+05   1.6006e+05  5.04e-08  3.15e-13  2.66e+01  0.00e+00  1.70e-07  7.14e-06  7.10e-05  7.60e-10  1.82e-01  1.64e-01
+   29   1.6048e+05   1.6049e+05  2.34e-08  1.46e-13  1.31e+01  0.00e+00  8.35e-08  6.74e-06  3.99e-05  3.53e-10  1.99e-01  6.69e-01
+   30   1.6067e+05   1.6067e+05  1.18e-08  7.36e-14  6.61e+00  0.00e+00  4.21e-08  6.75e-06  2.04e-05  1.78e-10  5.88e-02  5.26e-01
+   31   1.6082e+05   1.6083e+05  2.14e-09  1.33e-14  1.19e+00  0.00e+00  7.60e-09  6.79e-06  3.74e-06  3.24e-11  3.85e-02  8.51e-01
+   32   1.6086e+05   1.6086e+05  1.51e-10  9.40e-16  8.41e-02  0.00e+00  5.36e-10  6.79e-06  2.63e-07  2.28e-12  2.25e-02  9.51e-01
+   33   1.6086e+05   1.6086e+05  1.02e-10  6.31e-16  5.65e-02  0.00e+00  3.60e-10  6.79e-06  1.81e-07  1.53e-12  1.56e-01  3.89e-01
+   34   1.6086e+05   1.6086e+05  3.19e-11  1.98e-16  1.78e-02  0.00e+00  1.14e-10  6.77e-06  6.28e-08  4.83e-13  1.54e-01  8.10e-01
+   35   1.6086e+05   1.6086e+05  1.82e-11  1.13e-16  1.02e-02  0.00e+00  6.49e-11  6.78e-06  3.65e-08  2.76e-13  1.51e-01  5.05e-01
+   36   1.6086e+05   1.6086e+05  7.25e-12  4.51e-17  3.91e-03  0.00e+00  2.49e-11  6.89e-06  1.40e-08  1.10e-13  1.62e-03  6.10e-01
+   37   1.6086e+05   1.6086e+05  1.22e-12  7.58e-18  6.67e-04  0.00e+00  4.25e-12  6.84e-06  2.43e-09  1.84e-14  4.54e-03  8.34e-01
+   38   1.6086e+05   1.6086e+05  1.22e-12  7.56e-18  6.66e-04  0.00e+00  4.25e-12  6.84e-06  2.42e-09  1.84e-14  2.50e-01  2.63e-03
+
+status is NumericalFailure after 38 iterations and 15.496 seconds
+
+took 21.044352662 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+

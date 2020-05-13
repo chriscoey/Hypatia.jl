@@ -236,3 +236,661 @@ status is Optimal after 8 iterations and 9.889 seconds
 
 took 15.151970451 seconds
 
+
+instance beck753
+ran at: 2020-05-12T13:57:14.637
+with solver: hypatia, system solver: naive_dense
+number type : Float64 but congj_g in F64
+
+
+signal (2): Interrupt
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:5
+sweep_page at /home/lea/julia/src/gc.c:1283 [inlined]
+sweep_pool_page at /home/lea/julia/src/gc.c:1323 [inlined]
+sweep_pool_pagetable0 at /home/lea/julia/src/gc.c:1343 [inlined]
+sweep_pool_pagetable1 at /home/lea/julia/src/gc.c:1363 [inlined]
+sweep_pool_pagetable at /home/lea/julia/src/gc.c:1393 [inlined]
+gc_sweep_pool at /home/lea/julia/src/gc.c:1468
+_jl_gc_collect at /home/lea/julia/src/gc.c:3014
+jl_gc_collect at /home/lea/julia/src/gc.c:3107
+maybe_collect at /home/lea/julia/src/gc.c:827 [inlined]
+jl_gc_pool_alloc at /home/lea/julia/src/gc.c:1142
+UseRef at ./compiler/ssair/ir.jl:263 [inlined]
+UseRefIterator at ./compiler/ssair/ir.jl:268 [inlined]
+userefs at ./compiler/ssair/ir.jl:382 [inlined]
+renumber_ssa2! at ./compiler/ssair/ir.jl:810
+process_node! at ./compiler/ssair/ir.jl:952
+process_node! at ./compiler/ssair/ir.jl:984 [inlined]
+iterate at ./compiler/ssair/ir.jl:1151
+foreach at ./abstractarray.jl:1992 [inlined]
+compact! at ./compiler/ssair/ir.jl:1298
+compact! at ./compiler/ssair/ir.jl:1296 [inlined]
+run_passes at ./compiler/ssair/driver.jl:137
+optimize at ./compiler/optimize.jl:176
+typeinf at ./compiler/typeinfer.jl:33
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1230
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_apply at ./compiler/abstractinterpretation.jl:621
+abstract_call_known at ./compiler/abstractinterpretation.jl:690
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+abstract_call_method_with_const_args at ./compiler/abstractinterpretation.jl:268
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:136
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call at ./compiler/abstractinterpretation.jl:910
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1230
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1230
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_ext at ./compiler/typeinfer.jl:571
+typeinf_ext_toplevel at ./compiler/typeinfer.jl:604
+typeinf_ext_toplevel at ./compiler/typeinfer.jl:600
+jfptr_typeinf_ext_toplevel_18431 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+jl_type_infer at /home/lea/julia/src/gf.c:296
+jl_generate_fptr at /home/lea/julia/src/jitlayers.cpp:290
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1964
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1931 [inlined]
+_jl_invoke at /home/lea/julia/src/gf.c:2224 [inlined]
+jl_apply_generic at /home/lea/julia/src/gf.c:2398
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+do_apply at /home/lea/julia/src/builtins.c:655
+jl_f__apply_latest at /home/lea/julia/src/builtins.c:705
+#invokelatest#1 at ./essentials.jl:710 [inlined]
+invokelatest at ./essentials.jl:709 [inlined]
+__init__ at /home/lea/.julia/packages/MbedTLS_jll/hP8le/src/wrappers/x86_64-linux-gnu.jl:55
+unknown function (ip: 0x7fe23416bd4c)
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+jl_module_run_initializer at /home/lea/julia/src/toplevel.c:74
+jl_init_restored_modules at /home/lea/julia/src/dump.c:2545
+_include_from_serialized at ./loading.jl:697
+_require_search_from_serialized at ./loading.jl:782
+_tryrequire_from_serialized at ./loading.jl:712
+_require_search_from_serialized at ./loading.jl:771
+_require at ./loading.jl:1007
+require at ./loading.jl:928
+require at ./loading.jl:923
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+call_require at /home/lea/julia/src/toplevel.c:425 [inlined]
+eval_import_path at /home/lea/julia/src/toplevel.c:462
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:722
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:790
+jl_toplevel_eval_in at /home/lea/julia/src/toplevel.c:883
+eval at ./boot.jl:331 [inlined]
+include_string at ./loading.jl:1103
+_include at ./loading.jl:1157
+include at ./client.jl:446
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+do_call at /home/lea/julia/src/interpreter.c:117
+eval_value at /home/lea/julia/src/interpreter.c:206
+eval_stmt_value at /home/lea/julia/src/interpreter.c:157 [inlined]
+eval_body at /home/lea/julia/src/interpreter.c:548
+jl_interpret_toplevel_thunk at /home/lea/julia/src/interpreter.c:660
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:840
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:790
+jl_toplevel_eval_in at /home/lea/julia/src/toplevel.c:883
+eval at ./boot.jl:331 [inlined]
+include_string at ./loading.jl:1103
+_include at ./loading.jl:1157
+include at ./Base.jl:368
+exec_options at ./client.jl:295
+_start at ./client.jl:487
+jfptr__start_48545 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jl_apply at /home/lea/julia/ui/../src/julia.h:1700 [inlined]
+true_main at /home/lea/julia/ui/repl.c:106
+main at /home/lea/julia/ui/repl.c:227
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+_start at /home/lea/julia/usr/bin/julia (unknown line)
+unknown function (ip: (nil))
+Allocations: 5693278 (Pool: 5690315; Big: 2963); GC: 6
+
+instance bss2
+ran at: 2020-05-12T13:58:15.649
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+ERROR: LoadError: LoadError: ArgumentError: Package TimerOutputs not found in current path:
+- Run `import Pkg; Pkg.add("TimerOutputs")` to install the TimerOutputs package.
+
+Stacktrace:
+ [1] require(::Module, ::Symbol) at ./loading.jl:893
+ [2] include(::String) at ./client.jl:446
+ [3] top-level scope at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:11
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+
+instance bss2
+ran at: 2020-05-12T14:02:40.474
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+ERROR: LoadError: LoadError: ArgumentError: Package Hypatia not found in current path:
+- Run `import Pkg; Pkg.add("Hypatia")` to install the Hypatia package.
+
+Stacktrace:
+ [1] require(::Module, ::Symbol) at ./loading.jl:893
+ [2] include(::String) at ./client.jl:446
+ [3] top-level scope at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:12
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:46
+
+instance bss2
+ran at: 2020-05-12T14:07:48.174
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g in F64
+
+
+reading instance and constructing model...
+took 1.292346773 seconds
+building model...
+took 9.747404608 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+
+status is NumericalFailure after 0 iterations and 10.206 seconds
+
+took 15.756268281 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss2
+ran at: 2020-05-12T14:26:42.108
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat but congj_g opposite
+
+
+reading instance and constructing model...
+took 1.245329442 seconds
+building model...
+took 9.766360627 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.49e-06  6.06e-07  2.07e-07  0.00e+00  1.17e-07  9.84e-01  2.55e-07  2.28e-07  1.92e-02  8.43e-01
+    7   4.1085e+00   4.1085e+00  5.43e-07  1.32e-07  4.56e-08  0.00e+00  2.58e-08  9.79e-01  5.65e-08  4.98e-08  1.62e-02  7.94e-01
+    8   4.1085e+00   4.1085e+00  5.28e-07  1.29e-07  4.47e-08  0.00e+00  2.53e-08  9.77e-01  5.51e-08  4.85e-08  2.44e-01  3.18e-02
+
+status is NumericalFailure after 8 iterations and 10.306 seconds
+
+took 15.871245943 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss2
+ran at: 2020-05-12T15:49:21.482
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64 but congj_g opposite
+
+
+reading instance and constructing model...
+took 1.288500748 seconds
+building model...
+took 9.825949487 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.96e-06  7.19e-07  2.46e-07  0.00e+00  1.39e-07  9.84e-01  3.03e-07  2.71e-07  1.92e-02  8.10e-01
+    7   4.1085e+00   4.1085e+00  2.36e-07  5.75e-08  1.97e-08  0.00e+00  1.11e-08  9.84e-01  2.41e-08  2.17e-08  2.75e-03  9.23e-01
+    8   4.1085e+00   4.1085e+00  5.18e-08  1.26e-08  4.23e-09  0.00e+00  2.39e-09  9.92e-01  5.06e-09  4.74e-09  3.28e-02  8.10e-01
+optimal solution found; terminating
+
+status is Optimal after 8 iterations and 9.551 seconds
+
+took 13.792838904 seconds
+
+
+instance bss2
+ran at: 2020-05-12T16:02:59.589
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64 but congj_g opposite
+
+
+reading instance and constructing model...
+took 1.283582342 seconds
+building model...
+took 9.778760428 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.96e-06  7.19e-07  2.46e-07  0.00e+00  1.39e-07  9.84e-01  3.03e-07  2.71e-07  1.92e-02  8.10e-01
+    7   4.1085e+00   4.1085e+00  2.36e-07  5.75e-08  1.97e-08  0.00e+00  1.11e-08  9.84e-01  2.41e-08  2.17e-08  2.75e-03  9.23e-01
+    8   4.1085e+00   4.1085e+00  5.18e-08  1.26e-08  4.23e-09  0.00e+00  2.39e-09  9.92e-01  5.06e-09  4.74e-09  3.28e-02  8.10e-01
+optimal solution found; terminating
+
+status is Optimal after 8 iterations and 9.466 seconds
+
+took 13.641191177 seconds
+
+
+instance bss2
+ran at: 2020-05-12T16:15:31.25
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.252870016 seconds
+building model...
+took 9.837554665 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.49e-06  6.06e-07  2.07e-07  0.00e+00  1.17e-07  9.84e-01  2.55e-07  2.28e-07  1.92e-02  8.43e-01
+    7   4.1085e+00   4.1085e+00  6.04e-07  1.47e-07  5.03e-08  0.00e+00  2.84e-08  9.84e-01  6.15e-08  5.54e-08  1.62e-02  7.70e-01
+    8   4.1085e+00   4.1085e+00  5.95e-07  1.45e-07  4.92e-08  0.00e+00  2.81e-08  9.84e-01  6.07e-08  5.45e-08  2.45e-01  1.62e-02
+
+status is NumericalFailure after 8 iterations and 9.121 seconds
+
+took 13.303166329 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss2
+ran at: 2020-05-12T16:49:59.544
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+signal (2): Interrupt
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:60
+jfptr_getindex_23171 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+getindex at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jfptr_analyze_methodNOT._17685 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+unknown function (ip: 0x7f684fcb0aef)
+ssa_inlining_pass! at ./compiler/ssair/inlining.jl:74 [inlined]
+run_passes at ./compiler/ssair/driver.jl:138
+jl_system_image_data at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+unknown function (ip: (nil))
+Allocations: 44264296 (Pool: 44250007; Big: 14289); GC: 45
+
+instance bss2
+ran at: 2020-05-12T17:06:52.73
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.247137465 seconds
+building model...
+took 9.715899342 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.49e-06  6.06e-07  2.07e-07  0.00e+00  1.17e-07  9.84e-01  2.55e-07  2.28e-07  1.92e-02  8.43e-01
+    7   4.1085e+00   4.1085e+00  5.86e-07  1.43e-07  4.90e-08  0.00e+00  2.75e-08  9.85e-01  5.95e-08  5.37e-08  1.62e-02  7.78e-01
+    8   4.1085e+00   4.1085e+00  5.83e-07  1.42e-07  4.87e-08  0.00e+00  2.74e-08  9.85e-01  5.92e-08  5.35e-08  2.50e-01  6.77e-03
+
+status is NumericalFailure after 8 iterations and 9.516 seconds
+
+took 13.647408038 seconds
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss2
+ran at: 2020-05-12T17:40:02.853
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.260259415 seconds
+building model...
+took 9.80987488 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.96e-06  7.19e-07  2.46e-07  0.00e+00  1.39e-07  9.84e-01  3.03e-07  2.71e-07  1.92e-02  8.10e-01
+    7   4.1085e+00   4.1085e+00  2.09e-07  5.08e-08  1.74e-08  0.00e+00  9.84e-09  9.84e-01  2.13e-08  1.91e-08  2.75e-03  9.32e-01
+    8   4.1085e+00   4.1085e+00  5.70e-08  1.39e-08  4.74e-09  0.00e+00  2.68e-09  9.84e-01  5.76e-09  5.22e-09  4.57e-02  7.62e-01
+optimal solution found; terminating
+
+status is Optimal after 8 iterations and 9.721 seconds
+
+took 13.908397984 seconds
+
+
+instance bss2
+ran at: 2020-05-12T20:35:56.038
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.253576911 seconds
+building model...
+took 9.779842681 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.96e-06  7.19e-07  2.46e-07  0.00e+00  1.39e-07  9.84e-01  3.03e-07  2.71e-07  1.92e-02  8.10e-01
+    7   4.1085e+00   4.1085e+00  2.09e-07  5.08e-08  1.74e-08  0.00e+00  9.84e-09  9.84e-01  2.13e-08  1.91e-08  2.75e-03  9.32e-01
+    8   4.1085e+00   4.1085e+00  5.11e-08  1.24e-08  4.25e-09  0.00e+00  2.41e-09  9.84e-01  5.15e-09  4.68e-09  4.82e-02  7.94e-01
+optimal solution found; terminating
+
+status is Optimal after 8 iterations and 10.131 seconds
+
+took 15.672865073 seconds
+
+
+instance bss2
+ran at: 2020-05-12T21:57:17.812
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.288472985 seconds
+building model...
+took 9.710564541 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.96e-06  7.19e-07  2.46e-07  0.00e+00  1.39e-07  9.84e-01  3.03e-07  2.71e-07  1.92e-02  8.10e-01
+    7   4.1085e+00   4.1085e+00  2.09e-07  5.08e-08  1.74e-08  0.00e+00  9.84e-09  9.84e-01  2.13e-08  1.91e-08  2.75e-03  9.32e-01
+    8   4.1085e+00   4.1085e+00  5.11e-08  1.24e-08  4.25e-09  0.00e+00  2.41e-09  9.84e-01  5.15e-09  4.68e-09  4.82e-02  7.94e-01
+optimal solution found; terminating
+
+status is Optimal after 8 iterations and 10.128 seconds
+
+took 15.629217269 seconds
+
+
+instance bss2
+ran at: 2020-05-12T23:23:50.185
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.251466237 seconds
+building model...
+took 9.812204203 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+"hi" = "hi"
+ErrorException("")
+took 0.0 seconds
+┌ Warning: Hypatia status SolveCalled not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance bss2
+ran at: 2020-05-12T23:35:08.041
+with solver: hypatia, system solver: qrchol_dense
+number type : BigFloat
+
+
+reading instance and constructing model...
+took 1.250258818 seconds
+building model...
+took 9.924504381 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.3469e+00   1.4586e+00  1.10e+01  7.54e+00  8.93e-01  0.00e+00  5.06e-01  1.00e+00  1.00e+00  1.00e+00
+    1   4.3401e+00   4.1543e+00  5.75e-01  1.38e-01  5.04e-02  0.00e+00  2.85e-02  8.89e-01  2.98e-02  5.01e-02  3.88e-03  9.54e-01
+    2   4.1201e+00   4.1040e+00  6.13e-02  1.49e-02  5.07e-03  0.00e+00  2.87e-03  9.85e-01  5.90e-03  5.59e-03  1.11e-01  1.00e+00
+    3   4.1085e+00   4.1081e+00  1.22e-03  2.97e-04  1.01e-04  0.00e+00  5.74e-05  9.86e-01  1.26e-04  1.12e-04  1.20e-05  9.80e-01
+    4   4.1085e+00   4.1085e+00  1.63e-04  3.96e-05  1.35e-05  0.00e+00  7.67e-06  9.84e-01  1.68e-05  1.49e-05  2.27e-03  8.69e-01
+    5   4.1085e+00   4.1085e+00  1.43e-05  3.49e-06  1.20e-06  0.00e+00  6.77e-07  9.84e-01  1.48e-06  1.32e-06  1.85e-03  9.13e-01
+    6   4.1085e+00   4.1085e+00  2.96e-06  7.19e-07  2.46e-07  0.00e+00  1.39e-07  9.84e-01  3.03e-07  2.71e-07  1.92e-02  8.10e-01
+    7   4.1085e+00   4.1085e+00  2.09e-07  5.08e-08  1.74e-08  0.00e+00  9.84e-09  9.84e-01  2.13e-08  1.91e-08  2.75e-03  9.32e-01
+    8   4.1085e+00   4.1085e+00  5.11e-08  1.24e-08  4.25e-09  0.00e+00  2.41e-09  9.84e-01  5.15e-09  4.68e-09  4.82e-02  7.94e-01
+optimal solution found; terminating
+
+status is Optimal after 8 iterations and 10.19 seconds
+
+took 15.836403752 seconds
+
