@@ -108,22 +108,25 @@ end
 #     s_tilde = -conj_g
 #     rho = s_tilde - (s' * scal_hess * s_tilde) / dot(s, Hs) * s
 #
-#     if norm(rho) > 0 && norm(Hs - z) > update_tol && norm(scal_hess * conj_g - g) > update_tol # TODO
+#     if norm(Hs - z) > update_tol && norm(scal_hess * conj_g - g) > update_tol # TODO
 #         Us = U * s
 #         Urho = U * rho
-#         @assert dot(Us, Urho) <= sqrt(eps(T))
+#         # @assert dot(Us, Urho) <= sqrt(eps(T))
 #         r1term = I - (Us * Us') / sum(abs2, Us) - (Urho * Urho') / sum(abs2, Urho)
 #         # @show diag(qr(r1term).R) #, rank(r1term)
-#         y = r1term[:, 1] / norm(r1term[:, 1])
-#         z = f.L * y
+#         f1_fact = r1term[:, 1] / norm(r1term[:, 1])
+#         # @show norm(I - (Us * Us') / sum(abs2, Us) - (Urho * Urho') / sum(abs2, Urho) - y * y')
+#         final_col = f.L * f1_fact
 #
 #         W = vcat(
-#             s' / sqrt(sz),
-#             primal_gap' / sqrt(dot(primal_gap, dual_gap)),
-#             z',
+#             z' / sqrt(sz),
+#             dual_gap' / sqrt(dot(primal_gap, dual_gap)),
+#             final_col',
 #             )
 #
 #         scal_hess = Symmetric(W' * W)
+#         # @show norm(scal_hess * s - z)
+#         # @show norm(scal_hess * -conj_g + g)
 #     end
 #
 #
