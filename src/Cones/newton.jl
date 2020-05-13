@@ -1,9 +1,8 @@
 
 
-
 # for exp cone barrier
 # TODO combine Hi * g into one
-function newton_dir(point, dual_point) where {T <: Real}
+function newton_dir(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     (u, v, w) = point
 
     lwv = log(w / v)
@@ -31,8 +30,6 @@ function newton_dir(point, dual_point) where {T <: Real}
 
     return (g, newton_dir)
 end
-
-
 
 function update_dual_grad(cone::Cone{T}) where {T <: Real}
     @assert cone.is_feas
@@ -67,7 +64,6 @@ function update_dual_grad(cone::Cone{T}) where {T <: Real}
     cone.dual_grad_updated = true
     return cone.dual_grad
 end
-
 
 
 # function newton_step(cone::Cone)

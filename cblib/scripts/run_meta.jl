@@ -2,7 +2,7 @@
 Copyright 2019, Chris Coey, Lea Kapelevich and contributors
 
 j scripts/run_meta.jl sample sample 1800 30000000
-j scripts/run_meta.jl exporthantsmall exporthantsmall 900 30000000
+j cblib/scripts/run_meta.jl exporthantsmall exporthantsmall 900 30000000
 j -J sc_img.so scripts/run_meta.jl cbf_easy easy 1800 30000000
 julia scripts/run_meta.jl cbf_large linsystems 15 99999999
 =#
@@ -78,7 +78,7 @@ sleep(1.0)
 csvfile = joinpath(outputpath, "RESULTS_$(set).csv")
 open(csvfile, "a") do fdcsv
     print(fdcsv, "\ninstname,solver,systemsolver,status,rawstatus,primalobj,dualobj,niters,buildtime,moitime,gctime,bytes," *
-        "solvertime,directionstime,directionsbytes,absgap,relgap,xfeas,yfeas,zfeas")
+        "solvertime,directionstime,directionsbytes,absgap,relgap,xfeas,yfeas,zfeas,notes")
     flush(fdcsv)
 end
 flush(fdmeta)

@@ -153,7 +153,7 @@ function single_moi(
             raw_status = MOI.get(optimizer, MOI.RawStatusString())
             (num_iters, buildtime, step_t, step_b, abs_gap, rel_gap, x_feas, y_feas, z_feas) = get_result_attributes(optimizer)
             print(fdcsv, "$status,$raw_status,$primal_obj,$dual_obj,$num_iters,$buildtime,$moitime,$gctime,$bytes,$solvertime,$step_t,$step_b," *
-                "$abs_gap,$rel_gap,$x_feas,$y_feas,$z_feas"
+                "$abs_gap,$rel_gap,$x_feas,$y_feas,$z_feas,rteps(F64)"
                 )
             flush(stdout)
         end
