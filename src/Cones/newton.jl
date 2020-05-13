@@ -12,11 +12,6 @@ function newton_dir(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     wvdenom = w * v / denom
     vvdenom = (vlwvu + v) / denom
 
-    g = -dual_point
-    g[1] -= inv(vlwvu)
-    g[2] += (lwv - 1) / vlwvu + inv(v)
-    g[3] += (1 + v / vlwvu) / w
-
     Hi = similar(point, 3, 3)
     Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
     Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
@@ -26,9 +21,10 @@ function newton_dir(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     Hi[3, 3] = w * vvdenom * w
     Hi = Symmetric(Hi, :U)
 
-    newton_dir = Hi * g
+    Hiz = Hi * dual_point
+    newton_dir = point - Hiz
 
-    return (g, newton_dir)
+    return (newton_dir, Hiz)
 end
 
 function update_dual_grad(cone::Cone{T}) where {T <: Real}
@@ -38,14 +34,14 @@ function update_dual_grad(cone::Cone{T}) where {T <: Real}
     curr = cone.dual_grad
 
     max_iter = 200 # TODO reduce: shouldn't really take > 40
-    eta = eps(T) / 10 # TODO adjust
+    eta = sqrt(eps(T)) # TODO adjust
 
     # damped Newton
     curr .= point
     iter = 0
     while true
-        (gr, dir) = newton_dir(curr, dual_point)
-        nnorm = dot(gr, dir)
+        (dir, Hiz) = newton_dir(curr, dual_point)
+        nnorm = get_nu(cone) + dot(dual_point, Hiz) - 2 * dot(curr, dual_point)
         denom = 1 + nnorm
         @. curr += dir / denom
         iter += 1
