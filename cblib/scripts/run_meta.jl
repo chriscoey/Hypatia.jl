@@ -77,7 +77,7 @@ sleep(1.0)
 # each line of csv file will summarize performance on a particular instance
 csvfile = joinpath(outputpath, "RESULTS_$(set).csv")
 open(csvfile, "a") do fdcsv
-    print(fdcsv, "\ninstname,solver,systemsolver,status,rawstatus,primalobj,dualobj,niters,buildtime,moitime,gctime,bytes," *
+    print(fdcsv, "\ninstname,numtype,solver,systemsolver,status,rawstatus,primalobj,dualobj,niters,buildtime,moitime,gctime,bytes," *
         "solvertime,directionstime,directionsbytes,absgap,relgap,xfeas,yfeas,zfeas,notes")
     flush(fdcsv)
 end

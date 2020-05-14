@@ -40,7 +40,7 @@ flush(stdout)
 
 include(joinpath(@__DIR__, "single_moi.jl"))
 open(csvfile, "a") do fdcsv
-    print(fdcsv, "\n$instname,$solver_name,$system_solver_name,")
+    print(fdcsv, "\n$instname,$model_type,$solver_name,$system_solver_name,")
     flush(fdcsv)
 end
 # if solver_name == "hypatia"
