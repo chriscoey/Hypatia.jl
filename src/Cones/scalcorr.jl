@@ -5,7 +5,8 @@ use_scaling(cone::Cone) = false
 
 use_correction(cone::Cone) = false
 
-scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
+# scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.scal_hess : update_scal_hess(cone, mu))
+scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.hess : update_scal_hess(cone, mu))
 
 use_update_1_default() = true
 use_update_2_default() = true
@@ -73,10 +74,12 @@ function update_scal_hess(
         end
     end
 
-    copyto!(cone.scal_hess, scal_hess)
+    # copyto!(cone.scal_hess, scal_hess)
+    copyto!(cone.hess, scal_hess)
 
     cone.scal_hess_updated = true
-    return cone.scal_hess
+    # return cone.scal_hess
+    return cone.hess
 end
 
 # function update_scal_hess(
@@ -205,6 +208,32 @@ end
 #     return cone.scal_hess
 # end
 
+function scal_hess_prod!(
+    prod::AbstractVecOrMat{T},
+    arr::AbstractVecOrMat{T},
+    cone::Cone{T},
+    mu::T;
+    ) where {T}
+    mul!(prod, scal_hess(cone, mu), arr)
+    return prod
+end
+
+function scal_hess_sqrt_prod!(
+    prod::AbstractVecOrMat{T},
+    arr::AbstractVecOrMat{T},
+    cone::Cone{T},
+    mu::T;
+    ) where {T}
+    if !cone.hess_fact_updated
+        update_hess_fact(cone)
+    end
+    copyto!(prod, arr)
+    sqrt_prod(cone.hess_fact_cache, prod)
+    return prod
+end
+
+
+# # TODO make efficient - need an update_scal_hess_prod function and save fields etc
 # function scal_hess_prod!(
 #     prod::AbstractVecOrMat{T},
 #     arr::AbstractVecOrMat{T},
@@ -213,79 +242,66 @@ end
 #     use_update_1::Bool = use_update_1_default(),
 #     use_update_2::Bool = use_update_2_default(),
 #     ) where {T}
-#     mul!(prod, scal_hess(cone, mu), arr)
+#     s = cone.point
+#     z = cone.dual_point
+#
+#     hess_prod!(prod, arr, cone)
+#     @. prod *= mu
+#
+#     # TODO tune
+#     update_tol = 1e-12
+#     # update_tol = eps(T)
+#     # update_tol = sqrt(eps(T))
+#     denom_tol = update_tol
+#
+#     if use_update_1
+#         Hs = similar(s)
+#         hess_prod!(Hs, s, cone)
+#         @. Hs *= mu
+#         if norm(Hs - z) > update_tol
+#             # first update
+#             denom_a = dot(s, z)
+#             denom_b = dot(s, Hs)
+#             if denom_a > denom_tol && denom_b > denom_tol
+#                 for j in 1:size(arr, 2)
+#                     @views arrj = arr[:, j]
+#                     scale_a = dot(z, arrj) / denom_a
+#                     scale_b = dot(Hs, arrj) / denom_b
+#                     @. prod[:, j] += scale_a * z
+#                     @. prod[:, j] -= scale_b * Hs
+#                 end
+#             end
+#         end
+#     end
+#
+#     if use_update_2
+#         g = grad(cone)
+#         conj_g = dual_grad(cone)
+#         H1cg = similar(g)
+#         scal_hess_prod!(H1cg, conj_g, cone, mu, use_update_1 = true, use_update_2 = false)
+#         if norm(H1cg - g) > update_tol
+#             mu_cone = dot(s, z) / get_nu(cone)
+#             du_gap = z + mu_cone * g
+#             pr_gap = s + mu_cone * conj_g
+#             # second update
+#             denom_a = dot(pr_gap, du_gap)
+#             H1pg = similar(s)
+#             scal_hess_prod!(H1pg, pr_gap, cone, mu, use_update_1 = true, use_update_2 = false)
+#             denom_b = dot(pr_gap, H1pg)
+#             if denom_a > denom_tol && denom_b > denom_tol
+#                 for j in 1:size(arr, 2)
+#                     @views arrj = arr[:, j]
+#                     scale_a = dot(du_gap, arrj) / denom_a
+#                     scale_b = dot(H1pg, arrj) / denom_b
+#                     @. prod[:, j] += scale_a * du_gap
+#                     @. prod[:, j] -= scale_b * H1pg
+#                 end
+#             end
+#         end
+#     end
+#
 #     return prod
 # end
-
-# TODO make efficient - need an update_scal_hess_prod function and save fields etc
-function scal_hess_prod!(
-    prod::AbstractVecOrMat{T},
-    arr::AbstractVecOrMat{T},
-    cone::Cone{T},
-    mu::T;
-    use_update_1::Bool = use_update_1_default(),
-    use_update_2::Bool = use_update_2_default(),
-    ) where {T}
-    s = cone.point
-    z = cone.dual_point
-
-    hess_prod!(prod, arr, cone)
-    @. prod *= mu
-
-    # TODO tune
-    update_tol = 1e-12
-    # update_tol = eps(T)
-    # update_tol = sqrt(eps(T))
-    denom_tol = update_tol
-
-    if use_update_1
-        Hs = similar(s)
-        hess_prod!(Hs, s, cone)
-        @. Hs *= mu
-        if norm(Hs - z) > update_tol
-            # first update
-            denom_a = dot(s, z)
-            denom_b = dot(s, Hs)
-            if denom_a > denom_tol && denom_b > denom_tol
-                for j in 1:size(arr, 2)
-                    @views arrj = arr[:, j]
-                    scale_a = dot(z, arrj) / denom_a
-                    scale_b = dot(Hs, arrj) / denom_b
-                    @. prod[:, j] += scale_a * z
-                    @. prod[:, j] -= scale_b * Hs
-                end
-            end
-        end
-    end
-
-    if use_update_2
-        g = grad(cone)
-        conj_g = dual_grad(cone)
-        H1cg = similar(g)
-        scal_hess_prod!(H1cg, conj_g, cone, mu, use_update_1 = true, use_update_2 = false)
-        if norm(H1cg - g) > update_tol
-            mu_cone = dot(s, z) / get_nu(cone)
-            du_gap = z + mu_cone * g
-            pr_gap = s + mu_cone * conj_g
-            # second update
-            denom_a = dot(pr_gap, du_gap)
-            H1pg = similar(s)
-            scal_hess_prod!(H1pg, pr_gap, cone, mu, use_update_1 = true, use_update_2 = false)
-            denom_b = dot(pr_gap, H1pg)
-            if denom_a > denom_tol && denom_b > denom_tol
-                for j in 1:size(arr, 2)
-                    @views arrj = arr[:, j]
-                    scale_a = dot(du_gap, arrj) / denom_a
-                    scale_b = dot(H1pg, arrj) / denom_b
-                    @. prod[:, j] += scale_a * du_gap
-                    @. prod[:, j] -= scale_b * H1pg
-                end
-            end
-        end
-    end
-
-    return prod
-end
 
 # correction fallback (TODO remove later)
 import ForwardDiff

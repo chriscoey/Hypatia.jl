@@ -89,8 +89,9 @@ function update_hess_fact(cone::Cone{T}) where {T <: Real}
     end
 
     if !update_fact(cone.hess_fact_cache, cone.hess)
+        # TODO if Chol, try adding sqrt(eps(T)) to diag and re-factorize
         if T <: BlasReal && cone.hess_fact_cache isa DensePosDefCache{T}
-            # @warn("switching Hessian cache from Cholesky to Bunch Kaufman")
+            @warn("switching Hessian cache from Cholesky to Bunch Kaufman")
             cone.hess_fact_cache = DenseSymCache{T}()
             load_matrix(cone.hess_fact_cache, cone.hess)
         else
@@ -102,7 +103,7 @@ function update_hess_fact(cone::Cone{T}) where {T <: Real}
             end
         end
         if !update_fact(cone.hess_fact_cache, cone.hess)
-            # @warn("Hessian Bunch-Kaufman factorization failed after recovery")
+            @warn("Hessian Bunch-Kaufman factorization failed after recovery")
             return false
         end
     end

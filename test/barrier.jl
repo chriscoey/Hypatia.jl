@@ -75,7 +75,7 @@ function test_barrier_oracles(
 
         FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
         # check log-homog property that F'''(point)[point] = -2F''(point)
-        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * hess
+        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * fd_hess
         # check correction term agrees with directional 3rd derivative
         (primal_dir, dual_dir) = perturb_scale(zeros(T, dim), zeros(T, dim), noise, one(T))
         Hinv_z = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
@@ -110,7 +110,7 @@ function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T
     CO.inv_hess_sqrt_prod!(prod_mat2, Matrix(one(T) * I, dim, dim), cone)
     @test prod_mat2' * prod_mat2 ≈ inv_hess atol=tol rtol=tol
 
-    if CO.use_correction(cone)
+    if CO.use_scaling(cone)
         dual_grad = CO.dual_grad(cone)
         @test dot(dual_point, dual_grad) ≈ -nu atol=1000*tol rtol=1000*tol
 

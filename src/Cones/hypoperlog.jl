@@ -195,21 +195,54 @@ function correction(
     primal_dir::AbstractVector{T},
     dual_dir::AbstractVector{T},
     ) where {T <: Real}
-    update_hess_fact(cone)
-    corr = cone.correction
-    (u, v, w) = (cone.point[1], cone.point[2], cone.point[3])
+    point = cone.point
+    # corr = cone.correction
 
-    Hi_z = similar(dual_dir) # TODO prealloc
-    inv_hess_prod!(Hi_z, dual_dir, cone)
+    newT = BigFloat
+    # newT = T
+
+    primal_dir = newT.(primal_dir)
+    dual_dir = newT.(dual_dir)
+    (u, v, w) = newT.(point)
+
+    # # TODO compare below two ways to do inverse hess prod
+    # Hi_z = similar(dual_dir) # TODO prealloc
+    # update_hess_fact(cone)
+    # inv_hess_prod!(Hi_z, dual_dir, cone)
+
+    # TODO refac inv hess prod here
+    lwv = log(w / v)
+    vlwv = v * lwv
+    vlwvu = vlwv - u
+    denom = vlwvu + 2 * v
+    wvdenom = w * v / denom
+    vvdenom = (vlwvu + v) / denom
+    Hi = zeros(newT, 3, 3)
+    Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
+    Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
+    Hi[1, 3] = wvdenom * (2 * vlwv - u)
+    Hi[2, 2] = v * vvdenom * v
+    Hi[2, 3] = wvdenom * v
+    Hi[3, 3] = w * vvdenom * w
+    Hi = Symmetric(Hi, :U)
+    Hi_z = Hi * dual_dir
 
     # -log(v * log(w / v) - u) part
-    vlwvu = cone.vlwvu
-    vlwvup = T[-1, cone.lwv - 1, v / w]
-    gpp = Symmetric(cone.hess - Diagonal(T[0, abs2(inv(v)), abs2(inv(w))]), :U) # TODO improve
+    # vlwvu = cone.vlwvu
+    # vlwvup = T[-1, cone.lwv - 1, v / w]
+    # gpp = Symmetric(cone.hess - Diagonal(T[0, abs2(inv(v)), abs2(inv(w))]), :U) # TODO improve
+    # zz3vlwvup = (dual_dir[2:3] + dual_dir[1] * vlwvup[2:3]) / (vlwvu + 2 * v)
+    # vlwvupp_Hi_z = T[0, w * zz3vlwvup[2] - v * zz3vlwvup[1], v * (zz3vlwvup[1] * v / w - zz3vlwvup[2])]
+
+    H = inv(Hi)
+    vlwvup = newT[-1, lwv - 1, v / w]
+    gpp = Symmetric(H - Diagonal(newT[0, abs2(inv(v)), abs2(inv(w))]), :U) # TODO improve
     zz3vlwvup = (dual_dir[2:3] + dual_dir[1] * vlwvup[2:3]) / (vlwvu + 2 * v)
-    vlwvupp_Hi_z = T[0, w * zz3vlwvup[2] - v * zz3vlwvup[1], v * (zz3vlwvup[1] * v / w - zz3vlwvup[2])]
+    vlwvupp_Hi_z = newT[0, w * zz3vlwvup[2] - v * zz3vlwvup[1], v * (zz3vlwvup[1] * v / w - zz3vlwvup[2])]
+
 
     # term1
+    corr = similar(primal_dir)
     corr .= dual_dir[1] * 2 * vlwvu * gpp * primal_dir
     # term2
     corr[2] += dual_dir[1] * (primal_dir[3] / w - primal_dir[2] / v)
@@ -227,7 +260,9 @@ function correction(
     corr[2] += Hi_z[2] / v * primal_dir[2] / v / v
     corr[3] += Hi_z[3] / w * primal_dir[3] / w / w
 
-    return corr
+    cone.correction .= corr
+
+    return cone.correction
 end
 
 # TODO add hess prod, inv hess etc functions

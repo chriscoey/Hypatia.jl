@@ -121,7 +121,7 @@ for instname in instances, solver in moi_solvers, ss in system_solvers
         process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) cblib/scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
         # process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) --trace-compile=snoop --sysimage=sc_img.so scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
         sleep(3.0)
-        pid = parse(Int, chomp(readline(open("mypid", "r"))))
+        # pid = parse(Int, chomp(readline(open("mypid", "r"))))
         while process_running(process)
             if (time() - t) > (tlim + 60.0)
                 # kill if time limit exceeded (some solvers don't respect time limits)
@@ -135,25 +135,25 @@ for instname in instances, solver in moi_solvers, ss in system_solvers
                 open(csvfile, "a") do c
                     print(c, "KILLED_TIME,$(repeat(",", 16))")
                 end
-            else
-                try
-                    if !process_exited(process)
-                        memuse = parse(Int, split(read(pipeline(`cat /proc/$pid/status`,`grep RSS`), String))[2])
-                        if memuse > mlim
-                            kill(process)
-                            sleep(5.0)
-                            println(fdmeta, "killed by memory limit")
-                            open(filename, "a") do fd
-                                println(fd, "#STATUS# KilledMemory")
-                            end
-                            open(csvfile, "a") do c
-                                print(c, "KILLED_MEMORY,$(repeat(",", 16))")
-                            end
-                        end
-                    end
-                catch e
-                    println(fdmeta, "...error in memory check: $e")
-                end
+            # else
+            #     try
+            #         if !process_exited(process)
+            #             memuse = parse(Int, split(read(pipeline(`cat /proc/$pid/status`,`grep RSS`), String))[2])
+            #             if memuse > mlim
+            #                 kill(process)
+            #                 sleep(5.0)
+            #                 println(fdmeta, "killed by memory limit")
+            #                 open(filename, "a") do fd
+            #                     println(fd, "#STATUS# KilledMemory")
+            #                 end
+            #                 open(csvfile, "a") do c
+            #                     print(c, "KILLED_MEMORY,$(repeat(",", 16))")
+            #                 end
+            #             end
+            #         end
+            #     catch e
+            #         println(fdmeta, "...error in memory check: $e")
+            #     end
             end
             sleep(1.0)
         end

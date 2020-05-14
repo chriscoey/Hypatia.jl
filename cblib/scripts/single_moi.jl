@@ -11,7 +11,6 @@ using LinearAlgebra
 import TimerOutputs
 import Hypatia
 const SO = Hypatia.Solvers
-import TimerOutputs
 
 cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
 max_num_threads = length(Sys.cpu_info())

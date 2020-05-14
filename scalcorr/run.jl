@@ -31,19 +31,21 @@ default_solver_options = (
 
 # instance sets and real types to run and corresponding time limits (seconds)
 instance_sets = [
+    # (FastInstances, Float64, 60),
     (ExpInstances, Float64, 60),
     (PolyhedralInstances, Float64, 60),
     ]
 
 # types of models to run and corresponding options and example names
 model_types = [
-    "native",
+    # "native",
     "JuMP",
     ]
 
 # list of names of native examples to run
 native_example_names = [
     # "densityest",
+    "linearopt",
     ]
 
 # list of names of JuMP examples to run
