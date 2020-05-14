@@ -229,25 +229,32 @@ function update_lhs(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}
     lhs = system_solver.lhs1.data
 
     if !isempty(system_solver.Q2div)
-        # inv_hess_cones = empty!(system_solver.inv_hess_cones)
-        # inv_hess_sqrt_cones = empty!(system_solver.inv_hess_sqrt_cones)
-        # hess_cones = empty!(system_solver.hess_cones)
-        # hess_sqrt_cones = empty!(system_solver.hess_sqrt_cones)
-        #
-        # # update hessian factorizations and partition of cones
-        # for (k, cone_k) in enumerate(model.cones)
-        #     if hasfield(typeof(cone_k), :hess_fact_cache) # TODO use dispatch or a function
-        #         Cones.update_hess_fact(cone_k)
-        #         if cone_k.hess_fact_cache isa DenseSymCache{T}
-        #             cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_cones : hess_cones
-        #             push!(cones_list, k)
-        #             continue
-        #         end
-        #     end
-        #     cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_sqrt_cones : hess_sqrt_cones
-        #     push!(cones_list, k)
-        # end
-        #
+        inv_hess_cones = empty!(system_solver.inv_hess_cones)
+        inv_hess_sqrt_cones = empty!(system_solver.inv_hess_sqrt_cones)
+        hess_cones = empty!(system_solver.hess_cones)
+        hess_sqrt_cones = empty!(system_solver.hess_sqrt_cones)
+
+        # update hessian factorizations and partition of cones
+        for (k, cone_k) in enumerate(model.cones)
+            if hasfield(typeof(cone_k), :hess_fact_cache) # TODO use dispatch or a function
+                @assert !cone_k.scal_hess_updated
+                Cones.update_scal_hess(cone_k, solver.mu)
+                Cones.update_hess_fact(cone_k)
+                if cone_k.hess_fact_cache isa DenseSymCache{T}
+                    cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_cones : hess_cones
+                    push!(cones_list, k)
+                    continue
+                end
+            end
+            cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_sqrt_cones : hess_sqrt_cones
+            push!(cones_list, k)
+        end
+
+
+        # TODO inv cones
+        @assert isempty(inv_hess_cones)
+        @assert isempty(inv_hess_sqrt_cones)
+        # lhs .= 0
         # # do inv_hess and inv_hess_sqrt cones
         # if isempty(inv_hess_sqrt_cones)
         #     lhs .= 0
@@ -275,41 +282,47 @@ function update_lhs(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}
         #     # divide by mu for inv_hess and inv_hess_sqrt cones
         #     lhs ./= solver.mu
         # end
-        #
-        # # do hess and hess_sqrt cones
-        # if !isempty(hess_sqrt_cones)
-        #     idx = 1
-        #     for k in hess_sqrt_cones
-        #         arr_k = system_solver.GQ2_k[k]
-        #         q_k = size(arr_k, 1)
-        #         @views prod_k = system_solver.HGQ2[idx:(idx + q_k - 1), :]
-        #         Cones.hess_sqrt_prod!(prod_k, arr_k, model.cones[k])
-        #         idx += q_k
-        #     end
-        #     @views HGQ2_sub = system_solver.HGQ2[1:(idx - 1), :]
-        #     outer_prod(HGQ2_sub, lhs, solver.mu, true)
-        # end
-        #
-        # for k in hess_cones
-        #     arr_k = system_solver.GQ2_k[k]
-        #     prod_k = system_solver.HGQ2_k[k]
-        #     Cones.hess_prod!(prod_k, arr_k, model.cones[k])
-        #     mul!(lhs, arr_k', prod_k, solver.mu, true)
-        # end
 
-        lhs .= 0
-        for k in eachindex(model.cones)
+        # do hess and hess_sqrt cones
+        # @assert isempty(hess_cones)
+        if !isempty(hess_sqrt_cones)
+            idx = 1
+            for k in hess_sqrt_cones
+                arr_k = system_solver.GQ2_k[k]
+                q_k = size(arr_k, 1)
+                @views prod_k = system_solver.HGQ2[idx:(idx + q_k - 1), :]
+                # Cones.hess_sqrt_prod!(prod_k, arr_k, model.cones[k])
+                Cones.scal_hess_sqrt_prod!(prod_k, arr_k, model.cones[k], solver.mu)
+                idx += q_k
+            end
+            @views HGQ2_sub = system_solver.HGQ2[1:(idx - 1), :]
+            # outer_prod(HGQ2_sub, lhs, solver.mu, true)
+            outer_prod(HGQ2_sub, lhs, true, false)
+        end
+
+        for k in hess_cones
             arr_k = system_solver.GQ2_k[k]
             prod_k = system_solver.HGQ2_k[k]
-            cone_k = model.cones[k]
-            # if Cones.use_scaling(cone_k)
-                Cones.scal_hess_prod!(prod_k, arr_k, cone_k, solver.mu)
-                mul!(lhs, arr_k', prod_k, true, true)
-            # else
-            #     Cones.hess_prod!(prod_k, arr_k, cone_k)
-            #     mul!(lhs, arr_k', prod_k, solver.mu, true)
-            # end
+            # Cones.hess_prod!(prod_k, arr_k, model.cones[k])
+            Cones.scal_hess_prod!(prod_k, arr_k, model.cones[k], solver.mu)
+            mul!(lhs, arr_k', prod_k, true, true)
+            # mul!(lhs, arr_k', prod_k, solver.mu, true)
         end
+
+        # # TODO only do scal hess prod:
+        # lhs .= 0
+        # for k in eachindex(model.cones)
+        #     arr_k = system_solver.GQ2_k[k]
+        #     prod_k = system_solver.HGQ2_k[k]
+        #     cone_k = model.cones[k]
+        #     # if Cones.use_scaling(cone_k)
+        #         Cones.scal_hess_prod!(prod_k, arr_k, cone_k, solver.mu)
+        #         mul!(lhs, arr_k', prod_k, true, true)
+        #     # else
+        #     #     Cones.hess_prod!(prod_k, arr_k, cone_k)
+        #     #     mul!(lhs, arr_k', prod_k, solver.mu, true)
+        #     # end
+        # end
     end
 
     # TODO refactor below

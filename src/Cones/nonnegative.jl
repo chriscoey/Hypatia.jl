@@ -110,29 +110,29 @@ function update_inv_hess(cone::Nonnegative)
     return cone.inv_hess
 end
 
-function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    @assert cone.is_feas
-    @. prod = arr / cone.point / cone.point
-    return prod
-end
-
-function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    @assert cone.is_feas
-    @. prod = arr * cone.point * cone.point
-    return prod
-end
-
-function hess_sqrt_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    @assert cone.is_feas
-    @. prod = arr / cone.point
-    return prod
-end
-
-function inv_hess_sqrt_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
-    @assert cone.is_feas
-    @. prod = arr * cone.point
-    return prod
-end
+# function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+#     @assert cone.is_feas
+#     @. prod = arr / cone.point / cone.point
+#     return prod
+# end
+#
+# function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+#     @assert cone.is_feas
+#     @. prod = arr * cone.point * cone.point
+#     return prod
+# end
+#
+# function hess_sqrt_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+#     @assert cone.is_feas
+#     @. prod = arr / cone.point
+#     return prod
+# end
+#
+# function inv_hess_sqrt_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Nonnegative)
+#     @assert cone.is_feas
+#     @. prod = arr * cone.point
+#     return prod
+# end
 
 hess_nz_count(cone::Nonnegative) = cone.dim
 hess_nz_count_tril(cone::Nonnegative) = cone.dim
@@ -155,7 +155,6 @@ function in_neighborhood(cone::Nonnegative, mu::Real)
     return all(si * zi > mu_nbhd for (si, zi) in zip(cone.point, cone.dual_point))
 end
 
-
 function update_scal_hess(
     cone::Nonnegative{T},
     mu::T;
@@ -174,6 +173,16 @@ function scal_hess_prod!(
     mu::T;
     ) where {T}
     @. prod = cone.dual_point / cone.point * arr
+end
+
+function scal_hess_sqrt_prod!(
+    prod::AbstractVecOrMat{T},
+    arr::AbstractVecOrMat{T},
+    cone::Nonnegative{T},
+    mu::T;
+    ) where {T}
+    # TODO store sqrt(cone.dual_point / cone.point)
+    @. prod = sqrt(cone.dual_point / cone.point) * arr
 end
 
 function correction(cone::Nonnegative, primal_dir::AbstractVector, dual_dir::AbstractVector)

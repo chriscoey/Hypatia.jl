@@ -27,9 +27,10 @@ include(joinpath(@__DIR__, "read_instances.jl"))
 instname = "bss2"
 csvfile =  "dummy_results.txt"
 solver_name = "hypatia"
-# system_solver_name = "qrchol_dense"
-system_solver_name = "naive_dense"
-model_type = BigFloat
+system_solver_name = "qrchol_dense"
+# system_solver_name = "naive_dense"
+# model_type = BigFloat
+model_type = Float64
 
 println()
 println("instance $instname")
