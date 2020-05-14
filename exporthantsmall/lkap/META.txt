@@ -130,3 +130,94 @@ starting syn05m02m hypatia qrchol_dense
 ...process error: UndefVarError(:process)
 
 starting syn15m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting fang88 hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn10h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting demb761 hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting demb762 hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting demb763 hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn20m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn05m02h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn05m03m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting fiac81a hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn30m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn10m02m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting rijc787 hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn15h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting ravem hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn05m04m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting enpro56 hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn05m03h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn20h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn40m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting rsyn0805m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting enpro48 hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn10m02h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn15m02m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn10m03m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting rsyn0810m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn05m04h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting rsyn0815m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn30h hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting rsyn0820m hypatia qrchol_dense
+...process error: UndefVarError(:process)
+
+starting syn20m02m hypatia qrchol_dense
+...process error: UndefVarError(:process)
