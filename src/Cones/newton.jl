@@ -27,8 +27,46 @@ function newton_dir(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     return (newton_dir, Hiz)
 end
 
+# function update_dual_grad_bf(cone::Cone{T}) where {T <: Real}
+#     @assert cone.is_feas
+#     point = cone.point
+#     dual_point = BigFloat.(cone.dual_point)
+#     curr = BigFloat.(cone.dual_grad)
+#
+#     max_iter = 200 # TODO reduce: shouldn't really take > 40
+#     eta = sqrt(eps(T)) # TODO adjust
+#
+#     # damped Newton
+#     curr .= point
+#     iter = 0
+#     while true
+#         (dir, Hiz) = newton_dir(curr, dual_point)
+#         nnorm = get_nu(cone) + dot(dual_point, Hiz) - 2 * dot(curr, dual_point)
+#         denom = 1 + nnorm
+#         @. curr += dir / denom
+#         iter += 1
+#         if nnorm < eta || iter >= max_iter
+#             break
+#         end
+#     end
+#
+#     # # TODO remove check
+#     # if norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point) > sqrt(eps(T))
+#     #     @warn("conjugate grad calculation inaccurate")
+#     # end
+#
+#     curr .*= -1
+#     cone.dual_grad = Float64.(curr)
+#
+#     cone.dual_grad_updated = true
+#     return cone.dual_grad
+# end
+
 function update_dual_grad(cone::Cone{T}) where {T <: Real}
     @assert cone.is_feas
+
+    # bf_sol = update_dual_grad_bf(cone)
+
     point = cone.point
     dual_point = cone.dual_point
     curr = cone.dual_grad
@@ -56,6 +94,8 @@ function update_dual_grad(cone::Cone{T}) where {T <: Real}
     # end
 
     curr .*= -1
+
+    # @show norm(bf_sol - curr)
 
     cone.dual_grad_updated = true
     return cone.dual_grad

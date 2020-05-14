@@ -57,6 +57,8 @@ function test_barrier_oracles(
 
     # check gradient and Hessian agree with ForwardDiff
     if dim < 10 # too slow if dimension is large
+        CO.reset_data(cone)
+        @test CO.is_feas(cone)
         grad = CO.grad(cone)
         fd_grad = ForwardDiff.gradient(barrier, point)
         @test grad ≈ fd_grad atol=tol rtol=tol

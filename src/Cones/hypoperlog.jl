@@ -157,6 +157,27 @@ function update_grad(cone::HypoPerLog)
     return cone.grad
 end
 
+# function update_grad(cone::HypoPerLog)
+#     @assert cone.is_feas
+#     u = BigFloat(cone.point[1])
+#     v = BigFloat(cone.point[2])
+#     w = BigFloat.(cone.point[3:cone.dim])
+#     d = length(w)
+#     g = cone.grad
+#
+#     lwv = sum(log(wi / v) for wi in w)
+#     vlwvu = v * lwv - u
+#     lvwnivlwvu = (d - lwv) / vlwvu
+#
+#     g[1] = inv(vlwvu)
+#     g[2] = lvwnivlwvu - d / v
+#     gden = -1 - v / (vlwvu)
+#     @. g[3:end] = gden / w
+#
+#     cone.grad_updated = true
+#     return cone.grad
+# end
+
 function update_hess(cone::HypoPerLog)
     @assert cone.grad_updated
     u = cone.point[1]
@@ -187,6 +208,45 @@ function update_hess(cone::HypoPerLog)
     cone.hess_updated = true
     return cone.hess
 end
+
+# function update_hess(cone::HypoPerLog)
+#     @assert cone.grad_updated
+#     u = BigFloat(cone.point[1])
+#     v = BigFloat(cone.point[2])
+#     w = BigFloat.(cone.point[3:cone.dim])
+#     d = length(w)
+#
+#     lwv = sum(log(wi / v) for wi in w)
+#     vlwvu = v * lwv - u
+#     lvwnivlwvu = (d - lwv) / vlwvu
+#     vivlwvu = v / vlwvu
+#     vwivlwvu = vivlwvu ./ w
+#     hden = (-v * lvwnivlwvu - 1) / vlwvu
+#
+#     g = zeros(BigFloat, cone.dim)
+#     g[1] = inv(vlwvu)
+#     g[2] = lvwnivlwvu - d / v
+#     gden = -1 - v / (vlwvu)
+#     @. g[3:end] = gden / w
+#
+#     H = cone.hess.data
+#
+#     H[1, 1] = abs2(g[1])
+#     H[1, 2] = lvwnivlwvu / vlwvu
+#     @. H[1, 3:end] = -vwivlwvu / vlwvu
+#     H[2, 2] = abs2(lvwnivlwvu) + d * (g[1] + inv(v)) / v
+#     @. H[2, 3:end] = hden / w
+#     @inbounds for j in 1:d
+#         j2 = 2 + j
+#         @inbounds for i in 1:j
+#             H[2 + i, j2] = vwivlwvu[i] * vwivlwvu[j]
+#         end
+#         H[j2, j2] -= g[j2] / w[j]
+#     end
+#
+#     cone.hess_updated = true
+#     return cone.hess
+# end
 
 # directional third derivative term
 # TODO make efficient and improve numerics, reuse values stored in cone fields
