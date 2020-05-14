@@ -24,9 +24,9 @@ default_solver_options = (
     # system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
     system_solver = Solvers.QRCholDenseSystemSolver{Float64}(),
     # max_nbhd = 0.02,
-    # tol_rel_opt = 1e-7,
-    # tol_abs_opt = 1e-7,
-    # tol_feas = 1e-7,
+    tol_rel_opt = sqrt(eps(Float64)),
+    tol_abs_opt = sqrt(eps(Float64)),
+    tol_feas = sqrt(eps(Float64)),
     )
 
 # instance sets and real types to run and corresponding time limits (seconds)
