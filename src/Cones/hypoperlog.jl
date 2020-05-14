@@ -199,25 +199,27 @@ function correction(
     corr = cone.correction
     (u, v, w) = point
 
-    # Hi_z = similar(dual_dir) # TODO prealloc
-    # update_hess_fact(cone)
-    # inv_hess_prod!(Hi_z, dual_dir, cone)
-    # TODO refac inv hess prod here
-    lwv = log(w / v)
-    vlwv = v * lwv
-    vlwvu = vlwv - u
-    denom = vlwvu + 2 * v
-    wvdenom = w * v / denom
-    vvdenom = (vlwvu + v) / denom
-    Hi = similar(point, 3, 3)
-    Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
-    Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
-    Hi[1, 3] = wvdenom * (2 * vlwv - u)
-    Hi[2, 2] = v * vvdenom * v
-    Hi[2, 3] = wvdenom * v
-    Hi[3, 3] = w * vvdenom * w
-    Hi = Symmetric(Hi, :U)
-    Hi_z = Hi * dual_dir
+    # TODO compare below two ways to do inverse hess prod
+    Hi_z = similar(dual_dir) # TODO prealloc
+    update_hess_fact(cone)
+    inv_hess_prod!(Hi_z, dual_dir, cone)
+
+    # # TODO refac inv hess prod here
+    # lwv = log(w / v)
+    # vlwv = v * lwv
+    # vlwvu = vlwv - u
+    # denom = vlwvu + 2 * v
+    # wvdenom = w * v / denom
+    # vvdenom = (vlwvu + v) / denom
+    # Hi = similar(point, 3, 3)
+    # Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
+    # Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
+    # Hi[1, 3] = wvdenom * (2 * vlwv - u)
+    # Hi[2, 2] = v * vvdenom * v
+    # Hi[2, 3] = wvdenom * v
+    # Hi[3, 3] = w * vvdenom * w
+    # Hi = Symmetric(Hi, :U)
+    # Hi_z = Hi * dual_dir
 
     # -log(v * log(w / v) - u) part
     vlwvu = cone.vlwvu
