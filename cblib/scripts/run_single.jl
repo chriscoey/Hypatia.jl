@@ -9,6 +9,7 @@ helper file that calls single_moi, factoring out any code that can be avoided du
 import Dates
 include(joinpath(@__DIR__, "read_instances.jl"))
 
+@show newARGS
 nargs = length(ARGS)
 if !(nargs in [3, 4])
     error("usage: julia run_single.jl instname csvfile solver system_solver_name")
@@ -17,6 +18,7 @@ end
 open("mypid", "w") do fd
     print(fd, getpid())
 end
+
 
 instname = ARGS[1]
 csvfile = ARGS[2]
@@ -33,6 +35,7 @@ system_solver_name = (solver_name == "hypatia" ? ARGS[4] : "")
 model_type = Float64
 
 println()
+@show instname
 println("instance $instname")
 println("ran at: ", Dates.now())
 println("with solver: $solver_name, system solver: $system_solver_name")

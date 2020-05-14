@@ -58,166 +58,75 @@ syn20m02m
 
 
 starting bss1 hypatia qrchol_dense
-...took 65.37864112854004 seconds
+...process error: UndefVarError(:process)
 
 starting demb782 hypatia qrchol_dense
-...took 55.10963296890259 seconds
+...process error: UndefVarError(:process)
 
 starting bss2 hypatia qrchol_dense
-...took 55.10772180557251 seconds
+...process error: UndefVarError(:process)
 
 starting demb781 hypatia qrchol_dense
-...took 55.112016916275024 seconds
+...process error: UndefVarError(:process)
 
 starting synthes1 hypatia qrchol_dense
-...took 55.108266830444336 seconds
+...process error: UndefVarError(:process)
 
 starting gptest hypatia qrchol_dense
-...took 55.11004996299744 seconds
+...process error: UndefVarError(:process)
 
 starting rijc781 hypatia qrchol_dense
-...took 55.1103630065918 seconds
+...process error: UndefVarError(:process)
 
 starting synthes2 hypatia qrchol_dense
-...took 55.1119339466095 seconds
+...process error: UndefVarError(:process)
 
 starting rijc784 hypatia qrchol_dense
-...took 54.10898399353027 seconds
+...process error: UndefVarError(:process)
 
 starting rijc785 hypatia qrchol_dense
-...took 55.11206388473511 seconds
+...process error: UndefVarError(:process)
 
 starting rijc786 hypatia qrchol_dense
-...took 54.10924696922302 seconds
+...process error: UndefVarError(:process)
 
 starting syn05m hypatia qrchol_dense
-...took 56.11158108711243 seconds
+...process error: UndefVarError(:process)
 
 starting rijc782 hypatia qrchol_dense
-...took 54.108798027038574 seconds
+...process error: UndefVarError(:process)
 
 starting batchdes hypatia qrchol_dense
-...took 55.111912965774536 seconds
+...process error: UndefVarError(:process)
 
 starting synthes3 hypatia qrchol_dense
-...took 55.111473083496094 seconds
+...process error: UndefVarError(:process)
 
 starting rijc783 hypatia qrchol_dense
-...took 54.11098599433899 seconds
+...process error: UndefVarError(:process)
 
 starting syn10m hypatia qrchol_dense
-...took 55.1124370098114 seconds
+...process error: UndefVarError(:process)
 
 starting syn05h hypatia qrchol_dense
-...took 54.11025595664978 seconds
+...process error: UndefVarError(:process)
 
 starting beck751 hypatia qrchol_dense
-...took 55.11283779144287 seconds
+...process error: UndefVarError(:process)
 
 starting beck752 hypatia qrchol_dense
-...took 55.11054086685181 seconds
+...process error: UndefVarError(:process)
 
 starting beck753 hypatia qrchol_dense
-...took 55.1108980178833 seconds
+...process error: UndefVarError(:process)
 
 starting fiac81b hypatia qrchol_dense
-...took 55.11035895347595 seconds
+...process error: UndefVarError(:process)
 
 starting batch hypatia qrchol_dense
-...took 56.11327004432678 seconds
+...process error: UndefVarError(:process)
 
 starting syn05m02m hypatia qrchol_dense
-...took 56.112871170043945 seconds
+...process error: UndefVarError(:process)
 
 starting syn15m hypatia qrchol_dense
-...took 56.1125009059906 seconds
-
-starting fang88 hypatia qrchol_dense
-...took 55.11113500595093 seconds
-
-starting syn10h hypatia qrchol_dense
-...took 54.1076979637146 seconds
-
-starting demb761 hypatia qrchol_dense
-...took 54.10893988609314 seconds
-
-starting demb762 hypatia qrchol_dense
-...took 54.1077401638031 seconds
-
-starting demb763 hypatia qrchol_dense
-...took 54.10999584197998 seconds
-
-starting syn20m hypatia qrchol_dense
-...took 56.113523960113525 seconds
-
-starting syn05m02h hypatia qrchol_dense
-...took 55.111905097961426 seconds
-
-starting syn05m03m hypatia qrchol_dense
-...took 56.11371207237244 seconds
-
-starting fiac81a hypatia qrchol_dense
-...took 55.109878063201904 seconds
-
-starting syn30m hypatia qrchol_dense
-...took 56.11484503746033 seconds
-
-starting syn10m02m hypatia qrchol_dense
-...took 56.115041971206665 seconds
-
-starting rijc787 hypatia qrchol_dense
-...took 54.10964584350586 seconds
-
-starting syn15h hypatia qrchol_dense
-...took 56.11289191246033 seconds
-
-starting ravem hypatia qrchol_dense
-...took 57.11595702171326 seconds
-
-starting syn05m04m hypatia qrchol_dense
-...took 56.11396288871765 seconds
-
-starting enpro56 hypatia qrchol_dense
-...took 56.11401391029358 seconds
-
-starting syn05m03h hypatia qrchol_dense
-...took 56.11192321777344 seconds
-
-starting syn20h hypatia qrchol_dense
-...took 56.11155891418457 seconds
-
-starting syn40m hypatia qrchol_dense
-...took 56.11030387878418 seconds
-
-starting rsyn0805m hypatia qrchol_dense
-...took 56.109874963760376 seconds
-
-starting enpro48 hypatia qrchol_dense
-...took 56.11204481124878 seconds
-
-starting syn10m02h hypatia qrchol_dense
-...took 56.113527059555054 seconds
-
-starting syn15m02m hypatia qrchol_dense
-...took 56.11314582824707 seconds
-
-starting syn10m03m hypatia qrchol_dense
-...took 56.11249399185181 seconds
-
-starting rsyn0810m hypatia qrchol_dense
-...took 56.11333990097046 seconds
-
-starting syn05m04h hypatia qrchol_dense
-...took 56.11434602737427 seconds
-
-starting rsyn0815m hypatia qrchol_dense
-...took 56.11387300491333 seconds
-
-starting syn30h hypatia qrchol_dense
-...took 56.113749980926514 seconds
-
-starting rsyn0820m hypatia qrchol_dense
-...took 56.11354994773865 seconds
-
-starting syn20m02m hypatia qrchol_dense
-...took 56.113231897354126 seconds

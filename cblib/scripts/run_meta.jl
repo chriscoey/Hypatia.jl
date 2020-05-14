@@ -10,10 +10,15 @@ julia scripts/run_meta.jl cbf_large linsystems 15 99999999
 using CSV
 
 include(joinpath(@__DIR__, "read_instances.jl"))
+include(joinpath(@__DIR__, "single_moi.jl"))
 # need this in case we do a compile run
-# include(joinpath(@__DIR__, "single_hypatia.jl"))
 
 println()
+
+# set = outsubfolder = "exporthantsmall"
+# tlim = 900
+# mlim = 30000000
+model_type = Float64
 
 if length(ARGS) == 4
     set = ARGS[1]
@@ -25,6 +30,7 @@ if length(ARGS) == 4
 else
     error("usage: julia run_meta.jl instance_set output_path tlim mlim")
 end
+
 
 setfile = joinpath(@__DIR__, "../sets", set * ".txt")
 if !isfile(setfile)
@@ -117,9 +123,20 @@ for instname in instances, solver in moi_solvers, ss in system_solvers
 
     try
         t = time()
-        # process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) --trace-compile=snoop scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
-        process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) cblib/scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
-        # process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) --trace-compile=snoop --sysimage=sc_img.so scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
+        open(csvfile, "a") do fdcsv
+            print(fdcsv, "\n$instname,$model_type,$solver,$ss,")
+            flush(fdcsv)
+        end
+        OUT = stdout
+        open(filename, "w") do io
+            redirect_stdout(io)
+            redirect_stderr(io)
+            single_moi(instname, csvfile, ss, print_timer = true, precompiling = false, out_type = model_type)
+            redirect_stdout(OUT)
+            redirect_stderr(OUT)
+            close(io)
+        end
+        # process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) cblib/scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
         sleep(3.0)
         # pid = parse(Int, chomp(readline(open("mypid", "r"))))
         while process_running(process)
