@@ -693,3 +693,240 @@ status is Optimal after 13 iterations and 10.615 seconds
 
 took 16.178427834 seconds
 
+
+instance syn05m
+ran at: 2020-05-13T17:41:20.282
+with solver: hypatia, system solver: qrchol_dense
+number type : Float64
+
+
+reading instance and constructing model...
+took 1.35140153 seconds
+building model...
+took 10.274594424 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -3.9061e+02  -5.1914e+01  5.90e+01  1.51e-01  9.43e+00  0.00e+00  5.87e-01  1.00e+00  1.00e+00  1.00e+00
+
+signal (2): Interrupt
+in expression starting at /home/lea/.julia/dev/Hypatia/cblib/scripts/run_single.jl:60
+process_node! at ./compiler/ssair/ir.jl:896
+process_node! at ./compiler/ssair/ir.jl:984 [inlined]
+iterate at ./compiler/ssair/ir.jl:1151
+adce_pass! at ./compiler/ssair/passes.jl:876
+run_passes at ./compiler/ssair/driver.jl:146
+optimize at ./compiler/optimize.jl:176
+typeinf at ./compiler/typeinfer.jl:33
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_edge at ./compiler/typeinfer.jl:484
+abstract_call_method at ./compiler/abstractinterpretation.jl:421
+abstract_call_gf_by_type at ./compiler/abstractinterpretation.jl:113
+abstract_call_known at ./compiler/abstractinterpretation.jl:890
+abstract_call at ./compiler/abstractinterpretation.jl:912
+abstract_call at ./compiler/abstractinterpretation.jl:897
+abstract_eval at ./compiler/abstractinterpretation.jl:991
+typeinf_local at ./compiler/abstractinterpretation.jl:1245
+typeinf_nocycle at ./compiler/abstractinterpretation.jl:1301
+typeinf at ./compiler/typeinfer.jl:12
+typeinf_ext at ./compiler/typeinfer.jl:571
+typeinf_ext_toplevel at ./compiler/typeinfer.jl:604
+typeinf_ext_toplevel at ./compiler/typeinfer.jl:600
+jfptr_typeinf_ext_toplevel_18431 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+jl_type_infer at /home/lea/julia/src/gf.c:296
+jl_generate_fptr at /home/lea/julia/src/jitlayers.cpp:290
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1964
+jl_compile_method_internal at /home/lea/julia/src/gf.c:1931 [inlined]
+_jl_invoke at /home/lea/julia/src/gf.c:2224 [inlined]
+jl_apply_generic at /home/lea/julia/src/gf.c:2398
+update_lhs at /home/lea/.julia/dev/Hypatia/src/Solvers/systemsolvers/qrchol.jl:306
+macro expansion at /home/lea/.julia/packages/TimerOutputs/NvIUx/src/TimerOutput.jl:229 [inlined]
+step at /home/lea/.julia/dev/Hypatia/src/Solvers/stepper.jl:180
+macro expansion at /home/lea/.julia/packages/TimerOutputs/NvIUx/src/TimerOutput.jl:229 [inlined]
+solve at /home/lea/.julia/dev/Hypatia/src/Solvers/Solvers.jl:264
+macro expansion at ./timing.jl:310 [inlined]
+#single_moi#3 at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:134
+unknown function (ip: 0x7f42c47b0069)
+single_moi##kw at /home/lea/.julia/dev/Hypatia/cblib/scripts/single_moi.jl:107
+unknown function (ip: 0x7f42c4787181)
+jl_apply at /home/lea/julia/src/julia.h:1700 [inlined]
+do_call at /home/lea/julia/src/interpreter.c:117
+eval_value at /home/lea/julia/src/interpreter.c:206
+eval_stmt_value at /home/lea/julia/src/interpreter.c:157 [inlined]
+eval_body at /home/lea/julia/src/interpreter.c:548
+jl_interpret_toplevel_thunk at /home/lea/julia/src/interpreter.c:660
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:840
+jl_toplevel_eval_flex at /home/lea/julia/src/toplevel.c:790
+jl_toplevel_eval_in at /home/lea/julia/src/toplevel.c:883
+eval at ./boot.jl:331 [inlined]
+include_string at ./loading.jl:1103
+_include at ./loading.jl:1157
+include at ./Base.jl:368
+exec_options at ./client.jl:295
+_start at ./client.jl:487
+jfptr__start_48545 at /home/lea/julia/usr/lib/julia/sys.so (unknown line)
+jl_apply at /home/lea/julia/ui/../src/julia.h:1700 [inlined]
+true_main at /home/lea/julia/ui/repl.c:106
+main at /home/lea/julia/ui/repl.c:227
+__libc_start_main at /lib/x86_64-linux-gnu/libc.so.6 (unknown line)
+_start at /home/lea/julia/usr/bin/julia (unknown line)
+unknown function (ip: (nil))
+Allocations: 120823681 (Pool: 120792437; Big: 31244); GC: 94
+
+instance syn05m
+ran at: 2020-05-14T10:12:56.083
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.353722389 seconds
+building model...
+took 10.217694363 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -3.9061e+02  -5.1914e+01  5.90e+01  1.51e-01  9.43e+00  0.00e+00  5.87e-01  1.00e+00  1.00e+00  1.00e+00
+    1  -7.2116e+02  -3.8075e+02  9.40e+00  1.30e-02  9.33e+00  0.00e+00  5.81e-01  1.61e-01  9.98e-01  1.59e-01  2.25e-02  8.60e-01
+    2  -1.2181e+03  -9.0887e+02  3.29e+00  2.70e-03  8.23e+00  0.00e+00  5.12e-01  6.40e-02  9.21e-01  5.59e-02  7.66e-02  7.03e-01
+    3  -1.2021e+03  -1.0342e+03  1.12e+00  9.33e-04  4.36e+00  0.00e+00  2.71e-01  4.11e-02  4.82e-01  1.90e-02  1.44e-01  7.70e-01
+    4  -1.2115e+03  -1.1338e+03  4.30e-01  3.55e-04  2.01e+00  0.00e+00  1.25e-01  3.41e-02  1.97e-01  7.28e-03  7.66e-02  6.69e-01
+    5  -1.1618e+03  -1.1325e+03  1.54e-01  1.32e-04  7.61e-01  0.00e+00  4.74e-02  3.22e-02  6.69e-02  2.60e-03  1.39e-01  7.47e-01
+    6  -1.1512e+03  -1.1450e+03  3.15e-02  2.74e-05  1.62e-01  0.00e+00  1.01e-02  3.11e-02  1.50e-02  5.33e-04  1.03e-01  8.86e-01
+    7  -1.1453e+03  -1.1443e+03  5.29e-03  4.62e-06  2.74e-02  0.00e+00  1.70e-03  3.08e-02  2.55e-03  8.94e-05  2.25e-02  8.51e-01
+    8  -1.1447e+03  -1.1445e+03  1.05e-03  9.17e-07  5.44e-03  0.00e+00  3.39e-04  3.08e-02  5.25e-04  1.78e-05  5.88e-02  8.51e-01
+    9  -1.1446e+03  -1.1445e+03  2.17e-04  1.90e-07  1.13e-03  0.00e+00  7.01e-05  3.08e-02  1.13e-04  3.68e-06  9.63e-02  8.77e-01
+   10  -1.1445e+03  -1.1445e+03  1.28e-05  1.11e-08  6.62e-05  0.00e+00  4.12e-06  3.08e-02  6.64e-06  2.16e-07  1.18e-04  9.41e-01
+   11  -1.1445e+03  -1.1445e+03  1.66e-06  1.45e-09  8.61e-06  0.00e+00  5.36e-07  3.08e-02  9.12e-07  2.81e-08  1.30e-01  1.00e+00
+   12  -1.1445e+03  -1.1445e+03  4.95e-08  4.32e-11  2.57e-07  0.00e+00  1.60e-08  3.08e-02  2.72e-08  8.38e-10  2.65e-05  9.70e-01
+   13  -1.1445e+03  -1.1445e+03  5.11e-08  4.47e-11  4.24e-06  0.00e+00  1.10e-08  3.51e-02  1.83e-08  8.63e-10  8.61e-02  2.33e-01
+   14  -1.1445e+03  -1.1445e+03  3.82e-08  3.34e-11  3.16e-06  0.00e+00  8.25e-09  3.51e-02  1.38e-08  6.44e-10  7.66e-02  2.73e-01
+   15  -1.1445e+03  -1.1445e+03  1.36e-08  1.19e-11  1.64e-06  0.00e+00  1.59e-09  3.51e-02  2.70e-09  2.28e-10  4.15e-03  8.10e-01
+   16  -1.1445e+03  -1.1445e+03  1.21e-08  1.06e-11  1.53e-05  0.00e+00  8.93e-10  3.51e-02  1.63e-09  2.03e-10  6.19e-02  4.71e-01
+   17  -1.1445e+03  -1.1445e+03  9.80e-09  8.56e-12  1.28e-05  0.00e+00  7.50e-10  3.51e-02  1.37e-09  1.64e-10  1.85e-03  1.61e-01
+
+status is NumericalFailure after 17 iterations and 12.311 seconds
+
+took 16.283549004 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance syn05m
+ran at: 2020-05-14T11:15:41.118
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.345548362 seconds
+building model...
+took 10.125837454 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -3.9061e+02  -5.1914e+01  5.90e+01  1.51e-01  9.43e+00  0.00e+00  5.87e-01  1.00e+00  1.00e+00  1.00e+00
+    1  -7.2116e+02  -3.8075e+02  9.40e+00  1.30e-02  9.33e+00  0.00e+00  5.81e-01  1.61e-01  9.98e-01  1.59e-01  2.25e-02  8.60e-01
+    2  -1.2181e+03  -9.0887e+02  3.29e+00  2.70e-03  8.23e+00  0.00e+00  5.12e-01  6.40e-02  9.21e-01  5.59e-02  7.66e-02  7.03e-01
+    3  -1.2021e+03  -1.0342e+03  1.12e+00  9.33e-04  4.36e+00  0.00e+00  2.71e-01  4.11e-02  4.82e-01  1.90e-02  1.44e-01  7.70e-01
+    4  -1.2115e+03  -1.1338e+03  4.30e-01  3.55e-04  2.01e+00  0.00e+00  1.25e-01  3.41e-02  1.97e-01  7.28e-03  7.66e-02  6.69e-01
+    5  -1.1618e+03  -1.1325e+03  1.54e-01  1.32e-04  7.61e-01  0.00e+00  4.74e-02  3.22e-02  6.69e-02  2.60e-03  1.39e-01  7.47e-01
+    6  -1.1512e+03  -1.1450e+03  3.15e-02  2.74e-05  1.62e-01  0.00e+00  1.01e-02  3.11e-02  1.50e-02  5.33e-04  1.03e-01  8.86e-01
+    7  -1.1453e+03  -1.1443e+03  5.29e-03  4.62e-06  2.74e-02  0.00e+00  1.70e-03  3.08e-02  2.55e-03  8.94e-05  2.25e-02  8.51e-01
+    8  -1.1447e+03  -1.1445e+03  1.05e-03  9.17e-07  5.44e-03  0.00e+00  3.39e-04  3.08e-02  5.25e-04  1.78e-05  5.88e-02  8.51e-01
+    9  -1.1446e+03  -1.1445e+03  2.17e-04  1.90e-07  1.13e-03  0.00e+00  7.01e-05  3.08e-02  1.13e-04  3.68e-06  9.63e-02  8.77e-01
+   10  -1.1445e+03  -1.1445e+03  1.28e-05  1.11e-08  6.62e-05  0.00e+00  4.12e-06  3.08e-02  6.64e-06  2.16e-07  1.18e-04  9.41e-01
+   11  -1.1445e+03  -1.1445e+03  1.66e-06  1.45e-09  8.61e-06  0.00e+00  5.36e-07  3.08e-02  9.12e-07  2.81e-08  1.30e-01  1.00e+00
+   12  -1.1445e+03  -1.1445e+03  4.94e-08  4.32e-11  2.57e-07  0.00e+00  1.60e-08  3.08e-02  2.73e-08  8.38e-10  2.65e-05  9.70e-01
+   13  -1.1445e+03  -1.1445e+03  9.13e-09  7.98e-12  5.89e-07  0.00e+00  2.11e-09  3.09e-02  3.48e-09  1.54e-10  1.32e-01  1.00e+00
+   14  -1.1445e+03  -1.1445e+03  1.74e-09  1.52e-12  1.13e-07  0.00e+00  4.03e-10  3.09e-02  6.78e-10  2.93e-11  1.10e-02  8.18e-01
+   15  -1.1445e+03  -1.1445e+03  1.58e-09  1.38e-12  1.02e-07  0.00e+00  3.67e-10  3.09e-02  6.24e-10  2.67e-11  2.42e-01  1.20e-01
+   16  -1.1445e+03  -1.1445e+03  4.79e-10  4.19e-13  3.18e-08  0.00e+00  1.11e-10  3.09e-02  2.28e-10  8.10e-12  1.89e-01  8.60e-01
+   17  -1.1445e+03  -1.1445e+03  3.51e-11  3.06e-14  4.88e-09  0.00e+00  7.62e-12  3.09e-02  1.57e-11  5.92e-13  6.49e-04  9.32e-01
+optimal solution found; terminating
+
+status is Optimal after 17 iterations and 9.109 seconds
+
+took 13.199156214 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+

@@ -570,3 +570,98 @@ status is Optimal after 16 iterations and 10.887 seconds
 
 took 16.40323735 seconds
 
+
+instance synthes3
+ran at: 2020-05-14T10:15:53.46
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.342559414 seconds
+building model...
+took 10.15001895 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.0289e+02  -5.0553e+01  7.90e+01       NaN  2.32e+01  0.00e+00  5.43e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.4434e+02  -2.8086e+02  1.58e+01       NaN  2.20e+01  0.00e+00  5.14e-01  2.11e-01  9.79e-01  2.00e-01  4.09e-02  8.34e-01
+    2   1.7372e+02  -1.1139e+02  1.08e+01       NaN  1.47e+01  0.00e+00  3.44e-01  2.15e-01  5.67e-01  1.36e-01  1.97e-01  3.97e-01
+    3   7.9491e+01  -5.4619e+01  4.04e+00       NaN  6.92e+00  0.00e+00  1.62e-01  1.71e-01  2.33e-01  5.10e-02  1.38e-01  7.25e-01
+    4   3.6441e+01  -8.2284e+00  1.28e+00       NaN  2.30e+00  0.00e+00  5.39e-02  1.63e-01  6.90e-02  1.62e-02  2.43e-02  6.99e-01
+    5   1.8451e+01   8.5788e+00  2.82e-01  3.29e-02  5.09e-01  0.00e+00  1.19e-02  1.62e-01  1.53e-02  3.55e-03  2.61e-02  8.02e-01
+    6   1.5846e+01   1.2524e+01  9.51e-02  7.59e-03  1.71e-01  0.00e+00  4.01e-03  1.62e-01  5.33e-03  1.20e-03  3.90e-02  6.89e-01
+    7   1.5319e+01   1.4135e+01  3.39e-02  2.40e-03  6.11e-02  0.00e+00  1.43e-03  1.63e-01  2.17e-03  4.28e-04  1.65e-01  7.70e-01
+    8   1.5198e+01   1.4593e+01  1.73e-02  1.19e-03  3.12e-02  0.00e+00  7.31e-04  1.63e-01  1.13e-03  2.19e-04  7.08e-02  5.26e-01
+    9   1.5135e+01   1.4846e+01  8.27e-03  5.57e-04  1.49e-02  0.00e+00  3.49e-04  1.63e-01  5.40e-04  1.04e-04  2.44e-02  5.36e-01
+   10   1.5097e+01   1.5001e+01  2.78e-03  1.85e-04  5.00e-03  0.00e+00  1.17e-04  1.63e-01  1.82e-04  3.51e-05  6.92e-03  6.69e-01
+   11   1.5085e+01   1.5071e+01  4.23e-04  2.81e-05  7.62e-04  0.00e+00  1.78e-05  1.63e-01  2.78e-05  5.35e-06  4.55e-03  8.51e-01
+   12   1.5083e+01   1.5077e+01  1.63e-04  1.08e-05  2.94e-04  0.00e+00  6.87e-06  1.63e-01  1.13e-05  2.06e-06  1.60e-01  7.32e-01
+   13   1.5082e+01   1.5082e+01  1.65e-06  1.09e-07  2.97e-06  0.00e+00  6.94e-08  1.63e-01  1.14e-07  2.08e-08  1.03e-06  9.90e-01
+   14   1.5082e+01   1.5082e+01  3.41e-07  2.26e-08  6.11e-07  0.00e+00  1.41e-08  1.64e-01  2.43e-08  4.31e-09  8.69e-03  8.02e-01
+
+status is NumericalFailure after 14 iterations and 11.172 seconds
+
+took 15.140685664 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
+
+instance synthes3
+ran at: 2020-05-14T11:18:26.474
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.346629584 seconds
+building model...
+took 10.176545712 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0   4.0289e+02  -5.0553e+01  7.90e+01       NaN  2.32e+01  0.00e+00  5.43e-01  1.00e+00  1.00e+00  1.00e+00
+    1   1.4434e+02  -2.8086e+02  1.58e+01       NaN  2.20e+01  0.00e+00  5.14e-01  2.11e-01  9.79e-01  2.00e-01  4.09e-02  8.34e-01
+    2   1.7372e+02  -1.1139e+02  1.08e+01       NaN  1.47e+01  0.00e+00  3.44e-01  2.15e-01  5.67e-01  1.36e-01  1.97e-01  3.97e-01
+    3   7.9491e+01  -5.4619e+01  4.04e+00       NaN  6.92e+00  0.00e+00  1.62e-01  1.71e-01  2.33e-01  5.10e-02  1.38e-01  7.25e-01
+    4   3.6441e+01  -8.2284e+00  1.28e+00       NaN  2.30e+00  0.00e+00  5.39e-02  1.63e-01  6.90e-02  1.62e-02  2.43e-02  6.99e-01
+    5   1.8451e+01   8.5788e+00  2.82e-01  3.29e-02  5.09e-01  0.00e+00  1.19e-02  1.62e-01  1.53e-02  3.55e-03  2.61e-02  8.02e-01
+    6   1.5846e+01   1.2524e+01  9.51e-02  7.59e-03  1.71e-01  0.00e+00  4.01e-03  1.62e-01  5.33e-03  1.20e-03  3.90e-02  6.89e-01
+    7   1.5319e+01   1.4135e+01  3.39e-02  2.40e-03  6.11e-02  0.00e+00  1.43e-03  1.63e-01  2.17e-03  4.28e-04  1.65e-01  7.70e-01
+    8   1.5198e+01   1.4593e+01  1.73e-02  1.19e-03  3.12e-02  0.00e+00  7.31e-04  1.63e-01  1.13e-03  2.19e-04  7.08e-02  5.26e-01
+    9   1.5135e+01   1.4846e+01  8.27e-03  5.57e-04  1.49e-02  0.00e+00  3.49e-04  1.63e-01  5.40e-04  1.04e-04  2.44e-02  5.36e-01
+   10   1.5097e+01   1.5001e+01  2.78e-03  1.85e-04  5.00e-03  0.00e+00  1.17e-04  1.63e-01  1.82e-04  3.51e-05  6.92e-03  6.69e-01
+   11   1.5085e+01   1.5071e+01  4.23e-04  2.81e-05  7.62e-04  0.00e+00  1.78e-05  1.63e-01  2.78e-05  5.35e-06  4.55e-03  8.51e-01
+   12   1.5083e+01   1.5077e+01  1.63e-04  1.08e-05  2.94e-04  0.00e+00  6.87e-06  1.63e-01  1.13e-05  2.06e-06  1.60e-01  7.32e-01
+   13   1.5082e+01   1.5082e+01  1.65e-06  1.09e-07  2.97e-06  0.00e+00  6.94e-08  1.63e-01  1.14e-07  2.08e-08  1.03e-06  9.90e-01
+   14   1.5082e+01   1.5082e+01  4.18e-07  2.77e-08  7.98e-07  0.00e+00  1.76e-08  1.63e-01  2.92e-08  5.29e-09  2.09e-02  7.62e-01
+   15   1.5082e+01   1.5082e+01  5.51e-07  3.65e-08  2.37e-05  0.00e+00  1.70e-08  1.63e-01  2.83e-08  6.95e-09  2.15e-01  4.22e-02
+   16   1.5082e+01   1.5082e+01  1.21e-07  8.01e-09  5.24e-06  0.00e+00  3.76e-09  1.63e-01  8.31e-09  1.53e-09  1.56e-01  9.23e-01
+   17   1.5082e+01   1.5082e+01  1.20e-07  7.94e-09  5.19e-06  0.00e+00  3.73e-09  1.63e-01  8.24e-09  1.51e-09  2.50e-01  1.14e-02
+
+status is NumericalFailure after 17 iterations and 9.243 seconds
+
+took 13.352973438 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+

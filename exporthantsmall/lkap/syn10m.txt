@@ -534,3 +534,118 @@ status is Optimal after 14 iterations and 11.228 seconds
 
 took 16.771054924 seconds
 
+
+instance syn10m
+ran at: 2020-05-14T10:17:44.689
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.353512546 seconds
+building model...
+took 10.298776352 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -3.9494e+02  -7.0206e+01  1.12e+02  2.84e-01  1.31e+01  0.00e+00  6.29e-01  1.00e+00  1.00e+00  1.00e+00
+    1  -8.4438e+02  -5.1694e+02  1.82e+01  2.16e-02  1.30e+01  0.00e+00  6.24e-01  1.64e-01  9.98e-01  1.63e-01  6.45e-02  8.95e-01
+    2  -1.8225e+03  -1.5240e+03  5.33e+00  2.92e-03  1.14e+01  0.00e+00  5.47e-01  5.47e-02  9.31e-01  4.76e-02  1.18e-01  8.02e-01
+    3  -1.9695e+03  -1.7658e+03  2.54e+00  1.29e-03  7.64e+00  0.00e+00  3.66e-01  3.89e-02  5.89e-01  2.27e-02  1.43e-01  6.11e-01
+    4  -2.1236e+03  -2.0363e+03  8.61e-01  4.05e-04  3.25e+00  0.00e+00  1.56e-01  3.10e-02  2.21e-01  7.68e-03  5.08e-02  6.96e-01
+    5  -2.0581e+03  -2.0027e+03  4.99e-01  2.42e-04  2.05e+00  0.00e+00  9.85e-02  2.84e-02  1.34e-01  4.45e-03  1.84e-01  5.15e-01
+    6  -2.0108e+03  -2.0004e+03  9.11e-02  4.53e-05  3.87e-01  0.00e+00  1.86e-02  2.75e-02  2.38e-02  8.12e-04  5.88e-02  8.69e-01
+    7  -2.0055e+03  -2.0037e+03  1.57e-02  7.83e-06  6.70e-02  0.00e+00  3.21e-03  2.74e-02  4.20e-03  1.40e-04  2.80e-02  8.51e-01
+    8  -2.0036e+03  -2.0035e+03  9.60e-04  4.79e-07  4.10e-03  0.00e+00  1.96e-04  2.74e-02  2.77e-04  8.56e-06  2.25e-02  9.60e-01
+    9  -2.0036e+03  -2.0035e+03  8.22e-04  4.10e-07  3.51e-03  0.00e+00  1.68e-04  2.74e-02  2.38e-04  7.33e-06  1.78e-01  1.74e-01
+   10  -2.0035e+03  -2.0035e+03  3.43e-04  1.71e-07  1.47e-03  0.00e+00  7.03e-05  2.74e-02  1.03e-04  3.06e-06  1.64e-01  6.96e-01
+   11  -2.0035e+03  -2.0035e+03  2.48e-05  1.24e-08  1.06e-04  0.00e+00  5.08e-06  2.74e-02  7.73e-06  2.21e-07  3.41e-02  9.60e-01
+   12  -2.0035e+03  -2.0035e+03  9.83e-07  4.91e-10  4.20e-06  0.00e+00  2.01e-07  2.74e-02  3.06e-07  8.77e-09  1.18e-04  9.60e-01
+   13  -2.0035e+03  -2.0035e+03  8.53e-08  4.26e-11  3.64e-07  0.00e+00  1.75e-08  2.74e-02  2.65e-08  7.61e-10  2.02e-04  9.13e-01
+   14  -2.0035e+03  -2.0035e+03  2.89e-08  1.44e-11  9.67e-06  0.00e+00  2.81e-09  2.63e-02  5.82e-09  2.57e-10  1.54e-01  1.00e+00
+   15  -2.0035e+03  -2.0035e+03  6.11e-09  3.05e-12  2.04e-06  0.00e+00  5.96e-10  2.63e-02  1.25e-09  5.44e-11  6.90e-03  7.94e-01
+   16  -2.0035e+03  -2.0035e+03  1.77e-09  8.83e-13  1.11e-06  0.00e+00  2.49e-10  2.63e-02  5.79e-10  1.58e-11  1.03e-01  6.49e-01
+   17  -2.0035e+03  -2.0035e+03  1.04e-09  5.17e-13  6.57e-07  0.00e+00  1.47e-10  2.63e-02  3.44e-10  9.24e-12  2.13e-01  5.20e-01
+   18  -2.0035e+03  -2.0035e+03  7.53e-10  3.76e-13  4.95e-07  0.00e+00  1.11e-10  2.63e-02  2.60e-10  6.73e-12  8.62e-02  2.68e-01
+   19  -2.0035e+03  -2.0035e+03  3.69e-10  1.84e-13  2.43e-07  0.00e+00  5.45e-11  2.63e-02  1.27e-10  3.29e-12  2.15e-01  6.49e-01
+   20  -2.0035e+03  -2.0035e+03  3.69e-10  1.84e-13  2.42e-07  0.00e+00  5.45e-11  2.63e-02  1.27e-10  3.29e-12  2.38e-01  1.04e-03
+   21  -2.0035e+03  -2.0035e+03  1.24e-10  6.20e-14  8.07e-08  0.00e+00  1.82e-11  2.63e-02  4.24e-11  1.11e-12  4.54e-03  6.69e-01
+   22  -2.0035e+03  -2.0035e+03  1.08e-10  5.40e-14  7.03e-08  0.00e+00  1.59e-11  2.63e-02  3.69e-11  9.66e-13  2.45e-01  1.71e-01
+   23  -2.0035e+03  -2.0035e+03  6.06e-11  3.02e-14  4.03e-08  0.00e+00  9.05e-12  2.63e-02  2.11e-11  5.41e-13  1.32e-01  4.95e-01
+   24  -2.0035e+03  -2.0035e+03  1.75e-11  8.75e-15  1.18e-08  0.00e+00  2.64e-12  2.63e-02  6.13e-12  1.57e-13  2.25e-02  7.25e-01
+optimal solution found; terminating
+
+status is Optimal after 24 iterations and 14.173 seconds
+
+took 18.164686973 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: Hessian Bunch-Kaufman factorization failed after recovery
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:106
+┌ Warning: Hessian Bunch-Kaufman factorization failed after recovery
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:106
+┌ Warning: Hessian Bunch-Kaufman factorization failed after recovery
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:106
+┌ Warning: Hessian Bunch-Kaufman factorization failed after recovery
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:106
+┌ Warning: Hessian Bunch-Kaufman factorization failed after recovery
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:106
+┌ Warning: Hessian Bunch-Kaufman factorization failed after recovery
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:106
+
+
+instance syn10m
+ran at: 2020-05-14T11:20:15.716
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.350587829 seconds
+building model...
+took 10.164540415 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -3.9494e+02  -7.0206e+01  1.12e+02  2.84e-01  1.31e+01  0.00e+00  6.29e-01  1.00e+00  1.00e+00  1.00e+00
+    1  -8.4438e+02  -5.1694e+02  1.82e+01  2.16e-02  1.30e+01  0.00e+00  6.24e-01  1.64e-01  9.98e-01  1.63e-01  6.45e-02  8.95e-01
+    2  -1.8225e+03  -1.5240e+03  5.33e+00  2.92e-03  1.14e+01  0.00e+00  5.47e-01  5.47e-02  9.31e-01  4.76e-02  1.18e-01  8.02e-01
+    3  -1.9695e+03  -1.7658e+03  2.54e+00  1.29e-03  7.64e+00  0.00e+00  3.66e-01  3.89e-02  5.89e-01  2.27e-02  1.43e-01  6.11e-01
+    4  -2.1236e+03  -2.0363e+03  8.61e-01  4.05e-04  3.25e+00  0.00e+00  1.56e-01  3.10e-02  2.21e-01  7.68e-03  5.08e-02  6.96e-01
+    5  -2.0581e+03  -2.0027e+03  4.99e-01  2.42e-04  2.05e+00  0.00e+00  9.85e-02  2.84e-02  1.34e-01  4.45e-03  1.84e-01  5.15e-01
+    6  -2.0108e+03  -2.0004e+03  9.11e-02  4.53e-05  3.87e-01  0.00e+00  1.86e-02  2.75e-02  2.38e-02  8.12e-04  5.88e-02  8.69e-01
+    7  -2.0055e+03  -2.0037e+03  1.57e-02  7.83e-06  6.70e-02  0.00e+00  3.21e-03  2.74e-02  4.20e-03  1.40e-04  2.80e-02  8.51e-01
+    8  -2.0036e+03  -2.0035e+03  9.60e-04  4.79e-07  4.10e-03  0.00e+00  1.96e-04  2.74e-02  2.77e-04  8.56e-06  2.25e-02  9.60e-01
+    9  -2.0036e+03  -2.0035e+03  8.22e-04  4.10e-07  3.51e-03  0.00e+00  1.68e-04  2.74e-02  2.38e-04  7.33e-06  1.78e-01  1.74e-01
+   10  -2.0035e+03  -2.0035e+03  3.43e-04  1.71e-07  1.47e-03  0.00e+00  7.03e-05  2.74e-02  1.03e-04  3.06e-06  1.64e-01  6.96e-01
+   11  -2.0035e+03  -2.0035e+03  2.48e-05  1.24e-08  1.06e-04  0.00e+00  5.08e-06  2.74e-02  7.73e-06  2.21e-07  3.41e-02  9.60e-01
+   12  -2.0035e+03  -2.0035e+03  9.83e-07  4.91e-10  4.20e-06  0.00e+00  2.01e-07  2.74e-02  3.06e-07  8.77e-09  1.18e-04  9.60e-01
+   13  -2.0035e+03  -2.0035e+03  6.71e-07  3.35e-10  3.00e-06  0.00e+00  1.44e-07  2.68e-02  2.18e-07  5.99e-09  1.60e-01  3.59e-01
+   14  -2.0035e+03  -2.0035e+03  1.23e-07  6.14e-11  5.54e-07  0.00e+00  2.65e-08  2.67e-02  4.03e-08  1.10e-09  5.08e-02  8.60e-01
+   15  -2.0035e+03  -2.0035e+03  8.49e-08  4.24e-11  2.63e-06  0.00e+00  1.81e-08  2.64e-02  2.83e-08  7.58e-10  2.40e-01  4.26e-01
+   16  -2.0035e+03  -2.0035e+03  8.48e-08  4.23e-11  2.63e-06  0.00e+00  1.81e-08  2.64e-02  2.83e-08  7.57e-10  2.50e-01  1.37e-03
+   17  -2.0035e+03  -2.0035e+03  8.46e-08  4.22e-11  2.62e-06  0.00e+00  1.81e-08  2.64e-02  2.82e-08  7.55e-10  2.50e-01  2.40e-03
+   18  -2.0035e+03  -2.0035e+03  5.59e-08  2.79e-11  1.94e-06  0.00e+00  1.24e-08  2.61e-02  1.93e-08  4.99e-10  2.50e-01  4.30e-01
+
+status is NumericalFailure after 18 iterations and 9.311 seconds
+
+took 13.401640964 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+

@@ -174,3 +174,129 @@ status is Optimal after 20 iterations and 45.213 seconds
 
 took 50.752412217 seconds
 
+
+instance syn10m02h
+ran at: 2020-05-14T10:49:29.812
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.350938719 seconds
+building model...
+took 10.21960202 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -2.8936e+03  -6.4835e+02  4.32e+02  1.49e-01  9.67e+00  0.00e+00  7.26e-01  1.00e+00  1.00e+00  1.00e+00
+    1  -4.7072e+03  -2.4849e+03  1.33e+02  2.82e-02  9.56e+00  0.00e+00  7.18e-01  3.11e-01  9.95e-01  3.08e-01  7.35e-02  7.47e-01
+    2  -4.5667e+03  -2.5544e+03  6.25e+01  1.37e-02  8.64e+00  0.00e+00  6.49e-01  1.62e-01  9.16e-01  1.45e-01  1.84e-01  6.49e-01
+    3  -4.6824e+03  -2.8990e+03  3.70e+01  7.90e-03  7.65e+00  0.00e+00  5.74e-01  1.08e-01  7.86e-01  8.56e-02  1.58e-01  4.85e-01
+    4  -4.9841e+03  -3.9879e+03  1.11e+01  2.22e-03  4.26e+00  0.00e+00  3.19e-01  5.83e-02  4.77e-01  2.57e-02  5.34e-02  7.40e-01
+    5  -4.3426e+03  -3.4729e+03  7.90e+00  1.82e-03  3.71e+00  0.00e+00  2.79e-01  4.76e-02  3.83e-01  1.83e-02  1.98e-01  3.59e-01
+    6  -3.5183e+03  -3.0260e+03  3.77e+00  1.07e-03  2.10e+00  0.00e+00  1.58e-01  4.02e-02  1.93e-01  8.73e-03  1.45e-01  6.11e-01
+    7  -2.8078e+03  -2.6125e+03  1.40e+00  4.98e-04  8.33e-01  0.00e+00  6.25e-02  3.75e-02  7.02e-02  3.23e-03  1.14e-01  7.10e-01
+    8  -2.5462e+03  -2.4593e+03  6.16e-01  2.42e-04  3.70e-01  0.00e+00  2.78e-02  3.72e-02  3.21e-02  1.43e-03  1.47e-01  6.56e-01
+    9  -2.4271e+03  -2.3832e+03  3.12e-01  1.29e-04  1.87e-01  0.00e+00  1.40e-02  3.73e-02  1.67e-02  7.22e-04  1.59e-01  5.87e-01
+   10  -2.3684e+03  -2.3468e+03  1.55e-01  6.53e-05  9.23e-02  0.00e+00  6.93e-03  3.74e-02  8.45e-03  3.58e-04  1.23e-01  5.75e-01
+   11  -2.3243e+03  -2.3189e+03  3.86e-02  1.66e-05  2.30e-02  0.00e+00  1.73e-03  3.76e-02  2.23e-03  8.94e-05  1.28e-01  8.60e-01
+   12  -2.3161e+03  -2.3144e+03  1.21e-02  5.22e-06  7.21e-03  0.00e+00  5.41e-04  3.75e-02  7.09e-04  2.80e-05  8.95e-02  7.55e-01
+   13  -2.3136e+03  -2.3130e+03  4.39e-03  1.90e-06  2.62e-03  0.00e+00  1.97e-04  3.75e-02  2.59e-04  1.02e-05  3.85e-02  6.62e-01
+   14  -2.3123e+03  -2.3122e+03  4.28e-04  1.85e-07  2.55e-04  0.00e+00  1.91e-05  3.75e-02  2.52e-05  9.90e-07  1.84e-03  9.04e-01
+   15  -2.3122e+03  -2.3122e+03  1.20e-04  5.18e-08  7.15e-05  0.00e+00  5.36e-06  3.75e-02  7.15e-06  2.77e-07  9.29e-02  7.94e-01
+   16  -2.3122e+03  -2.3121e+03  2.48e-05  1.07e-08  1.48e-05  0.00e+00  1.11e-06  3.75e-02  1.50e-06  5.74e-08  9.63e-02  8.77e-01
+   17  -2.3121e+03  -2.3121e+03  1.46e-06  6.30e-10  8.69e-07  0.00e+00  6.52e-08  3.75e-02  8.81e-08  3.37e-09  1.18e-04  9.41e-01
+   18  -2.3121e+03  -2.3121e+03  8.07e-07  3.49e-10  4.84e-07  0.00e+00  3.64e-08  3.75e-02  4.94e-08  1.87e-09  1.35e-01  5.10e-01
+   19  -2.3121e+03  -2.3121e+03  6.53e-07  2.82e-10  3.91e-07  0.00e+00  2.95e-08  3.75e-02  4.00e-08  1.51e-09  1.97e-01  2.38e-01
+   20  -2.3121e+03  -2.3121e+03  6.48e-07  2.80e-10  3.88e-07  0.00e+00  2.93e-08  3.75e-02  3.96e-08  1.50e-09  1.21e-01  9.06e-03
+   21  -2.3121e+03  -2.3121e+03  4.36e-07  1.89e-10  3.13e-07  0.00e+00  1.95e-08  3.75e-02  2.64e-08  1.01e-09  1.30e-01  3.85e-01
+   22  -2.3121e+03  -2.3121e+03  3.00e-07  1.30e-10  2.27e-07  0.00e+00  1.36e-08  3.75e-02  1.85e-08  6.95e-10  2.07e-01  3.81e-01
+   23  -2.3121e+03  -2.3121e+03  1.78e-07  7.71e-11  1.35e-07  0.00e+00  8.06e-09  3.75e-02  1.10e-08  4.13e-10  1.36e-01  4.71e-01
+   24  -2.3121e+03  -2.3121e+03  1.48e-07  6.39e-11  1.12e-07  0.00e+00  6.71e-09  3.75e-02  9.12e-09  3.42e-10  1.88e-01  2.06e-01
+   25  -2.3121e+03  -2.3121e+03  1.41e-07  6.10e-11  1.07e-07  0.00e+00  6.39e-09  3.75e-02  8.70e-09  3.26e-10  1.44e-01  5.42e-02
+   26  -2.3121e+03  -2.3121e+03  4.81e-08  2.08e-11  3.62e-08  0.00e+00  2.15e-09  3.75e-02  2.92e-09  1.11e-10  4.57e-02  6.96e-01
+   27  -2.3121e+03  -2.3121e+03  1.56e-08  6.74e-12  1.14e-08  0.00e+00  6.76e-10  3.75e-02  9.20e-10  3.61e-11  2.61e-02  7.03e-01
+optimal solution found; terminating
+
+status is Optimal after 27 iterations and 17.983 seconds
+
+took 21.955737293 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+
+
+instance syn10m02h
+ran at: 2020-05-14T11:48:00.336
+with solver: hypatia, system solver: qrchol_dense
+
+
+reading instance and constructing model...
+took 1.34846764 seconds
+building model...
+took 10.171359782 seconds
+
+solving model...
+
+ iter        p_obj        d_obj   abs_gap   rel_gap    x_feas    y_feas    z_feas       tau       kap        mu     gamma     alpha
+    0  -2.8936e+03  -6.4835e+02  4.32e+02  1.49e-01  9.67e+00  0.00e+00  7.26e-01  1.00e+00  1.00e+00  1.00e+00
+    1  -4.7072e+03  -2.4849e+03  1.33e+02  2.82e-02  9.56e+00  0.00e+00  7.18e-01  3.11e-01  9.95e-01  3.08e-01  7.35e-02  7.47e-01
+    2  -4.5667e+03  -2.5544e+03  6.25e+01  1.37e-02  8.64e+00  0.00e+00  6.49e-01  1.62e-01  9.16e-01  1.45e-01  1.84e-01  6.49e-01
+    3  -4.6824e+03  -2.8990e+03  3.70e+01  7.90e-03  7.65e+00  0.00e+00  5.74e-01  1.08e-01  7.86e-01  8.56e-02  1.58e-01  4.85e-01
+    4  -4.9841e+03  -3.9879e+03  1.11e+01  2.22e-03  4.26e+00  0.00e+00  3.19e-01  5.83e-02  4.77e-01  2.57e-02  5.34e-02  7.40e-01
+    5  -4.3426e+03  -3.4729e+03  7.90e+00  1.82e-03  3.71e+00  0.00e+00  2.79e-01  4.76e-02  3.83e-01  1.83e-02  1.98e-01  3.59e-01
+    6  -3.5183e+03  -3.0260e+03  3.77e+00  1.07e-03  2.10e+00  0.00e+00  1.58e-01  4.02e-02  1.93e-01  8.73e-03  1.45e-01  6.11e-01
+    7  -2.8078e+03  -2.6125e+03  1.40e+00  4.98e-04  8.33e-01  0.00e+00  6.25e-02  3.75e-02  7.02e-02  3.23e-03  1.14e-01  7.10e-01
+    8  -2.5462e+03  -2.4593e+03  6.16e-01  2.42e-04  3.70e-01  0.00e+00  2.78e-02  3.72e-02  3.21e-02  1.43e-03  1.47e-01  6.56e-01
+    9  -2.4271e+03  -2.3832e+03  3.12e-01  1.29e-04  1.87e-01  0.00e+00  1.40e-02  3.73e-02  1.67e-02  7.22e-04  1.59e-01  5.87e-01
+   10  -2.3684e+03  -2.3468e+03  1.55e-01  6.53e-05  9.23e-02  0.00e+00  6.93e-03  3.74e-02  8.45e-03  3.58e-04  1.23e-01  5.75e-01
+   11  -2.3243e+03  -2.3189e+03  3.86e-02  1.66e-05  2.30e-02  0.00e+00  1.73e-03  3.76e-02  2.23e-03  8.94e-05  1.28e-01  8.60e-01
+   12  -2.3161e+03  -2.3144e+03  1.21e-02  5.22e-06  7.21e-03  0.00e+00  5.41e-04  3.75e-02  7.09e-04  2.80e-05  8.95e-02  7.55e-01
+   13  -2.3136e+03  -2.3130e+03  4.39e-03  1.90e-06  2.62e-03  0.00e+00  1.97e-04  3.75e-02  2.59e-04  1.02e-05  3.85e-02  6.62e-01
+   14  -2.3123e+03  -2.3122e+03  4.28e-04  1.85e-07  2.55e-04  0.00e+00  1.91e-05  3.75e-02  2.52e-05  9.90e-07  1.84e-03  9.04e-01
+   15  -2.3122e+03  -2.3122e+03  1.15e-04  4.96e-08  6.81e-05  0.00e+00  5.11e-06  3.73e-02  6.89e-06  2.66e-07  9.29e-02  8.10e-01
+   16  -2.3122e+03  -2.3121e+03  2.43e-05  1.05e-08  1.44e-05  0.00e+00  1.08e-06  3.73e-02  1.48e-06  5.61e-08  1.10e-01  8.86e-01
+   17  -2.3121e+03  -2.3121e+03  3.21e-06  1.39e-09  1.91e-06  0.00e+00  1.43e-07  3.73e-02  1.96e-07  7.42e-09  1.47e-03  8.69e-01
+   18  -2.3121e+03  -2.3121e+03  2.40e-06  1.04e-09  1.44e-06  0.00e+00  1.08e-07  3.73e-02  1.48e-07  5.56e-09  1.69e-01  2.99e-01
+   19  -2.3121e+03  -2.3121e+03  1.45e-06  6.29e-10  8.73e-07  0.00e+00  6.55e-08  3.73e-02  8.98e-08  3.37e-09  1.59e-01  4.66e-01
+   20  -2.3121e+03  -2.3121e+03  1.33e-06  5.73e-10  1.01e-06  0.00e+00  6.01e-08  3.73e-02  8.25e-08  3.07e-09  2.23e-01  1.05e-01
+   21  -2.3121e+03  -2.3121e+03  1.30e-06  5.62e-10  9.88e-07  0.00e+00  5.89e-08  3.73e-02  8.09e-08  3.01e-09  2.44e-01  2.63e-02
+   22  -2.3121e+03  -2.3121e+03  1.30e-06  5.61e-10  9.87e-07  0.00e+00  5.88e-08  3.73e-02  8.07e-08  3.00e-09  2.50e-01  2.22e-03
+
+status is NumericalFailure after 22 iterations and 9.974 seconds
+
+took 14.064822545 seconds
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: switching Hessian cache from Cholesky to Bunch Kaufman
+└ @ Hypatia.Cones ~/.julia/dev/Hypatia/src/Cones/Cones.jl:94
+┌ Warning: very small alpha
+└ @ Hypatia.Solvers ~/.julia/dev/Hypatia/src/Solvers/stepper.jl:211
+┌ Warning: Hypatia status NumericalFailure not handled
+└ @ Hypatia ~/.julia/dev/Hypatia/src/MathOptInterface/wrapper.jl:530
+
