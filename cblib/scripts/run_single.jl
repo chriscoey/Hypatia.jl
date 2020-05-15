@@ -8,28 +8,28 @@ helper file that calls single_moi, factoring out any code that can be avoided du
 
 import Dates
 include(joinpath(@__DIR__, "read_instances.jl"))
+#
+# @show newARGS
+# nargs = length(ARGS)
+# if !(nargs in [3, 4])
+#     error("usage: julia run_single.jl instname csvfile solver system_solver_name")
+# end
+#
+# open("mypid", "w") do fd
+#     print(fd, getpid())
+# end
 
-@show newARGS
-nargs = length(ARGS)
-if !(nargs in [3, 4])
-    error("usage: julia run_single.jl instname csvfile solver system_solver_name")
-end
 
-open("mypid", "w") do fd
-    print(fd, getpid())
-end
-
-
-instname = ARGS[1]
-csvfile = ARGS[2]
-solver_name = ARGS[3]
-system_solver_name = (solver_name == "hypatia" ? ARGS[4] : "")
+# instname = ARGS[1]
+# csvfile = ARGS[2]
+# solver_name = ARGS[3]
+# system_solver_name = (solver_name == "hypatia" ? ARGS[4] : "")
 # # bss1 solved with nbhds 1e-2
 # # demb782 solved with 1e-3
-# instname = "bss2"
-# csvfile =  "dummy_results.txt"
-# solver_name = "hypatia"
-# system_solver_name = "qrchol_dense"
+instname = "ravem"
+csvfile =  "dummy_results.txt"
+solver_name = "hypatia"
+system_solver_name = "qrchol_dense"
 # system_solver_name = "naive_dense"
 # model_type = BigFloat
 model_type = Float64
