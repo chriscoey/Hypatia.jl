@@ -49,6 +49,8 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     newton_hess::Matrix{T}
     newton_norm::T
 
+    dual_grad_inacc::Bool
+
     function HypoPerLog{T}(
         dim::Int;
         use_dual::Bool = false,

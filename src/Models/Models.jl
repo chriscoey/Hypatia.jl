@@ -34,6 +34,7 @@ TODO
 
 module Models
 
+using LinearAlgebra
 import Hypatia.Cones
 
 mutable struct Point{T <: Real}
@@ -93,6 +94,7 @@ mutable struct Model{T <: Real}
         h::Vector{T},
         cones::Vector{Cones.Cone{T}};
         obj_offset::T = zero(T),
+        rescale::Bool = true, # rescale problem data # TODO un-scale in residuals (optional) and before returning solution
         ) where {T <: Real}
         model = new{T}()
 
@@ -100,6 +102,24 @@ mutable struct Model{T <: Real}
         model.p = length(b)
         model.q = length(h)
         model.obj_offset = obj_offset
+        if rescale
+            # TODO might need to move to solver because model gets reformed a lot in some scripts
+            # @show norm(A)
+            # @show norm(G)
+            c_scale = [sqrt(max(abs(c[j]), maximum(abs, A[:, j]), maximum(abs, G[:, j]))) for j in 1:model.n]
+            b_scale = [sqrt(max(abs(b[i]), maximum(abs, A[i, :]))) for i in 1:model.p]
+            h_scale = [sqrt(max(abs(h[i]), maximum(abs, G[i, :]))) for i in 1:model.q]
+            # c_mat = Diagonal(c_scale)
+            # b_mat = Diagonal(b_scale)
+            # h_mat = Diagonal(h_scale)
+            c = c ./ c_scale
+            b = b ./ b_scale
+            h = h ./ h_scale
+            A = A ./ c_scale' ./ b_scale
+            G = G ./ c_scale' ./ h_scale
+            # @show norm(A)
+            # @show norm(G)
+        end
         model.c = c
         model.A = A
         model.b = b

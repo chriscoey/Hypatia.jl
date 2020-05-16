@@ -2,7 +2,14 @@
 
 # for exp cone barrier
 # TODO combine Hi * g into one
-function newton_dir(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
+function hess_inv_dual_point(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
+    point = BigFloat.(point) # TODO toggle bigfloat oracle here
+
+
+
+
+
+
     (u, v, w) = point
 
     lwv = log(w / v)
@@ -22,12 +29,21 @@ function newton_dir(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     Hi = Symmetric(Hi, :U)
 
     Hiz = Hi * dual_point
-    newton_dir = point - Hiz
 
-    return (newton_dir, Hiz)
+    # hess_inv_dual_point = point - Hiz
+    # nnorm = 3 + dot(dual_point, Hiz) - 2 * dot(point, dual_point)
+    # if nnorm < -sqrt(eps(T))
+    #     println()
+    #     @show point
+    #     @show dual_point
+    #     @show nnorm
+    #     @show Hi
+    # end
+
+    return Hiz
 end
 
-# function update_dual_grad_bf(cone::Cone{T}) where {T <: Real}
+# function update_dual_grad_bf(cone::Cone{T}, mu::Real) where {T <: Real}
 #     @assert cone.is_feas
 #     point = cone.point
 #     dual_point = BigFloat.(cone.dual_point)
@@ -37,10 +53,10 @@ end
 #     eta = sqrt(eps(T)) # TODO adjust
 #
 #     # damped Newton
-#     curr .= point
+#     curr .= point / mu
 #     iter = 0
 #     while true
-#         (dir, Hiz) = newton_dir(curr, dual_point)
+#         (dir, Hiz) = hess_inv_dual_point(curr, dual_point)
 #         nnorm = get_nu(cone) + dot(dual_point, Hiz) - 2 * dot(curr, dual_point)
 #         denom = 1 + nnorm
 #         @. curr += dir / denom
@@ -62,40 +78,93 @@ end
 #     return cone.dual_grad
 # end
 
-function update_dual_grad(cone::Cone{T}) where {T <: Real}
+function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     @assert cone.is_feas
 
-    # bf_sol = update_dual_grad_bf(cone)
+    # bf_sol = update_dual_grad_bf(cone, mu)
 
     point = cone.point
     dual_point = cone.dual_point
     curr = cone.dual_grad
 
-    max_iter = 200 # TODO reduce: shouldn't really take > 40
+    nu = get_nu(cone)
+    # max_iter = 20 # TODO make it depend on sqrt(nu). reduce: shouldn't really take > 40
+    max_iter = 50 # TODO useful for bigfloat
     eta = sqrt(eps(T)) # TODO adjust
+    # neg_tol = eps(T)
+    neg_tol = eta
 
-    # damped Newton
-    curr .= point
+    # TODO maybe also rescale dual_point by its norm, but only once
+    # dual_norm = norm(dual_point)
+    # dual_point_scal = dual_point / dual_norm
+
+    # initial guess based on central path proximity is point / mu
+    # TODO depends on neighborhood definition we use, since that determines guarantees about relationship between s and conj_g
+    # TODO skajaa ye central path is s + mu * conj_g = 0, so conj_g = -s/mu
+    # TODO mosek central path is cone_nu = mu * dot(g, conj_g), satisfied by conj_g = -s/mu
+    pscal = inv(mu)
+    # TODO but point / cone_mu also works well (better actually) on the one case i tried (let cone_mu = dot(point, dual_point) / cone_nu)
+    # pscal = nu / dot(point, dual_point)
+    # @show dot(point, dual_point) / nu / mu # TODO seems always close to 1
+    curr .= pscal * point
+    # curr .= point
+
+    # @show norm(dual_point), norm(curr), norm(dual_point + point)
+
     iter = 0
     while true
-        (dir, Hiz) = newton_dir(curr, dual_point)
-        nnorm = get_nu(cone) + dot(dual_point, Hiz) - 2 * dot(curr, dual_point)
-        denom = 1 + nnorm
-        @. curr += dir / denom
         iter += 1
-        if nnorm < eta || iter >= max_iter
+
+
+        # # no scaling
+        # Hiz = hess_inv_dual_point(curr, dual_point) # TODO just inv hess prod applied to dual_point
+        # dir = curr - Hiz
+        # nnorm = nu - dot(curr + dir, dual_point)
+        #
+        # if nnorm < -neg_tol # bad nnorm
+        #     @show nnorm, iter
+        #     # cone.dual_grad_inacc = true
+        #     break
+        # end
+        #
+        # # damped Newton step
+        # alpha = inv(1 + nnorm)
+        # axpy!(alpha, dir, curr)
+
+
+        # scaling
+        curr_norm = norm(curr)
+        inv_curr_norm = inv(curr_norm)
+        curr_scal = inv_curr_norm * curr
+        Hiz_scal = hess_inv_dual_point(curr_scal, dual_point) # TODO just inv hess prod applied to dual_point
+        dir_scal = curr_scal - curr_norm * Hiz_scal
+        nnorm = nu - curr_norm * dot(curr_scal + dir_scal, dual_point)
+
+        if nnorm < -neg_tol # bad nnorm
+            @show nnorm, iter
+            cone.dual_grad_inacc = true
+            break
+        end
+
+        # damped Newton step
+        alpha = curr_norm / (1 + nnorm)
+        axpy!(alpha, dir_scal, curr)
+
+
+        if iter >= max_iter
+            @show nnorm, iter
+            cone.dual_grad_inacc = true
+            break
+        elseif nnorm < eta
+            # TODO remove check
+            cgnorm = norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point)
+            if cgnorm > 100sqrt(eps(T))
+                @warn("conjugate grad calculation inaccurate: $cgnorm")
+            end
             break
         end
     end
-
-    # # TODO remove check
-    # if norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point) > sqrt(eps(T))
-    #     @warn("conjugate grad calculation inaccurate")
-    # end
-
     curr .*= -1
-
-    # @show norm(bf_sol - curr)
 
     cone.dual_grad_updated = true
     return cone.dual_grad

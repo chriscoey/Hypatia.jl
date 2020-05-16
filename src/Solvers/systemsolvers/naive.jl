@@ -265,9 +265,16 @@ function load(system_solver::NaiveDenseSystemSolver{T}, solver::Solver{T}) where
 end
 
 function update_lhs(system_solver::NaiveDenseSystemSolver, solver::Solver)
+    k = 1
     for (cone_k, lhs6_H_k) in zip(solver.model.cones, system_solver.lhs6_H_k)
         H_k = Cones.scal_hess(cone_k, solver.mu)
         @. lhs6_H_k = H_k
+        println(k, " ", cone_k isa Cones.HypoPerLog ? "hypoperlog" : "nonneg")
+        println("norm(H) ", norm(H_k))
+        println("cond(H) ", cond(H_k))
+        println("min max eigval(H) ", extrema(eigvals(H_k)))
+        println()
+        k += 1
         # if Cones.use_scaling(cone_k)
         #     scal_hess = Cones.scal_hess(cone_k, solver.mu)
         #     @. lhs6_H_k = scal_hess

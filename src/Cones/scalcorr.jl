@@ -26,10 +26,13 @@ function update_scal_hess(
     # TODO tune
     update_tol = 1e-12
     # update_tol = eps(T)
-    # update_tol = sqrt(eps(T))
+    # update_tol = 10*sqrt(eps(T))
     denom_tol = update_tol
 
     scal_hess = mu * hess(cone)
+
+    # @show extrema(eigvals(scal_hess))
+    # @show scal_hess
 
     if use_update_1
         Hs = scal_hess * s
@@ -47,11 +50,17 @@ function update_scal_hess(
         end
     end
 
+    # @show extrema(eigvals(scal_hess))
+    # @show scal_hess
+
     if use_update_2
         g = grad(cone)
-        conj_g = dual_grad(cone)
+        conj_g = dual_grad(cone, mu)
         # check gradient of the optimization problem is small
         # @show norm(ForwardDiff.gradient(cone.barrier, -conj_g) + z)
+        # @show g
+        # @show conj_g
+        # @show norm(scal_hess * conj_g - g)
         if norm(scal_hess * conj_g - g) > update_tol
             mu_cone = dot(s, z) / get_nu(cone)
             du_gap = z + mu_cone * g
@@ -60,6 +69,11 @@ function update_scal_hess(
             denom_a = dot(pr_gap, du_gap)
             H1pg = scal_hess * pr_gap
             denom_b = dot(pr_gap, H1pg)
+            # @show mu_cone
+            # @show du_gap
+            # @show pr_gap
+            # @show denom_a
+            # @show denom_b
             if denom_a > denom_tol && denom_b > denom_tol
                 dga = du_gap / sqrt(denom_a)
                 scal_hess += Symmetric(dga * dga')
@@ -73,6 +87,9 @@ function update_scal_hess(
             # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
         end
     end
+
+    # @show extrema(eigvals(scal_hess))
+    # @show scal_hess
 
     # copyto!(cone.scal_hess, scal_hess)
     copyto!(cone.hess, scal_hess)
