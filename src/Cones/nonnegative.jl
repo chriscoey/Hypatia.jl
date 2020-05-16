@@ -91,6 +91,7 @@ end
 function update_dual_grad(cone::Nonnegative, mu::Real)
     @assert cone.is_feas
     @. cone.dual_grad = -inv(cone.dual_point)
+    cone.dual_grad_updated = true
     return cone.dual_grad
 end
 
