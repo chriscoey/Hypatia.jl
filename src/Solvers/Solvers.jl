@@ -263,6 +263,11 @@ function solve(solver::Solver{T}) where {T <: Real}
 
         @timeit solver.timer "step" step(stepper, solver) || break
         solver.num_iters += 1
+
+
+        # if solver.num_iters > 1
+        #     error()
+        # end
     end
 
     # calculate result and iteration statistics and finish

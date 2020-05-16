@@ -34,6 +34,9 @@ function update_scal_hess(
     # @show extrema(eigvals(scal_hess))
     # @show scal_hess
 
+    # normpoint1 = norm(s)
+    # normdual1 = norm(z)
+
     if use_update_1
         Hs = scal_hess * s
         if norm(Hs - z) > update_tol
@@ -56,6 +59,7 @@ function update_scal_hess(
     if use_update_2
         g = grad(cone)
         conj_g = dual_grad(cone, mu)
+        # @show norm(conj_g)
         # check gradient of the optimization problem is small
         # @show norm(ForwardDiff.gradient(cone.barrier, -conj_g) + z)
         # @show g
@@ -72,8 +76,6 @@ function update_scal_hess(
             # @show mu_cone
             # @show du_gap
             # @show pr_gap
-            # @show denom_a
-            # @show denom_b
             if denom_a > denom_tol && denom_b > denom_tol
                 dga = du_gap / sqrt(denom_a)
                 scal_hess += Symmetric(dga * dga')
@@ -90,6 +92,9 @@ function update_scal_hess(
 
     # @show extrema(eigvals(scal_hess))
     # @show scal_hess
+
+    # @assert normpoint1 == norm(cone.point)
+    # @assert normdual1 == norm(cone.dual_point)
 
     # copyto!(cone.scal_hess, scal_hess)
     copyto!(cone.hess, scal_hess)
@@ -320,16 +325,16 @@ end
 #     return prod
 # end
 
-# correction fallback (TODO remove later)
-import ForwardDiff
-
-function correction(cone::Cone{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
-    dim = cone.dim
-    point = cone.point
-    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier(cone), x), point)
-    # check log-homog property that F'''(point)[point] = -2F''(point)
-    @assert reshape(FD_3deriv * cone.point, dim, dim) ≈ -2 * ForwardDiff.hessian(barrier(cone), point)
-    Hinv_z = inv_hess_prod!(similar(dual_dir), dual_dir, cone)
-    FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_z / -2
-    return FD_corr
-end
+# # correction fallback (TODO remove later)
+# import ForwardDiff
+#
+# function correction(cone::Cone{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
+#     dim = cone.dim
+#     point = cone.point
+#     FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier(cone), x), point)
+#     # check log-homog property that F'''(point)[point] = -2F''(point)
+#     @assert reshape(FD_3deriv * cone.point, dim, dim) ≈ -2 * ForwardDiff.hessian(barrier(cone), point)
+#     Hinv_z = inv_hess_prod!(similar(dual_dir), dual_dir, cone)
+#     FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_z / -2
+#     return FD_corr
+# end

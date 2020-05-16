@@ -176,6 +176,13 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     point = solver.point
     timer = solver.timer
 
+    Cones.load_point.(cones, point.primal_views)
+    Cones.load_dual_point.(cones, point.dual_views)
+    Cones.reset_data.(cones)
+    Cones.is_feas.(cones)
+    Cones.grad.(cones)
+    Cones.hess.(cones)
+
     # update linear system solver factorization and helpers
     @timeit timer "update_lhs" update_lhs(solver.system_solver, solver)
 
@@ -546,7 +553,7 @@ function find_max_alpha(
             if mu_temp > eps(Float64) && taukap_temp > mu_temp * solver.max_nbhd
             # if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-4 # solver.max_nbhd
                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
-                sortperm!(cone_order, cone_times, initialized = true)
+                # sortperm!(cone_order, cone_times, initialized = true)
 
                 for k in cone_order
                     cone_k = cones[k]

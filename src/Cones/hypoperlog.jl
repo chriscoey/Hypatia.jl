@@ -16,6 +16,9 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     point::Vector{T}
     dual_point::Vector{T}
     timer::TimerOutput
+    nu::Int
+
+    scal::T
 
     feas_updated::Bool
     grad_updated::Bool
@@ -69,6 +72,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
         cone.use_heuristic_neighborhood = use_heuristic_neighborhood
         cone.max_neighborhood = max_neighborhood
         cone.dim = dim
+        cone.nu = 1 + 2 * (dim - 2)
         cone.hess_fact_cache = hess_fact_cache
         cone.barrier = (x -> -log(x[2] * log(x[3] / x[2]) - x[1]) - log(x[3]) - log(x[2]))
         return cone
@@ -104,7 +108,7 @@ use_scaling(cone::HypoPerLog) = true
 
 use_correction(cone::HypoPerLog) = true
 
-get_nu(cone::HypoPerLog) = 1 + 2 * (cone.dim - 2)
+get_nu(cone::HypoPerLog) = cone.nu
 
 reset_data(cone::HypoPerLog) = (cone.feas_updated = cone.grad_updated = cone.dual_grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scal_hess_updated = cone.hess_fact_updated = false)
 
@@ -116,17 +120,44 @@ end
 
 function update_feas(cone::HypoPerLog)
     @assert !cone.feas_updated
-    u = cone.point[1]
-    v = cone.point[2]
-    w = view(cone.point, 3:cone.dim)
 
-    if v > 0 && all(>(zero(u)), w)
+    point = cone.point
+    # @show norm(point)
+    # cone.scal = norm(point) / sqrt(cone.nu)
+    # cone.scal = 1.0
+    # @show cone.scal
+    # point ./= cone.scal
+    # @show norm(point)
+
+    # mu_cone = dot(point, cone.dual_point) / cone.nu
+    # @show mu_cone
+
+    u = point[1]
+    v = point[2]
+    w = view(point, 3:cone.dim)
+
+    # if v > 0 && all(>(0), w)
+    #     cone.lwv = sum(log(wi / v) for wi in w)
+    #     cone.vlwvu = v * cone.lwv - u
+    #     # @show cone.lwv
+    #     @show cone.vlwvu
+    #     cone.is_feas = (cone.vlwvu > 0)
+    # else
+    #     cone.is_feas = false
+    # end
+
+    if v <= 1e-12 || any(<=(1e-12), w)
+        cone.is_feas = false
+    else
         cone.lwv = sum(log(wi / v) for wi in w)
         cone.vlwvu = v * cone.lwv - u
-        cone.is_feas = (cone.vlwvu > 0)
-    else
-        cone.is_feas = false
+        # cone.scal = cone.vlwvu
+        # cone.scal = 1
+        # cone.point = point / cone.scal
+        cone.is_feas = (cone.vlwvu > 1e-12)
     end
+
+
 
     cone.feas_updated = true
     return cone.is_feas
@@ -137,7 +168,6 @@ function update_dual_feas(cone::HypoPerLog)
     u = cone.dual_point[1]
     v = cone.dual_point[2]
     w = cone.dual_point[3]
-
     return u < 0 && w > 0 && v - u - u * log(-w / u) > 0
 end
 
@@ -152,7 +182,7 @@ function update_grad(cone::HypoPerLog)
     g[1] = inv(cone.vlwvu)
     cone.lvwnivlwvu = (d - cone.lwv) / cone.vlwvu
     g[2] = cone.lvwnivlwvu - d / v
-    gden = -1 - v / (cone.vlwvu)
+    gden = -1 - v / cone.vlwvu
     @. g[3:end] = gden / w
 
     cone.grad_updated = true
@@ -173,7 +203,7 @@ end
 #
 #     g[1] = inv(vlwvu)
 #     g[2] = lvwnivlwvu - d / v
-#     gden = -1 - v / (vlwvu)
+#     gden = -1 - v / vlwvu
 #     @. g[3:end] = gden / w
 #
 #     cone.grad_updated = true
@@ -206,6 +236,8 @@ function update_hess(cone::HypoPerLog)
         end
         H[j2, j2] -= g[j2] / w[j]
     end
+
+    # @show H
 
     cone.hess_updated = true
     return cone.hess
@@ -260,8 +292,8 @@ function correction(
     point = cone.point
     # corr = cone.correction
 
-    newT = BigFloat
-    # newT = T
+    # newT = BigFloat
+    newT = T
 
     primal_dir = newT.(primal_dir)
     dual_dir = newT.(dual_dir)
@@ -304,8 +336,8 @@ function correction(
 
 
     # term1
-    corr = similar(primal_dir)
-    corr .= dual_dir[1] * 2 * vlwvu * gpp * primal_dir
+    # corr = similar(primal_dir)
+    corr = dual_dir[1] * 2 * vlwvu * gpp * primal_dir
     # term2
     corr[2] += dual_dir[1] * (primal_dir[3] / w - primal_dir[2] / v)
     corr[3] += dual_dir[1] * (-v * primal_dir[3] / w + primal_dir[2]) / w

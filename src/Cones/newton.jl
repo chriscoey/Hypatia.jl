@@ -3,13 +3,10 @@
 # for exp cone barrier
 # TODO combine Hi * g into one
 function hess_inv_dual_point(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
-    point = BigFloat.(point) # TODO toggle bigfloat oracle here
+    # newT = T
+    newT = BigFloat # TODO toggle bigfloat oracle here
 
-
-
-
-
-
+    point = newT.(point)
     (u, v, w) = point
 
     lwv = log(w / v)
@@ -19,7 +16,7 @@ function hess_inv_dual_point(point::Vector{T}, dual_point::Vector{T}) where {T <
     wvdenom = w * v / denom
     vvdenom = (vlwvu + v) / denom
 
-    Hi = similar(point, 3, 3)
+    Hi = zeros(newT, 3, 3)
     Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
     Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
     Hi[1, 3] = wvdenom * (2 * vlwv - u)
@@ -80,6 +77,7 @@ end
 
 function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     @assert cone.is_feas
+    @assert !cone.dual_grad_updated
 
     # bf_sol = update_dual_grad_bf(cone, mu)
 
