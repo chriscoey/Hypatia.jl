@@ -2,7 +2,7 @@
 Copyright 2019, Chris Coey, Lea Kapelevich and contributors
 
 j scripts/run_meta.jl sample sample 1800 30000000
-j cblib/scripts/run_meta.jl exporthantsmall exporthantsmall 900 30000000
+j cblib/scripts/run_meta.jl exporthanthard exporthanthard 900 30000000
 j -J sc_img.so scripts/run_meta.jl cbf_easy easy 1800 30000000
 julia scripts/run_meta.jl cbf_large linsystems 15 99999999
 =#
@@ -139,19 +139,19 @@ for instname in instances, solver in moi_solvers, ss in system_solvers
         # process = run(pipeline(`$(joinpath(Sys.BINDIR, "julia")) cblib/scripts/run_single.jl $instname $csvfile $solver $ss`, stdout = filename, stderr = filename, append = true), wait = false)
         sleep(3.0)
         # pid = parse(Int, chomp(readline(open("mypid", "r"))))
-        while process_running(process)
-            if (time() - t) > (tlim + 60.0)
-                # kill if time limit exceeded (some solvers don't respect time limits)
-                kill(process)
-                sleep(1.0)
-                println(fdmeta, "killed by time limit")
-                flush(fdmeta)
-                open(filename, "a") do fd
-                    println(fd, "#STATUS# KilledTime")
-                end
-                open(csvfile, "a") do c
-                    print(c, "KILLED_TIME,$(repeat(",", 16))")
-                end
+        # while process_running(process)
+        #     if (time() - t) > (tlim + 60.0)
+        #         # kill if time limit exceeded (some solvers don't respect time limits)
+        #         kill(process)
+        #         sleep(1.0)
+        #         println(fdmeta, "killed by time limit")
+        #         flush(fdmeta)
+        #         open(filename, "a") do fd
+        #             println(fd, "#STATUS# KilledTime")
+        #         end
+        #         open(csvfile, "a") do c
+        #             print(c, "KILLED_TIME,$(repeat(",", 16))")
+        #         end
             # else
             #     try
             #         if !process_exited(process)
@@ -171,9 +171,9 @@ for instname in instances, solver in moi_solvers, ss in system_solvers
             #     catch e
             #         println(fdmeta, "...error in memory check: $e")
             #     end
-            end
-            sleep(1.0)
-        end
+            # end
+            # sleep(1.0)
+        # end
 
         println(fdmeta, "...took $(time() - t) seconds")
     catch e
