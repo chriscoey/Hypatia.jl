@@ -303,7 +303,7 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}; iter_ref
         norm_2 = norm(res, 2)
 
         for i in 1:iter_ref_steps
-            # @show norm_inf
+            @show norm_inf
             if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
                 break
             end
@@ -326,6 +326,10 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}; iter_ref
             copyto!(dir_temp, dir)
             norm_inf = norm_inf_new
             norm_2 = norm_2_new
+        end
+
+        if norm_inf > 1e-2
+            error("residual on direction too large: $norm_inf")
         end
     end
 
@@ -363,7 +367,10 @@ function apply_lhs(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: R
         # (du bar) mu*H_k*z_k + s_k
         # TODO handle dual barrier
         s_res_k = stepper.s_res_k[k]
+        # @show k
+        # @show norm(stepper.primal_dir_k[k])
         Cones.scal_hess_prod!(s_res_k, stepper.primal_dir_k[k], cone_k, solver.mu)
+        # @show norm(s_res_k)
         # if Cones.use_scaling(cone_k)
         #     scal_hess = Cones.scal_hess(cone_k, solver.mu)
         #     mul!(s_res_k, scal_hess, stepper.primal_dir_k[k])

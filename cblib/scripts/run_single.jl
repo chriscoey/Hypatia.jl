@@ -26,11 +26,11 @@ include(joinpath(@__DIR__, "read_instances.jl"))
 # system_solver_name = (solver_name == "hypatia" ? ARGS[4] : "")
 # # bss1 solved with nbhds 1e-2
 # # demb782 solved with 1e-3
-instname = "ravem"
+instname = "synthes1"
 csvfile =  "dummy_results.txt"
 solver_name = "hypatia"
-system_solver_name = "qrchol_dense"
-# system_solver_name = "naive_dense"
+# system_solver_name = "qrchol_dense"
+system_solver_name = "naive_dense"
 # model_type = BigFloat
 model_type = Float64
 

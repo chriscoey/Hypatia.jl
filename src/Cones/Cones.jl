@@ -24,7 +24,7 @@ import Hypatia.inv_sqrt_prod
 import Hypatia.invert
 
 # default_max_neighborhood() = 0.5 # TODO skajaa ye
-default_max_neighborhood() = 0.1 # TODO mosek
+default_max_neighborhood() = 0.5 # TODO mosek
 default_use_heuristic_neighborhood() = false
 
 # hessian_cache(T::Type{<:BlasReal}) = DenseSymCache{T}() # use Bunch Kaufman for BlasReals from start
@@ -63,7 +63,7 @@ set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
 is_dual_feas(cone::Cone) = update_dual_feas(cone) # TODO field? like above
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
-dual_grad(cone::Cone) = (cone.dual_grad_updated ? cone.dual_grad : update_dual_grad(cone))
+dual_grad(cone::Cone, mu::Real) = (cone.dual_grad_updated ? cone.dual_grad : update_dual_grad(cone, mu))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
 barrier(cone::Cone) = cone.barrier
@@ -197,7 +197,15 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 #     return (nbhd < mu * cone.max_neighborhood)
 # end
 
-in_neighborhood(cone::Cone, mu::Real) = (get_nu(cone) > cone.max_neighborhood * mu * dot(grad(cone), dual_grad(cone)))
+function in_neighborhood(cone::Cone, mu::Real)
+    g = grad(cone)
+    cone.dual_grad_inacc = false
+    conj_g = dual_grad(cone, mu)
+    if cone.dual_grad_inacc
+        return false
+    end
+    return (get_nu(cone) > cone.max_neighborhood * mu * dot(g, conj_g))
+end
 
 # utilities for arrays
 
