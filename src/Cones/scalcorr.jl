@@ -24,10 +24,10 @@ function update_scal_hess(
     z = cone.dual_point
 
     # TODO tune
-    update_tol = 1e-12
+    # update_tol = 1e-12
     # update_tol = eps(T)
-    # update_tol = 10*sqrt(eps(T))
-    denom_tol = update_tol
+    update_tol = 1e-3 * sqrt(eps(T))
+    denom_tol = 1e4 * eps(T)
 
     scal_hess = mu * hess(cone)
 
@@ -37,8 +37,12 @@ function update_scal_hess(
     # normpoint1 = norm(s)
     # normdual1 = norm(z)
 
+    g = grad(cone)
+
     if use_update_1
-        Hs = scal_hess * s
+        # Hs = scal_hess * s
+        # @show norm(Hs + mu * g)
+        Hs = -mu * g
         if norm(Hs - z) > update_tol
             # first update
             denom_a = dot(s, z)
@@ -48,8 +52,12 @@ function update_scal_hess(
                 scal_hess += Symmetric(za * za')
                 Hsb = Hs / sqrt(denom_b)
                 scal_hess -= Symmetric(Hsb * Hsb')
+            else
+                @warn("skipped 1st update (small denoms)")
             end
             # @show norm(scal_hess * s - z)
+        # else
+        #     @warn("skipped 1st update (already satisfied)")
         end
     end
 
@@ -57,8 +65,9 @@ function update_scal_hess(
     # @show scal_hess
 
     if use_update_2
-        g = grad(cone)
+        # TODO maybe there are simplifications that can be made here
         conj_g = dual_grad(cone, mu)
+        cone.dual_grad_inacc && @warn("dual grad inacc in 2nd update")
         # @show norm(conj_g)
         # check gradient of the optimization problem is small
         # @show norm(ForwardDiff.gradient(cone.barrier, -conj_g) + z)
@@ -66,13 +75,18 @@ function update_scal_hess(
         # @show conj_g
         # @show norm(scal_hess * conj_g - g)
         if !cone.dual_grad_inacc && norm(scal_hess * conj_g - g) > update_tol
+            # TODO decide whether to use mu_cone = mu or mu_cone = s'z / nu
             mu_cone = dot(s, z) / get_nu(cone)
             # mu_cone = mu
+            # rtmu = sqrt(mu_cone)
+            # invrtmu = inv(rtmu)
+            # du_gap = invrtmu * z + rtmu * g
+            # pr_gap = invrtmu * s + rtmu * conj_g
             du_gap = z + mu_cone * g
             pr_gap = s + mu_cone * conj_g
             # second update
             denom_a = dot(pr_gap, du_gap)
-            H1pg = scal_hess * pr_gap
+            H1pg = scal_hess * pr_gap # TODO try to mathematically simplify by expanding out scal_hess components
             denom_b = dot(pr_gap, H1pg)
             # @show mu_cone
             # @show du_gap
@@ -82,12 +96,19 @@ function update_scal_hess(
                 scal_hess += Symmetric(dga * dga')
                 Hpga = H1pg / sqrt(denom_b)
                 scal_hess -= Symmetric(Hpga * Hpga')
+                # @show norm(scal_hess * s - z) / (1 + max(norm(s), norm(scal_hess * s)))
+                # @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
+            else
+                @warn("skipped 2nd update (small denoms: $denom_a, $denom_b)")
+                @show norm(scal_hess * conj_g - g)
             end
             # @show norm(scal_hess * s - z) / (1 + max(norm(s), norm(scal_hess * s)))
             # # @show norm(scal_hess * -conj_g + g)
             # @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
             # @show norm(scal_hess * pr_gap - du_gap)
             # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
+        # else
+        #     @warn("skipped 2nd update (already satisfied)")
         end
     end
 
