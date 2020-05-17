@@ -79,8 +79,6 @@ function update_scal_hess(
         # @show norm(conj_g)
         # check gradient of the optimization problem is small
         # @show norm(ForwardDiff.gradient(cone.barrier, -conj_g) + z)
-        # @show g
-        # @show conj_g
         # @show norm(scal_hess * conj_g - g)
         if !cone.dual_grad_inacc && norm(scal_hess * conj_g - g) > update_tol
             # TODO decide whether to use mu_cone = mu or mu_cone = s'z / nu
@@ -93,20 +91,28 @@ function update_scal_hess(
             du_gap = z + mu_cone * g
             pr_gap = s + mu_cone * conj_g
             # second update
-            denom_a = (use_simplifications ? sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone : dot(pr_gap, du_gap))
+            # mu_cone * (mu_cone * gsgz - 2nu)
+            denom_a = (use_simplifications ? sz + mu_cone * (gsgz * mu_cone - 2 * nu) : dot(pr_gap, du_gap))
             # denom_a = sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone
             # @assert isapprox(denom_a, sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone)
-            H1pg = scal_hess * pr_gap # TODO try to mathematically simplify by expanding out scal_hess components
 
+            Hgz = hess(cone) * conj_g
             if update_one_applied
                 # struggling with correcness of this
                 rho = -conj_g - gsgz / nu * s
                 # @show norm(s' * mu * hess(cone) * -conj_g - gsgz * mu) # looks BAD
                 # @show norm(rho - (-conj_g - (s' * mu * hess(cone) * -conj_g) / (s' * mu * hess(cone) * s)  * s)) # looks BAD
-                # @show norm(scal_hess * -conj_g - (mu * hess(cone) * rho + 1 / mu_cone * s)) # looks WRONG
+                # @show norm(scal_hess * -conj_g - (mu * hess(cone) * rho + 1 / mu_cone * z)) # looks BAD
+                # @show norm(scal_hess * pr_gap - (-mu * mu_cone * hess(cone) * rho)) # looks OK
+                # @show norm(scal_hess * pr_gap - (mu * mu_cone * (hess(cone) * conj_g - gsgz / nu * g))) # looks OK
+                H1pg = (use_simplifications ? mu * mu_cone * (Hgz - gsgz / nu * g) : scal_hess * pr_gap)
+                # @show norm(denom_b - mu * mu_cone^2 * (dot(conj_g, Hgz) - abs2(gsgz) / nu))
+                denom_b = mu * mu_cone * (dot(conj_g, Hgz) - abs2(gsgz) / nu) * mu_cone
+            else
+                H1pg = scal_hess * pr_gap
+                denom_b = dot(pr_gap, H1pg)
             end
 
-            denom_b = dot(pr_gap, H1pg)
             if denom_a > denom_tol && denom_b > denom_tol
                 dga = du_gap / sqrt(denom_a)
                 scal_hess += Symmetric(dga * dga')
