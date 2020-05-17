@@ -169,8 +169,12 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
             nnorm *= 10
         end
 
-        # damped Newton step
-        alpha = scalval / (1 + abs(nnorm))
+        # if nnorm > 0.35
+            # damped Newton step
+            alpha = scalval / (1 + abs(nnorm))
+        # else
+        #     alpha = scalval
+        # end
         axpy!(alpha, dir_scal, curr)
 
         if nnorm < eta
