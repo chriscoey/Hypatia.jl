@@ -99,6 +99,14 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     dual_point = cone.dual_point
     curr = cone.dual_grad
 
+    # norm_z = norm(dual_point)
+    # if norm_z > 1e5 || norm_z < 1e-5
+    #     @warn("norm of dual point is $norm_z, maybe try scaling it in update_dual_grad")
+    # end
+    # inv_norm_z = inv(norm_z)
+    # dual_point_scal = inv_norm_z * dual_point
+    dual_point_scal = dual_point
+
     nu = get_nu(cone)
     max_iter = 25 # TODO make it depend on sqrt(nu). reduce: shouldn't really take > 40
     # max_iter = 50 # TODO useful for bigfloat
@@ -106,22 +114,16 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     # neg_tol = eps(T)
     neg_tol = eta
 
-    # TODO maybe also rescale dual_point by its norm, but only once
-    # dual_norm = norm(dual_point)
-    # dual_point_scal = dual_point / dual_norm
-
     # initial guess based on central path proximity is point / mu
     # TODO depends on neighborhood definition we use, since that determines guarantees about relationship between s and conj_g
     # TODO skajaa ye central path is s + mu * conj_g = 0, so conj_g = -s/mu
     # TODO mosek central path is cone_nu = mu * dot(g, conj_g), satisfied by conj_g = -s/mu
     pscal = inv(mu)
-    # TODO but point / cone_mu also works well (better actually) on the one case i tried (let cone_mu = dot(point, dual_point) / cone_nu)
-    # pscal = nu / dot(point, dual_point)
-    # @show dot(point, dual_point) / nu / mu # TODO seems always close to 1
+    # TODO but point / cone_mu also works well (better actually) on the one case i tried (let cone_mu = dot(point, dual_point_scal) / cone_nu)
+    # pscal = nu / dot(point, dual_point_scal)
+    # @show dot(point, dual_point_scal) / nu / mu # TODO seems always close to 1
     curr .= pscal * point
     # curr .= point
-
-    # @show norm(dual_point), norm(curr), norm(dual_point + point)
 
     iter = 0
     while true
@@ -129,9 +131,10 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
 
 
         # # no scaling
-        # Hiz = hess_inv_dual_point(curr, dual_point) # TODO just inv hess prod applied to dual_point
+        # # TODO to use, turn off dual_point scaling too
+        # Hiz = hess_inv_dual_point(curr, dual_point_scal) # TODO just inv hess prod applied to dual_point
         # dir = curr - Hiz
-        # nnorm = nu - dot(curr + dir, dual_point)
+        # nnorm = nu - dot(curr + dir, dual_point_scal)
         #
         # if nnorm < -neg_tol # bad nnorm
         #     @show nnorm, iter
@@ -153,9 +156,9 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
         # inv_scalval = v * (log(w / v) + 2) - u
         # scalval = inv(inv_scalval)
         curr_scal = inv_scalval * curr
-        Hiz_scal = hess_inv_dual_point(curr_scal, dual_point) # TODO just inv hess prod applied to dual_point
+        Hiz_scal = hess_inv_dual_point(curr_scal, dual_point_scal) # TODO just inv hess prod applied to dual_point
         dir_scal = curr_scal - scalval * Hiz_scal
-        nnorm = nu - scalval * dot(curr_scal + dir_scal, dual_point)
+        nnorm = nu - scalval * dot(curr_scal + dir_scal, dual_point_scal)
 
         if nnorm < -neg_tol # bad nnorm
             # @show nnorm, iter
@@ -184,12 +187,14 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
             break
         end
     end
-    cgnorm = norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point)
-    if cgnorm > 1000sqrt(eps(T))
-        @warn("conjugate grad calculation inaccurate: $cgnorm")
-    end
 
     curr .*= -1
+    # curr .*= -inv_norm_z
+
+    cgnorm = norm(ForwardDiff.gradient(cone.barrier, -curr) + cone.dual_point)
+    if cgnorm > 1000sqrt(eps(T))
+        println("conjugate grad calculation inaccurate: $cgnorm")
+    end
 
     cone.dual_grad_updated = true
     return cone.dual_grad

@@ -65,7 +65,6 @@ function setup_data(cone::Nonnegative{T}) where {T <: Real}
     cone.inv_hess = Diagonal(zeros(T, dim))
     cone.scal_hess = Diagonal(zeros(T, dim))
     cone.correction = zeros(T, dim)
-    @warn("has nonneg cone, dim $dim")
     return
 end
 
