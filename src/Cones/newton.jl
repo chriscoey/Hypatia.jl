@@ -173,17 +173,11 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
         alpha = scalval / (1 + abs(nnorm))
         axpy!(alpha, dir_scal, curr)
 
-
-        if iter >= max_iter
+        if nnorm < eta
+            break
+        elseif iter >= max_iter
             @show nnorm, iter
             cone.dual_grad_inacc = true
-            break
-        elseif nnorm < eta
-            # TODO remove check
-            # cgnorm = norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point)
-            # if cgnorm > 1000sqrt(eps(T))
-            #     @warn("conjugate grad calculation inaccurate: $cgnorm")
-            # end
             break
         end
     end
