@@ -38,6 +38,8 @@ mutable struct CombinedStepper{T <: Real} <: Stepper{T}
     cone_times::Vector{Float64}
     cone_order::Vector{Int}
 
+    tkcorr::T
+
     CombinedStepper{T}() where {T <: Real} = new{T}()
 end
 
@@ -191,12 +193,17 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
     # @show stepper.dir
 
+    @timeit timer "rhs_corr" update_rhs_corr(stepper, solver)
+    @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
+    # @show stepper.dir
+
     # get alpha for affine direction
     @timeit timer "alpha_aff" stepper.prev_aff_alpha = aff_alpha = find_max_alpha(
         stepper, solver, true, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
     # @show aff_alpha
     # calculate correction factor gamma
-    stepper.prev_gamma = gamma = (one(T) - aff_alpha) * min(abs2(one(T) - aff_alpha), T(0.25))
+    # stepper.prev_gamma = gamma = (one(T) - aff_alpha) * min(abs2(one(T) - aff_alpha), T(0.25))
+    stepper.prev_gamma = gamma = (one(T) - aff_alpha)^2
 
     # TODO have to reload point after affine alpha line search
     Cones.load_point.(cones, point.primal_views)
@@ -262,7 +269,35 @@ function update_rhs_affine(stepper::CombinedStepper{T}, solver::Solver{T}) where
     return rhs
 end
 
-# update the RHS for correction direction
+# update the RHS for affine-corr direction
+function update_rhs_corr(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
+    rhs = stepper.rhs
+
+    # x, y, z, tau
+    stepper.x_rhs .= solver.x_residual
+    stepper.y_rhs .= solver.y_residual
+    stepper.z_rhs .= solver.z_residual
+    rhs[stepper.tau_row] = solver.kap + solver.primal_obj_t - solver.dual_obj_t
+
+    # s
+    for (k, cone_k) in enumerate(solver.model.cones)
+        duals_k = solver.point.dual_views[k]
+        @. stepper.s_rhs_k[k] = -duals_k
+        if Cones.use_correction(cone_k)
+            # (reuses affine direction)
+            # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
+            stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k])
+        end
+    end
+
+    # NT: kap
+    stepper.tkcorr = stepper.dir[stepper.tau_row] * stepper.dir[stepper.kap_row] / solver.tau
+    rhs[end] = -solver.kap - stepper.tkcorr
+
+    return rhs
+end
+
+# update the RHS for combined direction
 function update_rhs_final(stepper::CombinedStepper{T}, solver::Solver{T}, gamma::T) where {T <: Real}
     rhs = stepper.rhs
 
@@ -280,12 +315,12 @@ function update_rhs_final(stepper::CombinedStepper{T}, solver::Solver{T}, gamma:
         if Cones.use_correction(cone_k)
             # (reuses affine direction)
             # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
-            stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k])
+            stepper.s_rhs_k[k] .-= cone_k.correction
         end
     end
 
     # NT: kap (corrector reuses kappa/tau affine directions)
-    rhs[end] = -solver.kap + (solver.mu / solver.tau) * gamma - stepper.dir[stepper.tau_row] * stepper.dir[stepper.kap_row] / solver.tau
+    rhs[end] = -solver.kap + (solver.mu / solver.tau) * gamma - stepper.tkcorr
 
     return rhs
 end
@@ -310,7 +345,7 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}; iter_ref
         norm_2 = norm(res, 2)
 
         for i in 1:iter_ref_steps
-            @show norm_inf
+            # @show norm_inf
             if norm_inf < 100 * eps(T) # TODO change tolerance dynamically
                 break
             end
@@ -335,8 +370,8 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}; iter_ref
             norm_2 = norm_2_new
         end
 
-        if norm_inf > 1e-2
-            error("residual on direction too large: $norm_inf")
+        if norm_inf > 1e-7
+            @warn("residual on direction too large: $norm_inf")
         end
     end
 
@@ -550,7 +585,7 @@ function find_max_alpha(
             mu_temp = (dot_s_z + taukap_temp) / nup1
 
             # TODO change back
-            if mu_temp > eps(Float64) && taukap_temp > mu_temp * solver.max_nbhd
+            if mu_temp > eps(Float64) && taukap_temp > mu_temp * 0.1 && abs(taukap_temp - mu_temp) < mu_temp * 0.9 # TODO redundant
             # if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-4 # solver.max_nbhd
                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
                 # sortperm!(cone_order, cone_times, initialized = true)
@@ -562,9 +597,19 @@ function find_max_alpha(
                     Cones.load_dual_point(cone_k, duals_linesearch[k])
                     Cones.reset_data(cone_k)
 
+                    # fsble_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k) && Cones.in_neighborhood_sy(cone_k, mu_temp))
                     fsble_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k))
                     if fsble_k
-                        in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood(cone_k, mu_temp))
+                        if affine_phase
+                            in_nbhd_k = true
+                        else
+                            in_nbhd_k = Cones.in_neighborhood(cone_k, mu_temp)
+                            # in_nbhd_k && @show Cones.in_neighborhood_sy(cone_k, mu_temp)
+                        end
+                        # in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood_sy(cone_k, mu_temp) && Cones.in_neighborhood(cone_k, mu_temp))
+                        # in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood_sy(cone_k, mu_temp))
+                        #
+                        # in_nbhd_k = true
                     else
                         in_nbhd_k = false
                     end
@@ -589,7 +634,7 @@ function find_max_alpha(
         end
 
         # iterate is outside the neighborhood: decrease alpha
-        alpha *= T(0.99)
+        alpha *= T(0.95)
     end # while true
 
     return alpha

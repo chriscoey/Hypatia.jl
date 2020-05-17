@@ -31,6 +31,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     grad::Vector{T}
     dual_grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
+    old_hess::Symmetric{T, Matrix{T}}
     inv_hess::Symmetric{T, Matrix{T}}
     scal_hess::Symmetric{T, Matrix{T}}
     hess_fact_cache
@@ -168,7 +169,7 @@ function update_dual_feas(cone::HypoPerLog)
     u = cone.dual_point[1]
     v = cone.dual_point[2]
     w = cone.dual_point[3]
-    return u < 0 && w > 0 && v - u - u * log(-w / u) > 0
+    return u < -1e-12 && w > 1e-12 && v - u - u * log(-w / u) > 1e-12
 end
 
 function update_grad(cone::HypoPerLog)
@@ -238,6 +239,8 @@ function update_hess(cone::HypoPerLog)
     end
 
     # @show H
+
+    cone.old_hess = copy(cone.hess)
 
     cone.hess_updated = true
     return cone.hess
@@ -328,7 +331,11 @@ function correction(
     # zz3vlwvup = (dual_dir[2:3] + dual_dir[1] * vlwvup[2:3]) / (vlwvu + 2 * v)
     # vlwvupp_Hi_z = T[0, w * zz3vlwvup[2] - v * zz3vlwvup[1], v * (zz3vlwvup[1] * v / w - zz3vlwvup[2])]
 
-    H = inv(Hi)
+    # H = inv(Hi)
+    # @show H - hess(cone)
+    # H = hess(cone)
+    @assert cone.hess_updated
+    H = cone.old_hess
     vlwvup = newT[-1, lwv - 1, v / w]
     gpp = Symmetric(H - Diagonal(newT[0, abs2(inv(v)), abs2(inv(w))]), :U) # TODO improve
     zz3vlwvup = (dual_dir[2:3] + dual_dir[1] * vlwvup[2:3]) / (vlwvu + 2 * v)
@@ -358,6 +365,74 @@ function correction(
 
     return cone.correction
 end
+
+
+# (z + mu*g)' (mu*H)^-1 (z + mu*g)
+# = (z + mu*g)' (Hiz / mu - s)
+# = z'Hiz / mu + g'Hiz - z's - mu*g's
+# = z'Hiz / mu - 2*s'z + mu*nu
+# < mu * beta^2
+function in_neighborhood_sy(cone::HypoPerLog{T}, mu::T) where {T <: Real}
+    # mu_cone = dot(cone.point, cone.dual_point) / cone.nu
+    # @show mu_cone / mu
+    # mu = mu_cone
+
+    # nbhd_tmp = cone.nbhd_tmp
+    # g = grad(cone)
+    # @. nbhd_tmp = cone.dual_point + mu * g
+
+    (u, v, w) = cone.point
+
+    # # TODO compare below two ways to do inverse hess prod
+    # Hi_z = similar(dual_dir) # TODO prealloc
+    # update_hess_fact(cone)
+    # inv_hess_prod!(Hi_z, dual_dir, cone)
+
+    # TODO refac inv hess prod here
+    lwv = log(w / v)
+    vlwv = v * lwv
+    vlwvu = vlwv - u
+    denom = vlwvu + 2 * v
+    wvdenom = w * v / denom
+    vvdenom = (vlwvu + v) / denom
+    Hi = zeros(T, 3, 3)
+    Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
+    Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
+    Hi[1, 3] = wvdenom * (2 * vlwv - u)
+    Hi[2, 2] = v * vvdenom * v
+    Hi[2, 3] = wvdenom * v
+    Hi[3, 3] = w * vvdenom * w
+    Hi = Symmetric(Hi, :U)
+
+    # @show norm(Hi * g + cone.point)
+
+    # nbhdsqr = dot(nbhd_tmp, Hi * nbhd_tmp)
+
+    z = cone.dual_point
+    s = cone.point
+    nbhdsqr2mu = dot(z, Hi, z) / mu - 2 * dot(s, z) + mu * cone.nu
+    # @show nbhdsqr / mu - nbhdsqr2mu
+
+    # if nbhdsqr2mu <= 0
+    #     # @show nbhdsqr
+    #     return false
+    # end
+    # nbhd = sqrt(nbhdsqr)
+    # sy_eta = 0.99
+    # sy_eta = 0.5
+    # sy_eta = 0.99
+    sy_eta = 2
+    return (nbhdsqr2mu < mu * sy_eta^2)
+
+    # @show nbhd / (mu * sy_eta)
+    # return (nbhd < mu * sy_eta)
+    return true
+end
+
+
+
+
+
 
 # TODO add hess prod, inv hess etc functions
 # NOTE old EpiPerExp code below may be useful (cone vector is reversed)

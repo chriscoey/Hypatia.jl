@@ -1,4 +1,5 @@
 
+using ForwardDiff
 using DoubleFloats
 using Quadmath
 
@@ -6,9 +7,9 @@ using Quadmath
 # TODO combine Hi * g into one
 function hess_inv_dual_point(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     # TODO toggle
-    newT = T
+    # newT = T
     # newT = Double64
-    # newT = Float128 # more precise than Double64
+    newT = Float128 # more precise than Double64
     # newT = BigFloat
 
     point = newT.(point)
@@ -91,6 +92,7 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     @assert cone.is_feas
     @assert !cone.dual_grad_updated
 
+    cone.dual_grad_inacc = false
     # bf_sol = update_dual_grad_bf(cone, mu)
 
     point = cone.point
@@ -98,8 +100,8 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     curr = cone.dual_grad
 
     nu = get_nu(cone)
-    # max_iter = 20 # TODO make it depend on sqrt(nu). reduce: shouldn't really take > 40
-    max_iter = 50 # TODO useful for bigfloat
+    max_iter = 25 # TODO make it depend on sqrt(nu). reduce: shouldn't really take > 40
+    # max_iter = 50 # TODO useful for bigfloat
     eta = sqrt(eps(T)) # TODO adjust
     # neg_tol = eps(T)
     neg_tol = eta
@@ -156,8 +158,9 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
         nnorm = nu - scalval * dot(curr_scal + dir_scal, dual_point)
 
         if nnorm < -neg_tol # bad nnorm
-            @show nnorm, iter
-            # cone.dual_grad_inacc = true
+            # @show nnorm, iter
+            # @show norm(dual_point)
+            cone.dual_grad_inacc = true
             break
         elseif nnorm < 0 # bad nnorm
             nnorm *= 10
@@ -174,13 +177,18 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
             break
         elseif nnorm < eta
             # TODO remove check
-            cgnorm = norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point)
-            if cgnorm > 1000sqrt(eps(T))
-                @warn("conjugate grad calculation inaccurate: $cgnorm")
-            end
+            # cgnorm = norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point)
+            # if cgnorm > 1000sqrt(eps(T))
+            #     @warn("conjugate grad calculation inaccurate: $cgnorm")
+            # end
             break
         end
     end
+    cgnorm = norm(ForwardDiff.gradient(cone.barrier, curr) + cone.dual_point)
+    if cgnorm > 1000sqrt(eps(T))
+        @warn("conjugate grad calculation inaccurate: $cgnorm")
+    end
+
     curr .*= -1
 
     cone.dual_grad_updated = true

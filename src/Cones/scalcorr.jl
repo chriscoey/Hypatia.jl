@@ -65,8 +65,9 @@ function update_scal_hess(
         # @show g
         # @show conj_g
         # @show norm(scal_hess * conj_g - g)
-        if norm(scal_hess * conj_g - g) > update_tol
+        if !cone.dual_grad_inacc && norm(scal_hess * conj_g - g) > update_tol
             mu_cone = dot(s, z) / get_nu(cone)
+            # mu_cone = mu
             du_gap = z + mu_cone * g
             pr_gap = s + mu_cone * conj_g
             # second update
@@ -82,8 +83,8 @@ function update_scal_hess(
                 Hpga = H1pg / sqrt(denom_b)
                 scal_hess -= Symmetric(Hpga * Hpga')
             end
-            # @show norm(scal_hess * s - z)
-            # @show norm(scal_hess * -conj_g + g)
+            # @show norm(scal_hess * s - z) / (1 + max(norm(s), norm(scal_hess * s)))
+            # # @show norm(scal_hess * -conj_g + g)
             # @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
             # @show norm(scal_hess * pr_gap - du_gap)
             # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()

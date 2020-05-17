@@ -65,6 +65,7 @@ function setup_data(cone::Nonnegative{T}) where {T <: Real}
     cone.inv_hess = Diagonal(zeros(T, dim))
     cone.scal_hess = Diagonal(zeros(T, dim))
     cone.correction = zeros(T, dim)
+    @warn("has nonneg cone, dim $dim")
     return
 end
 
@@ -144,16 +145,21 @@ hess_nz_idxs_col_tril(cone::Nonnegative, j::Int) = [j]
 inv_hess_nz_idxs_col(cone::Nonnegative, j::Int) = [j]
 inv_hess_nz_idxs_col_tril(cone::Nonnegative, j::Int) = [j]
 
-# TODO skajaa ye nbhd
-# function in_neighborhood(cone::Nonnegative, mu::Real)
-#     mu_nbhd = mu * cone.max_neighborhood
-#     return all(abs(si * zi - mu) < mu_nbhd for (si, zi) in zip(cone.point, cone.dual_point))
-# end
+# # TODO skajaa ye nbhd
+function in_neighborhood_sy(cone::Nonnegative, mu::Real)
+    mu_nbhd = mu * 0.99
+    return all(abs(si * zi - mu) < mu_nbhd for (si, zi) in zip(cone.point, cone.dual_point))
+end
 
 # TODO mosek nbhd
 function in_neighborhood(cone::Nonnegative, mu::Real)
-    mu_nbhd = mu * cone.max_neighborhood
-    return all(si * zi > mu_nbhd for (si, zi) in zip(cone.point, cone.dual_point))
+# function in_neighborhood_sy(cone::Nonnegative, mu::Real)
+    # mu_nbhd = mu * cone.max_neighborhood
+    # return all(si * zi > mu_nbhd for (si, zi) in zip(cone.point, cone.dual_point))
+    # sy = all(abs(si * zi - mu) < 0.9 * mu for (si, zi) in zip(cone.point, cone.dual_point))
+    sy = true
+    mo = all(si * zi > 0.01 * mu for (si, zi) in zip(cone.point, cone.dual_point))
+    return sy && mo
 end
 
 function update_scal_hess(

@@ -197,6 +197,9 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 #     return (nbhd < mu * cone.max_neighborhood)
 # end
 
+# in_neighborhood_sy(cone::Cone, mu::Real) = true
+
+# in_neighborhood(cone::Cone, mu::Real) = true
 function in_neighborhood(cone::Cone, mu::Real)
     g = grad(cone)
     cone.dual_grad_inacc = false
@@ -204,7 +207,7 @@ function in_neighborhood(cone::Cone, mu::Real)
     if cone.dual_grad_inacc
         return false
     end
-    return (get_nu(cone) > cone.max_neighborhood * mu * dot(g, conj_g))
+    return (get_nu(cone) > 0.3 * mu * dot(g, conj_g))
 end
 
 # utilities for arrays
