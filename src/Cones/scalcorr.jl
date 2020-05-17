@@ -22,6 +22,10 @@ function update_scal_hess(
     @assert !cone.scal_hess_updated
     s = cone.point
     z = cone.dual_point
+    sz = dot(s, z)
+    nu = get_nu(cone)
+
+    use_simplifications = true
 
     # TODO tune
     # update_tol = 1e-12
@@ -30,6 +34,7 @@ function update_scal_hess(
     denom_tol = 1e4 * eps(T)
 
     scal_hess = mu * hess(cone)
+    # @show norm(hess(cone) * s + grad(cone))
 
     # @show extrema(eigvals(scal_hess))
     # @show scal_hess
@@ -38,20 +43,22 @@ function update_scal_hess(
     # normdual1 = norm(z)
 
     g = grad(cone)
+    update_one_applied = false
 
     if use_update_1
-        # Hs = scal_hess * s
-        # @show norm(Hs + mu * g)
-        Hs = -mu * g
+        Hs = (use_simplifications ? -mu * g : scal_hess * s)
         if norm(Hs - z) > update_tol
             # first update
-            denom_a = dot(s, z)
-            denom_b = dot(s, Hs)
+            denom_a = sz
+            # denom_b = dot(s, Hs)
+            denom_b = (use_simplifications ? mu * nu : dot(s, Hs))
+            # @assert isapprox(mu * nu, dot(s, Hs))
             if denom_a > denom_tol && denom_b > denom_tol
                 za = z / sqrt(denom_a)
                 scal_hess += Symmetric(za * za')
                 Hsb = Hs / sqrt(denom_b)
                 scal_hess -= Symmetric(Hsb * Hsb')
+                update_one_applied = true
             else
                 @warn("skipped 1st update (small denoms)")
             end
@@ -67,6 +74,7 @@ function update_scal_hess(
     if use_update_2
         # TODO maybe there are simplifications that can be made here
         conj_g = dual_grad(cone, mu)
+        gsgz = dot(g, conj_g)
         cone.dual_grad_inacc && @warn("dual grad inacc in 2nd update")
         # @show norm(conj_g)
         # check gradient of the optimization problem is small
@@ -76,7 +84,7 @@ function update_scal_hess(
         # @show norm(scal_hess * conj_g - g)
         if !cone.dual_grad_inacc && norm(scal_hess * conj_g - g) > update_tol
             # TODO decide whether to use mu_cone = mu or mu_cone = s'z / nu
-            mu_cone = dot(s, z) / get_nu(cone)
+            mu_cone = sz / nu
             # mu_cone = mu
             # rtmu = sqrt(mu_cone)
             # invrtmu = inv(rtmu)
@@ -85,12 +93,20 @@ function update_scal_hess(
             du_gap = z + mu_cone * g
             pr_gap = s + mu_cone * conj_g
             # second update
-            denom_a = dot(pr_gap, du_gap)
+            denom_a = (use_simplifications ? sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone : dot(pr_gap, du_gap))
+            # denom_a = sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone
+            # @assert isapprox(denom_a, sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone)
             H1pg = scal_hess * pr_gap # TODO try to mathematically simplify by expanding out scal_hess components
+
+            if update_one_applied
+                # struggling with correcness of this
+                rho = -conj_g - gsgz / nu * s
+                # @show norm(s' * mu * hess(cone) * -conj_g - gsgz * mu) # looks BAD
+                # @show norm(rho - (-conj_g - (s' * mu * hess(cone) * -conj_g) / (s' * mu * hess(cone) * s)  * s)) # looks BAD
+                # @show norm(scal_hess * -conj_g - (mu * hess(cone) * rho + 1 / mu_cone * s)) # looks WRONG
+            end
+
             denom_b = dot(pr_gap, H1pg)
-            # @show mu_cone
-            # @show du_gap
-            # @show pr_gap
             if denom_a > denom_tol && denom_b > denom_tol
                 dga = du_gap / sqrt(denom_a)
                 scal_hess += Symmetric(dga * dga')
