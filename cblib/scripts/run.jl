@@ -20,7 +20,7 @@ newT = Float64
 # tol = sqrt(eps())
 tol = 1e-7
 options = (
-    verbose = true,
+    verbose = false,
     iter_limit = 100,
     time_limit = 120,
     tol_rel_opt = tol,
@@ -80,7 +80,7 @@ for instname in instances
         newT.(model.h),
         convert_cone.(model.cones, newT),
         )
-    @show length(model.cones)
+    # @show length(model.cones)
 
     solver = SO.Solver{newT}(; options...)
     SO.load(solver, model)
