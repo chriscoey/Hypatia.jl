@@ -50,9 +50,7 @@ function update_scal_hess(
         if norm(Hs - z) > update_tol
             # first update
             denom_a = sz
-            # denom_b = dot(s, Hs)
             denom_b = (use_simplifications ? mu * nu : dot(s, Hs))
-            # @assert isapprox(mu * nu, dot(s, Hs))
             if denom_a > denom_tol && denom_b > denom_tol
                 za = z / sqrt(denom_a)
                 scal_hess += Symmetric(za * za')
@@ -72,7 +70,6 @@ function update_scal_hess(
     # @show scal_hess
 
     if use_update_2
-        # TODO maybe there are simplifications that can be made here
         conj_g = dual_grad(cone, mu)
         gsgz = dot(g, conj_g)
         cone.dual_grad_inacc && @warn("dual grad inacc in 2nd update")
@@ -92,14 +89,14 @@ function update_scal_hess(
             pr_gap = s + mu_cone * conj_g
             # second update
             # mu_cone * (mu_cone * gsgz - 2nu)
-            denom_a = (use_simplifications ? sz + mu_cone * (gsgz * mu_cone - 2 * nu) : dot(pr_gap, du_gap))
+            denom_a = (use_simplifications ? abs2(mu_cone) * gsgz - sz : dot(pr_gap, du_gap))
             # denom_a = sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone
-            # @assert isapprox(denom_a, sz + abs2(mu_cone) * gsgz - 2 * nu * mu_cone)
+            # @assert isapprox(denom_a, abs2(mu_cone) * gsgz - sz)
 
             Hgz = hess(cone) * conj_g
             if update_one_applied
                 # struggling with correcness of this
-                rho = -conj_g - gsgz / nu * s
+                # rho = -conj_g - gsgz / nu * s
                 # @show norm(s' * mu * hess(cone) * -conj_g - gsgz * mu) # looks BAD
                 # @show norm(rho - (-conj_g - (s' * mu * hess(cone) * -conj_g) / (s' * mu * hess(cone) * s)  * s)) # looks BAD
                 # @show norm(scal_hess * -conj_g - (mu * hess(cone) * rho + 1 / mu_cone * z)) # looks BAD
@@ -109,6 +106,7 @@ function update_scal_hess(
                 # @show norm(denom_b - mu * mu_cone^2 * (dot(conj_g, Hgz) - abs2(gsgz) / nu))
                 denom_b = mu * mu_cone * (dot(conj_g, Hgz) - abs2(gsgz) / nu) * mu_cone
             else
+                # would need to work out alternative simplifications if we want to have this path
                 H1pg = scal_hess * pr_gap
                 denom_b = dot(pr_gap, H1pg)
             end
