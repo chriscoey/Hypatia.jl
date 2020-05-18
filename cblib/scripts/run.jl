@@ -14,11 +14,13 @@ import Hypatia
 const SO = Hypatia.Solvers
 
 set = "exporthantsmall"
+# set = "myset"
+
 cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
 
 newT = Float64
 # tol = sqrt(eps())
-tol = 1e-6
+tol = 1e-8
 options = (
     verbose = true,
     iter_limit = 100,
@@ -27,6 +29,7 @@ options = (
     tol_abs_opt = tol,
     tol_feas = tol,
     system_solver = SO.QRCholDenseSystemSolver{newT}(),
+    # system_solver = SO.NaiveDenseSystemSolver{newT}(),
     )
 
 

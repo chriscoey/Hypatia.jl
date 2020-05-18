@@ -7,9 +7,9 @@ using Quadmath
 # TODO combine Hi * g into one
 function hess_inv_dual_point(point::Vector{T}, dual_point::Vector{T}) where {T <: Real}
     # TODO toggle
-    # newT = T
+    newT = T
     # newT = Double64
-    newT = Float128 # more precise than Double64
+    # newT = Float128 # more precise than Double64
     # newT = BigFloat
 
     point = newT.(point)
@@ -31,14 +31,21 @@ function hess_inv_dual_point(point::Vector{T}, dual_point::Vector{T}) where {T <
     Hi[2, 2] = v * vvdenom * v
     Hi[2, 3] = wvdenom * v
     Hi[3, 3] = w * vvdenom * w
-    Hi = Symmetric(Hi, :U)
+
+    HiT = T.(Hi)
+    normdiff = norm(Hi - HiT)
+    if normdiff > 1e-7
+        @show normdiff, norm(Hi), Hi[1,1], HiT[1,1]
+        error()
+    end
+    HiT = Symmetric(HiT, :U)
 
     # if eigmin(Hi) < 100eps(T)
     #     @show Hi
     #     @show u, v, vlwvu
     # end
 
-    Hiz = Hi * dual_point
+    Hiz = HiT * dual_point
 
     # hess_inv_dual_point = point - Hiz
     # nnorm = 3 + dot(dual_point, Hiz) - 2 * dot(point, dual_point)
@@ -111,15 +118,16 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     max_iter = 25 # TODO make it depend on sqrt(nu). reduce: shouldn't really take > 40
     # max_iter = 50 # TODO useful for bigfloat
     eta = sqrt(eps(T)) # TODO adjust
-    damp_tol = 0.2 # TODO tune
+    # damp_tol = 0.2 # TODO tune
+    damp_tol = 0.0 # TODO tune
 
     # initial guess based on central path proximity is point / mu
     # TODO depends on neighborhood definition we use, since that determines guarantees about relationship between s and conj_g
     # TODO skajaa ye central path is s + mu * conj_g = 0, so conj_g = -s/mu
     # TODO mosek central path is cone_nu = mu * dot(g, conj_g), satisfied by conj_g = -s/mu
-    pscal = inv(mu)
+    # pscal = inv(mu)
     # TODO but point / cone_mu also works well (better actually) on the one case i tried (let cone_mu = dot(point, dual_point_scal) / cone_nu)
-    # pscal = nu / dot(point, dual_point_scal)
+    pscal = nu / dot(point, dual_point_scal)
     # @show dot(point, dual_point_scal) / nu / mu # TODO seems always close to 1
     curr .= pscal * point
     # curr .= point
@@ -135,16 +143,18 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
         # dir = curr - Hiz
         # nnorm = nu - dot(curr + dir, dual_point_scal)
         #
-        # if nnorm < -neg_tol # bad nnorm
-        #     @show nnorm, iter
-        #     # cone.dual_grad_inacc = true
+        # if nnorm < 0 # bad norm
+        #     @show iter, nnorm, dot(curr, dual_point)
+        #     cone.dual_grad_inacc = true
         #     break
-        # # elseif nnorm < 0 # bad nnorm
-        # #     nnorm *= 10
         # end
         #
-        # # damped Newton step
-        # alpha = inv(1 + abs(nnorm))
+        # if nnorm > damp_tol
+        #     # damped Newton step
+        #     alpha = inv(1 + abs(nnorm))
+        # else
+        #     alpha = 1
+        # end
         # axpy!(alpha, dir, curr)
 
 
@@ -160,7 +170,7 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
         nnorm = nu - scalval * dot(curr_scal + dir_scal, dual_point_scal)
 
         if nnorm < 0 # bad norm
-            @show iter, nnorm, dot(curr, dual_point)
+            # @show iter, nnorm, dot(curr, dual_point)
             cone.dual_grad_inacc = true
             break
         end
@@ -172,14 +182,15 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
         end
         axpy!(alpha, dir_scal, curr)
 
+
         if dot(curr, dual_point) < eps(T) # dual_point is infeasible (or very close to)
-            @show iter, nnorm, dot(curr, dual_point)
+            # @show iter, nnorm, dot(curr, dual_point)
             cone.dual_grad_inacc = true
             break
         elseif nnorm < eta # successfully converged
             break
         elseif iter >= max_iter # too many iterations
-            @show iter, nnorm, dot(curr, dual_point)
+            # @show iter, nnorm, dot(curr, dual_point)
             cone.dual_grad_inacc = true
             break
         end

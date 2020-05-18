@@ -45,13 +45,7 @@ mutable struct HypoPerLog{T <: Real} <: Cone{T}
     lvwnivlwvu::T
     vwivlwvu::Vector{T}
 
-    barrier::Function
-    newton_cone
-    newton_point::Vector{T}
-    newton_grad::Vector{T}
-    newton_stepdir::Vector{T}
-    newton_hess::Matrix{T}
-    newton_norm::T
+    barrier::Function # TODO delete later
 
     dual_grad_inacc::Bool
 
@@ -85,6 +79,7 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
+    cone.dual_point = zeros(T, dim)
     cone.grad = zeros(T, dim)
     cone.dual_grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
@@ -95,13 +90,7 @@ function setup_data(cone::HypoPerLog{T}) where {T <: Real}
     cone.nbhd_tmp2 = zeros(T, dim)
     cone.correction = zeros(T, dim)
     cone.vwivlwvu = zeros(T, dim - 2)
-
-    cone.newton_cone = deepcopy(cone)
-    cone.dual_point = zeros(T, dim)
-    cone.newton_point = zeros(T, dim)
-    cone.newton_grad = zeros(T, dim)
-    cone.newton_stepdir = zeros(T, dim)
-    cone.newton_hess = zeros(T, dim, dim)
+    cone.dual_grad_inacc = false
     return
 end
 
@@ -119,7 +108,7 @@ function set_initial_point(arr::AbstractVector, cone::HypoPerLog)
     return arr
 end
 
-function update_feas(cone::HypoPerLog)
+function update_feas(cone::HypoPerLog{T}) where {T}
     @assert !cone.feas_updated
 
     point = cone.point
@@ -147,7 +136,7 @@ function update_feas(cone::HypoPerLog)
     #     cone.is_feas = false
     # end
 
-    if v <= 1e-12 || any(<=(1e-12), w)
+    if v <= eps(T) || any(<=(eps(T)), w)
         cone.is_feas = false
     else
         cone.lwv = sum(log(wi / v) for wi in w)
@@ -155,7 +144,7 @@ function update_feas(cone::HypoPerLog)
         # cone.scal = cone.vlwvu
         # cone.scal = 1
         # cone.point = point / cone.scal
-        cone.is_feas = (cone.vlwvu > 1e-12)
+        cone.is_feas = (cone.vlwvu > eps(T))
     end
 
 
@@ -164,12 +153,12 @@ function update_feas(cone::HypoPerLog)
     return cone.is_feas
 end
 
-function update_dual_feas(cone::HypoPerLog)
+function update_dual_feas(cone::HypoPerLog{T}) where {T}
     @assert cone.dim == 3
     u = cone.dual_point[1]
     v = cone.dual_point[2]
     w = cone.dual_point[3]
-    return u < -1e-12 && w > 1e-12 && v - u - u * log(-w / u) > 1e-12
+    return u < -eps(T) && w > eps(T) && v - u - u * log(-w / u) > eps(T)
 end
 
 function update_grad(cone::HypoPerLog)
