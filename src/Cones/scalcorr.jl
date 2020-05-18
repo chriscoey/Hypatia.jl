@@ -30,9 +30,9 @@ function update_scal_hess(
     # TODO tune
     # update_tol = 1e-12
     # update_tol = eps(T)
-    update_tol = 1e-3 * sqrt(eps(T))
-    # update_tol = 1e6 * eps(T)
-    denom_tol = 1e4 * eps(T)
+    # update_tol = 1e-3 * sqrt(eps(T))
+    update_tol = 1e5 * eps(T)
+    denom_tol = 1e0 * eps(T)
 
     # first update
     update_one_applied = false # TODO remove if not used for update 2
@@ -45,12 +45,12 @@ function update_scal_hess(
             gb = sqrt(mu) / sqrt(nu) * g
             scal_hess -= Symmetric(gb * gb')
             update_one_applied = true
+            if norm(scal_hess * s - z) > 1e-4
+                println("large residual after 1st update on norm(scal_hess * s - z): $(norm(scal_hess * s - z))")
+                # error()
+            end
         else
             println("skipped 1st update (small denom: $sz)")
-        end
-        if norm(scal_hess * s - z) > 1e-4
-            println("large residual after 1st update on norm(scal_hess * s - z): $(norm(scal_hess * s - z))")
-            # error()
         end
     end
 

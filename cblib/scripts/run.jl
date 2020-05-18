@@ -13,7 +13,9 @@ import TimerOutputs
 import Hypatia
 const SO = Hypatia.Solvers
 
-set = "exporthantsmall"
+# set = "exporthantsmall"
+# set = "exporthant"
+set = "exporthantmost"
 # set = "myset"
 
 cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
