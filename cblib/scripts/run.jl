@@ -20,7 +20,7 @@ cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
 
 newT = Float64
 # tol = sqrt(eps())
-tol = 1e-6
+tol = 1e-8
 options = (
     verbose = true,
     iter_limit = 100,
