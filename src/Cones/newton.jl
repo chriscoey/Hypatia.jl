@@ -179,7 +179,7 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
 
         if nnorm < eta
             break
-        elseif iter >= max_iter
+        elseif iter >= max_iter || dot(curr, dual_point) < 0
             @show nnorm, iter
             cone.dual_grad_inacc = true
             break
