@@ -603,13 +603,15 @@ function find_max_alpha(
                         if affine_phase
                             in_nbhd_k = true
                         else
-                            in_nbhd_k = Cones.in_neighborhood(cone_k, mu_temp)
+                            in_nbhd_k = (dot(primals_linesearch[k], duals_linesearch[k]) / Cones.get_nu(cone_k) > 0.1 * mu_temp)
+                            # in_nbhd_k = Cones.in_neighborhood(cone_k, mu_temp)
                             # in_nbhd_k && @show Cones.in_neighborhood_sy(cone_k, mu_temp)
                         end
                         # in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood_sy(cone_k, mu_temp) && Cones.in_neighborhood(cone_k, mu_temp))
                         # in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood_sy(cone_k, mu_temp))
                         #
                         # in_nbhd_k = true
+                        # in_nbhd_k = !affine_phase || (dot(primals_linesearch[k], duals_linesearch[k]) / Cones.get_nu(cone_k) > mu_temp)
                     else
                         in_nbhd_k = false
                     end
