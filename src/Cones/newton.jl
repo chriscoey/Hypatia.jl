@@ -112,7 +112,8 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     # max_iter = 50 # TODO useful for bigfloat
     eta = sqrt(eps(T)) # TODO adjust
     # neg_tol = eps(T)
-    neg_tol = eta
+    neg_tol = zero(T)
+    damp_tol = 0.2 # TODO tune
 
     # initial guess based on central path proximity is point / mu
     # TODO depends on neighborhood definition we use, since that determines guarantees about relationship between s and conj_g
@@ -165,16 +166,14 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
             # @show norm(dual_point)
             cone.dual_grad_inacc = true
             break
-        elseif nnorm < 0 # bad nnorm
-            nnorm *= 10
         end
 
-        # if nnorm > 0.35
+        if nnorm > damp_tol
             # damped Newton step
             alpha = scalval / (1 + abs(nnorm))
-        # else
-        #     alpha = scalval
-        # end
+        else
+            alpha = scalval
+        end
         axpy!(alpha, dir_scal, curr)
 
         if nnorm < eta
