@@ -129,7 +129,8 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     # TODO but point / cone_mu also works well (better actually) on the one case i tried (let cone_mu = dot(point, dual_point_scal) / cone_nu)
     pscal = nu / dot(point, dual_point_scal)
     # @show dot(point, dual_point_scal) / nu / mu # TODO seems always close to 1
-    curr .= pscal * point
+    # curr .= pscal * point
+    curr .= point * get_nu(cone) / dot(point, dual_point)
     # curr .= point
 
     iter = 0
