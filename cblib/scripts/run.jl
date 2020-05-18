@@ -18,9 +18,9 @@ cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
 
 newT = Float64
 # tol = sqrt(eps())
-tol = 1e-7
+tol = 1e-6
 options = (
-    verbose = false,
+    verbose = true,
     iter_limit = 100,
     time_limit = 120,
     tol_rel_opt = tol,
@@ -55,6 +55,7 @@ all_iter_counts = Int[]
 opt_iter_counts = Int[]
 all_times = Float64[]
 opt_times = Float64[]
+failed = SubString[]
 
 for instname in instances
     println("\nstarting $instname")
@@ -99,13 +100,19 @@ for instname in instances
         global opt_count += 1
         push!(opt_times, solvetime)
         push!(opt_iter_counts, iters)
+    else
+        push!(failed, instname)
     end
     push!(all_times, solvetime)
     push!(all_iter_counts, iters)
 end
 
-println("\ndone...")
-println("$opt_count / $(length(instances)) optimal for tol $tol")
+println("\ndone...\n")
+println("failed instances:")
+for instname in failed
+    println(instname)
+end
+println("\n$opt_count / $(length(instances)) optimal for tol $tol")
 geomean(v::Vector) = exp(sum(log, v) / length(v))
 println("time geomeans:\n  opt $(geomean(opt_times))\n  all $(geomean(all_times))")
 println("iter geomeans:\n  opt $(geomean(opt_iter_counts))\n  all $(geomean(all_iter_counts))")
