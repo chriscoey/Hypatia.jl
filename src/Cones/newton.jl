@@ -111,8 +111,6 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
     max_iter = 25 # TODO make it depend on sqrt(nu). reduce: shouldn't really take > 40
     # max_iter = 50 # TODO useful for bigfloat
     eta = sqrt(eps(T)) # TODO adjust
-    # neg_tol = eps(T)
-    neg_tol = zero(T)
     damp_tol = 0.2 # TODO tune
 
     # initial guess based on central path proximity is point / mu
@@ -154,32 +152,34 @@ function update_dual_grad(cone::Cone{T}, mu::T) where {T <: Real}
         scalval = norm(curr)
         inv_scalval = inv(scalval)
         # (u, v, w) = curr
-        # inv_scalval = v * (log(w / v) + 2) - u
+        # inv_scalval = v * (log(w / v) + 2) - u # TODO proxy for norm(grad)?
         # scalval = inv(inv_scalval)
         curr_scal = inv_scalval * curr
         Hiz_scal = hess_inv_dual_point(curr_scal, dual_point_scal) # TODO just inv hess prod applied to dual_point
         dir_scal = curr_scal - scalval * Hiz_scal
         nnorm = nu - scalval * dot(curr_scal + dir_scal, dual_point_scal)
 
-        if nnorm < -neg_tol # bad nnorm
-            # @show nnorm, iter
-            # @show norm(dual_point)
+        if nnorm < 0 # bad norm
+            @show iter, nnorm, dot(curr, dual_point)
             cone.dual_grad_inacc = true
             break
         end
 
+        alpha = scalval
         if nnorm > damp_tol
             # damped Newton step
-            alpha = scalval / (1 + abs(nnorm))
-        else
-            alpha = scalval
+            alpha /= (1 + abs(nnorm))
         end
         axpy!(alpha, dir_scal, curr)
 
-        if nnorm < eta
+        if dot(curr, dual_point) < eps(T) # dual_point is infeasible (or very close to)
+            @show iter, nnorm, dot(curr, dual_point)
+            cone.dual_grad_inacc = true
             break
-        elseif iter >= max_iter || dot(curr, dual_point) < 0
-            @show nnorm, iter
+        elseif nnorm < eta # successfully converged
+            break
+        elseif iter >= max_iter # too many iterations
+            @show iter, nnorm, dot(curr, dual_point)
             cone.dual_grad_inacc = true
             break
         end
