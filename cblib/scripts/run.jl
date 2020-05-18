@@ -17,10 +17,12 @@ const SO = Hypatia.Solvers
 # set = "exporthant"
 set = "exporthantmost"
 # set = "myset"
+# set = "failing6"
 
 cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
 
 newT = Float64
+# newT = BigFloat
 # tol = sqrt(eps())
 tol = 1e-8
 options = (

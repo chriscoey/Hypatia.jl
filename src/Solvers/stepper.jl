@@ -193,7 +193,7 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
     # @show stepper.dir
 
-    @timeit timer "rhs_corr" update_rhs_corr(stepper, solver)
+    @timeit timer "rhs_corr" update_rhs_corr(stepper, solver, stepper.prev_aff_alpha)
     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
     # @show stepper.dir
 
@@ -214,7 +214,7 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     Cones.hess.(cones)
 
     # calculate correction direction and keep in dir
-    @timeit timer "rhs_corr" update_rhs_final(stepper, solver, gamma)
+    @timeit timer "rhs_corr" update_rhs_final(stepper, solver, aff_alpha, gamma)
     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
     # @show stepper.dir
 
@@ -270,7 +270,7 @@ function update_rhs_affine(stepper::CombinedStepper{T}, solver::Solver{T}) where
 end
 
 # update the RHS for affine-corr direction
-function update_rhs_corr(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
+function update_rhs_corr(stepper::CombinedStepper{T}, solver::Solver{T}, prev_aff_alpha::T) where {T <: Real}
     rhs = stepper.rhs
 
     # x, y, z, tau
@@ -286,19 +286,19 @@ function update_rhs_corr(stepper::CombinedStepper{T}, solver::Solver{T}) where {
         if Cones.use_correction(cone_k)
             # (reuses affine direction)
             # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
-            stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k])
+            stepper.s_rhs_k[k] .-= Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k]) * prev_aff_alpha^2
         end
     end
 
     # NT: kap
     stepper.tkcorr = stepper.dir[stepper.tau_row] * stepper.dir[stepper.kap_row] / solver.tau
-    rhs[end] = -solver.kap - stepper.tkcorr
+    rhs[end] = -solver.kap - stepper.tkcorr * prev_aff_alpha^2
 
     return rhs
 end
 
 # update the RHS for combined direction
-function update_rhs_final(stepper::CombinedStepper{T}, solver::Solver{T}, gamma::T) where {T <: Real}
+function update_rhs_final(stepper::CombinedStepper{T}, solver::Solver{T}, aff_alpha::T, gamma::T) where {T <: Real}
     rhs = stepper.rhs
 
     # x, y, z, tau
@@ -315,12 +315,14 @@ function update_rhs_final(stepper::CombinedStepper{T}, solver::Solver{T}, gamma:
         if Cones.use_correction(cone_k)
             # (reuses affine direction)
             # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
-            stepper.s_rhs_k[k] .-= cone_k.correction
+            # stepper.s_rhs_k[k] .-= cone_k.correction
+            stepper.s_rhs_k[k] .-= cone_k.correction * aff_alpha^2 # TODO this is heuristicy currently and just tries to reduce the amount of correction depending on how far we actually can step. redo in math, use linearity of the third-order corrector in s_dir and z_dir
         end
     end
 
     # NT: kap (corrector reuses kappa/tau affine directions)
-    rhs[end] = -solver.kap + (solver.mu / solver.tau) * gamma - stepper.tkcorr
+    # rhs[end] = -solver.kap + (solver.mu / solver.tau) * gamma - stepper.tkcorr
+    rhs[end] = -solver.kap + (solver.mu / solver.tau) * gamma - stepper.tkcorr * aff_alpha^2 # TODO see comment on correction above
 
     return rhs
 end
@@ -585,7 +587,7 @@ function find_max_alpha(
             mu_temp = (dot_s_z + taukap_temp) / nup1
 
             # TODO change back
-            if mu_temp > eps(Float64) #&& taukap_temp > mu_temp * 0.1 && abs(taukap_temp - mu_temp) < mu_temp * 0.9 # TODO redundant
+            if mu_temp > eps(Float64) #&& taukap_temp > mu_temp * 0.5 && abs(taukap_temp - mu_temp) < mu_temp * 0.1 # TODO redundant
             # if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-4 # solver.max_nbhd
                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
                 # sortperm!(cone_order, cone_times, initialized = true)
@@ -605,7 +607,7 @@ function find_max_alpha(
                         else
                             in_nbhd_k = (dot(primals_linesearch[k], duals_linesearch[k]) / Cones.get_nu(cone_k) > 0.1 * mu_temp)
                             # in_nbhd_k = Cones.in_neighborhood(cone_k, mu_temp)
-                            # in_nbhd_k && @show Cones.in_neighborhood_sy(cone_k, mu_temp)
+                            # in_nbhd_k = Cones.in_neighborhood_sy(cone_k, mu_temp)
                         end
                         # in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood_sy(cone_k, mu_temp) && Cones.in_neighborhood(cone_k, mu_temp))
                         # in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood_sy(cone_k, mu_temp))
