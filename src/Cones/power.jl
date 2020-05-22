@@ -218,10 +218,12 @@ function correction(
                     third_order[i, i, i] = produuw_tw * aui[i] * (-inv(u[i]) + aui[i] * (2 * produuw - 1)) - 2 * (1 - alpha[i]) / u[i] ^ 3 + produuw / u[i] *
                         (4 * alpha[i] * (alpha[i] - 1) / u[i] ^ 2 - aui[i] / produuw)
                 elseif i == j
-                    third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] =  aui[i] * aui[k] * produuw_tw * ((2 * produuw - 1) * aui[i] - inv(u[i]))
+                    @show (i, j, k)
+                    third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] =  aui[i] * aui[k] * produuw * (1 - produuw) * ((2 * produuw - 1) * aui[i] + inv(u[i]))
                 elseif i != k && j != k
+                    # @show third_order[k, j, i] = aui[i] * aui[j] * aui[k] * produuw * (1 - produuw) * (2 * produuw - 1)
                     third_order[i, j, k] = third_order[i, k, j] = third_order[j, i, k] = third_order[j, k, i] =
-                        third_order[k, i, j] = third_order[k, j, i] = aui[i] * aui[j] * aui[k] * produuw_tw * (2 * produuw - 1)
+                        third_order[k, i, j] = third_order[k, j, i] = aui[i] * aui[j] * aui[k] * produuw * (1 - produuw) * (2 * produuw - 1)
                 end
             end
             # ui uj wk
@@ -229,8 +231,10 @@ function correction(
                 wk = k - m
                 if i == j
                     third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = 2 * w[wk] * produuw / produw * aui[i] * (2 * produuw * aui[i] + inv(u[i]) - aui[i])
+                    # third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = 2 * w[wk] * produuw / produw * aui[i] * (aui[i] * (2 * produuw - 1) + 2 * produuw / u[i]) #WRONG
                 else
-                    third_order[i, j, k] = 2 * aui[i] * aui[j] * produuw * w[wk] / produw * (produuw + 1)
+                    # third_order[i, j, k] = 2 * aui[i] * aui[j] * produuw * w[wk] / produw * (produuw + 1) #WRONG
+                    third_order[i, j, k] = 2 * aui[i] * aui[j] * produuw * w[wk] / produw * (2 * produuw - 1)
                 end
             end
         end
