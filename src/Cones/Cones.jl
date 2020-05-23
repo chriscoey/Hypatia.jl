@@ -56,6 +56,7 @@ include("newton.jl")
 
 use_dual_barrier(cone::Cone) = cone.use_dual_barrier
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
+rescale_point(cone::Cone{T}, s::T) where {T} = nothing
 load_dual_point(cone::Cone, point::AbstractVector) = copyto!(cone.dual_point, point)
 dimension(cone::Cone) = cone.dim
 set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
@@ -200,15 +201,15 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 # in_neighborhood_sy(cone::Cone, mu::Real) = true
 
 # in_neighborhood(cone::Cone, mu::Real) = true
-function in_neighborhood(cone::Cone, mu::Real)
-    g = grad(cone)
-    cone.dual_grad_inacc = false
-    conj_g = dual_grad(cone, mu)
-    if cone.dual_grad_inacc
-        return false
-    end
-    return (get_nu(cone) > 0.3 * mu * dot(g, conj_g))
-end
+# function in_neighborhood(cone::Cone, mu::Real)
+#     g = grad(cone)
+#     cone.dual_grad_inacc = false
+#     conj_g = dual_grad(cone, mu)
+#     if cone.dual_grad_inacc
+#         return false
+#     end
+#     return (get_nu(cone) > 0.3 * mu * dot(g, conj_g))
+# end
 
 # utilities for arrays
 

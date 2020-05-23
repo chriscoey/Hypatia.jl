@@ -95,7 +95,10 @@ function solve_subsystem(system_solver::QRCholSystemSolver{T}, solver::Solver{T}
     end
 
     if !isempty(system_solver.Q2div)
-        @views x_sub2 = copyto!(rhs3[(p + 1):n], system_solver.Q2div)
+        @views x_sub2 = rhs3[(p + 1):n]
+        # @show norm(system_solver.Q2div)
+        mul!(x_sub2, solver.mu, system_solver.Q2div)
+        # @show norm(x_sub2)
         inv_prod(system_solver.fact_cache, x_sub2)
     end
 
@@ -325,17 +328,25 @@ function update_lhs(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}
         # end
     end
 
+    # println()
+    # @show solver.mu
+    # @show norm(system_solver.lhs1)
+    # @show extrema(eigvals(system_solver.lhs1))
+    lmul!(solver.mu, system_solver.lhs1.data)
+    # @show extrema(eigvals(system_solver.lhs1))
+
     # TODO refactor below
+    # TODO if cholesky fails, add to diagonal (maybe based on norm of diagonal elements)
     if !isempty(system_solver.lhs1) && !update_fact(system_solver.fact_cache, system_solver.lhs1)
         # @warn("QRChol factorization failed")
         if T <: LinearAlgebra.BlasReal && system_solver.fact_cache isa DensePosDefCache{T}
-            # @warn("switching QRChol solver from Cholesky to Bunch Kaufman")
+            @warn("switching QRChol solver from Cholesky to Bunch Kaufman")
             system_solver.fact_cache = DenseSymCache{T}()
             load_matrix(system_solver.fact_cache, system_solver.lhs1)
         else
             system_solver.lhs1 += sqrt(eps(T)) * I # attempt recovery # TODO make more efficient
         end
-        update_fact(system_solver.fact_cache, system_solver.lhs1) # || @warn("QRChol Bunch-Kaufman factorization failed after recovery")
+        update_fact(system_solver.fact_cache, system_solver.lhs1) || @warn("QRChol Bunch-Kaufman factorization failed after recovery")
     end
 
     # update solution for fixed c,b,h part

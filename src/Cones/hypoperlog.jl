@@ -102,6 +102,8 @@ get_nu(cone::HypoPerLog) = cone.nu
 
 reset_data(cone::HypoPerLog) = (cone.feas_updated = cone.grad_updated = cone.dual_grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.scal_hess_updated = cone.hess_fact_updated = false)
 
+rescale_point(cone::HypoPerLog{T}, s::T) where {T} = (cone.point .*= s)
+
 function set_initial_point(arr::AbstractVector, cone::HypoPerLog)
     (arr[1], arr[2], w) = get_central_ray_hypoperlog(cone.dim - 2)
     arr[3:end] .= w
@@ -227,7 +229,9 @@ function update_hess(cone::HypoPerLog)
         H[j2, j2] -= g[j2] / w[j]
     end
 
-    # @show H
+    # @show norm(cone.point), maximum(abs, cone.point)
+    # @show norm(cone.dual_point)
+    # @show norm(H), maximum(abs, H)
 
     cone.old_hess = copy(cone.hess)
 
@@ -286,7 +290,6 @@ function correction(
 
     # newT = BigFloat
     newT = T
-
     primal_dir = newT.(primal_dir)
     dual_dir = newT.(dual_dir)
     (u, v, w) = newT.(point)
@@ -324,7 +327,7 @@ function correction(
     # @show H - hess(cone)
     # H = hess(cone)
     @assert cone.hess_updated
-    H = cone.old_hess
+    H = newT.(cone.old_hess)
     vlwvup = newT[-1, lwv - 1, v / w]
     gpp = Symmetric(H - Diagonal(newT[0, abs2(inv(v)), abs2(inv(w))]), :U) # TODO improve
     zz3vlwvup = (dual_dir[2:3] + dual_dir[1] * vlwvup[2:3]) / (vlwvu + 2 * v)

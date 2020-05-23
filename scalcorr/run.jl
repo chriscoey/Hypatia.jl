@@ -17,6 +17,7 @@ run_in_bf = false
 
 # options to solvers
 timer = TimerOutput()
+tol = 1e-8
 default_solver_options = (
     verbose = true,
     iter_limit = 100,
@@ -24,16 +25,16 @@ default_solver_options = (
     # system_solver = Solvers.NaiveDenseSystemSolver{Float64}(),
     system_solver = Solvers.QRCholDenseSystemSolver{Float64}(),
     # max_nbhd = 0.02,
-    tol_rel_opt = sqrt(eps(Float64)),
-    tol_abs_opt = sqrt(eps(Float64)),
-    tol_feas = sqrt(eps(Float64)),
+    tol_rel_opt = tol,
+    tol_abs_opt = tol,
+    tol_feas = tol,
     )
 
 # instance sets and real types to run and corresponding time limits (seconds)
 instance_sets = [
     # (FastInstances, Float64, 60),
     (ExpInstances, Float64, 60),
-    (PolyhedralInstances, Float64, 60),
+    # (PolyhedralInstances, Float64, 60),
     ]
 
 # types of models to run and corresponding options and example names

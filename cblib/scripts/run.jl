@@ -18,6 +18,7 @@ const SO = Hypatia.Solvers
 set = "exporthantmost"
 # set = "myset"
 # set = "failing6"
+# set = "failing7"
 
 cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
 
@@ -25,6 +26,7 @@ newT = Float64
 # newT = BigFloat
 # tol = sqrt(eps())
 tol = 1e-8
+# tol = 1e-7
 options = (
     verbose = true,
     iter_limit = 100,
@@ -120,6 +122,6 @@ for instname in failed
     println(instname)
 end
 println("\n$opt_count / $(length(instances)) optimal for tol $tol")
-geomean(v::Vector) = exp(sum(log, v) / length(v))
+geomean(v::Vector) = (isempty(v) ? NaN : exp(sum(log, v) / length(v)))
 println("time geomeans:\n  opt $(geomean(opt_times))\n  all $(geomean(all_times))")
 println("iter geomeans:\n  opt $(geomean(opt_iter_counts))\n  all $(geomean(all_iter_counts))")

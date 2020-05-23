@@ -12,6 +12,11 @@ use_update_1_default() = true
 use_update_2_default() = false
 
 
+
+outer_prod(A::AbstractMatrix{T}, B::AbstractMatrix{T}, alpha::Real, beta::Real) where {T <: LinearAlgebra.BlasReal} = BLAS.syrk!('U', 'T', alpha, A, beta, B)
+outer_prod(A::AbstractMatrix{T}, B::AbstractMatrix{T}, alpha::Real, beta::Real) where {T <: Real} = mul!(B, A', A, alpha, beta)
+
+
 # no cholesky updates
 function update_scal_hess(
     cone::Cone{T},
@@ -22,36 +27,46 @@ function update_scal_hess(
     @assert !cone.scal_hess_updated
     s = cone.point
     z = cone.dual_point
-    sz = dot(s, z)
+
+    rtmu = sqrt(mu)
+    # irtmu = inv(rtmu)
+    # s = rtmu * s
+
+    sz = rtmu * dot(s, z)
     nu = get_nu(cone)
+
     g = grad(cone)
-    scal_hess = mu * hess(cone)
+    # scal_hess = mu * hess(cone)
+    scal_hess = hess(cone)
 
     # TODO tune
     # update_tol = 1e-12
     # update_tol = eps(T)
     # update_tol = 1e-3 * sqrt(eps(T))
     update_tol = 1e5 * eps(T)
-    denom_tol = 1e0 * eps(T)
+    denom_tol = 1e2 * eps(T)
 
     # first update
-    update_one_applied = false # TODO remove if not used for update 2
-    if use_update_1 && norm(z + mu * g) > update_tol # TODO should this be more scale-independent? eg normalized, or check dot(Hs, z) / norm(Hs) / norm(z)
+    if use_update_1 && norm(z + rtmu * g) > update_tol # TODO should this be more scale-independent? eg normalized, or check dot(Hs, z) / norm(Hs) / norm(z)
         if sz > denom_tol
             # scal_hess += inv(sz) * Symmetric(z * z') - (mu / nu) * Symmetric(g * g')
             # za = inv(sqrt(sz)) * z
             za = z / sqrt(sz)
-            scal_hess += Symmetric(za * za')
-            gb = sqrt(mu) / sqrt(nu) * g
-            scal_hess -= Symmetric(gb * gb')
-            update_one_applied = true
-            if norm(scal_hess * s - z) > 1e-4
-                println("large residual after 1st update on norm(scal_hess * s - z): $(norm(scal_hess * s - z))")
-                # error()
-            end
-        else
-            println("skipped 1st update (small denom: $sz)")
+            BLAS.syr!('U', one(T), za, scal_hess.data)
+            # scal_hess += Symmetric(za * za')
+            # gb = inv(sqrt(nu)) * g
+            BLAS.syr!('U', -inv(nu), g, scal_hess.data)
+            # scal_hess -= Symmetric(gb * gb')
+            # if norm(scal_hess * rtmu * s - z) > 1e-4
+            #     println("large residual after 1st update on norm(scal_hess * s - z): $(norm(scal_hess * s - z))")
+            #     # error()
+            #     @show norm(scal_hess)
+            # end
+        # else
+        #     println("skipped 1st update (small denom: $sz)")
         end
+    # else
+        # println("skipped 1st update")
     end
 
     # @show extrema(eigvals(scal_hess))
@@ -139,57 +154,58 @@ function update_scal_hess(
     #     end
     # end
 
-    if use_update_2
-        # TODO maybe there are simplifications that can be made here
-        conj_g = dual_grad(cone, mu)
-        if !cone.dual_grad_inacc && norm(scal_hess * conj_g - g) > update_tol
-            # TODO decide whether to use mu_cone = mu or mu_cone = s'z / nu
-            mu_cone = dot(s, z) / get_nu(cone)
-            # mu_cone = mu
-            # rtmu = sqrt(mu_cone)
-            # invrtmu = inv(rtmu)
-            # du_gap = invrtmu * z + rtmu * g
-            # pr_gap = invrtmu * s + rtmu * conj_g
-            du_gap = z + mu_cone * g
-            pr_gap = s + mu_cone * conj_g
-            # second update
-            denom_a = dot(pr_gap, du_gap)
-            H1pg = scal_hess * pr_gap # TODO try to mathematically simplify by expanding out scal_hess components
-            denom_b = dot(pr_gap, H1pg)
-            # @show mu_cone
-            # @show du_gap
-            # @show pr_gap
-            if denom_a > denom_tol && denom_b > denom_tol
-                # scal_hess += inv(denom_a) * Symmetric(du_gap * du_gap') - inv(denom_b) * Symmetric(H1pg * H1pg')
-                dga = du_gap / sqrt(denom_a)
-                scal_hess += Symmetric(dga * dga')
-                Hpga = H1pg / sqrt(denom_b)
-                scal_hess -= Symmetric(Hpga * Hpga')
-                # dga = inv(sqrt(denom_a)) * du_gap
-                # scal_hess += Symmetric(dga * dga')
-                # Hpga = inv(sqrt(denom_b)) * H1pg
-                # scal_hess -= Symmetric(Hpga * Hpga')
-                # @show norm(scal_hess * s - z) #/ (1 + max(norm(s), norm(scal_hess * s)))
-                # @show norm(scal_hess * -conj_g + g) #/ (1 + max(norm(g), norm(scal_hess * -conj_g)))
-            else
-                println("skipped 2nd update (small denoms: $denom_a, $denom_b)")
-                # @show norm(scal_hess * conj_g - g)
-            end
-            # @show norm(scal_hess * s - z) / (1 + max(norm(s), norm(scal_hess * s)))
-            # # @show norm(scal_hess * -conj_g + g)
-            # @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
-            # @show norm(scal_hess * pr_gap - du_gap)
-            # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
-        # else
-        #     @warn("skipped 2nd update (already satisfied)")
-        end
-    end
+    # if use_update_2
+    #     # TODO maybe there are simplifications that can be made here
+    #     conj_g = dual_grad(cone, mu)
+    #     if !cone.dual_grad_inacc && norm(scal_hess * conj_g - g) > update_tol
+    #         # TODO decide whether to use mu_cone = mu or mu_cone = s'z / nu
+    #         mu_cone = dot(s, z) / get_nu(cone)
+    #         # mu_cone = mu
+    #         # rtmu = sqrt(mu_cone)
+    #         # invrtmu = inv(rtmu)
+    #         # du_gap = invrtmu * z + rtmu * g
+    #         # pr_gap = invrtmu * s + rtmu * conj_g
+    #         du_gap = z + mu_cone * g
+    #         pr_gap = s + mu_cone * conj_g
+    #         # second update
+    #         denom_a = dot(pr_gap, du_gap)
+    #         H1pg = scal_hess * pr_gap # TODO try to mathematically simplify by expanding out scal_hess components
+    #         denom_b = dot(pr_gap, H1pg)
+    #         # @show mu_cone
+    #         # @show du_gap
+    #         # @show pr_gap
+    #         if denom_a > denom_tol && denom_b > denom_tol
+    #             # scal_hess += inv(denom_a) * Symmetric(du_gap * du_gap') - inv(denom_b) * Symmetric(H1pg * H1pg')
+    #             dga = du_gap / sqrt(denom_a)
+    #             scal_hess += Symmetric(dga * dga')
+    #             Hpga = H1pg / sqrt(denom_b)
+    #             scal_hess -= Symmetric(Hpga * Hpga')
+    #             # dga = inv(sqrt(denom_a)) * du_gap
+    #             # scal_hess += Symmetric(dga * dga')
+    #             # Hpga = inv(sqrt(denom_b)) * H1pg
+    #             # scal_hess -= Symmetric(Hpga * Hpga')
+    #             # @show norm(scal_hess * s - z) #/ (1 + max(norm(s), norm(scal_hess * s)))
+    #             # @show norm(scal_hess * -conj_g + g) #/ (1 + max(norm(g), norm(scal_hess * -conj_g)))
+    #         else
+    #             println("skipped 2nd update (small denoms: $denom_a, $denom_b)")
+    #             # @show norm(scal_hess * conj_g - g)
+    #         end
+    #         # @show norm(scal_hess * s - z) / (1 + max(norm(s), norm(scal_hess * s)))
+    #         # # @show norm(scal_hess * -conj_g + g)
+    #         # @show norm(scal_hess * -conj_g + g) / (1 + max(norm(g), norm(scal_hess * -conj_g)))
+    #         # @show norm(scal_hess * pr_gap - du_gap)
+    #         # norm(scal_hess * s - z) > 1e-3 || norm(scal_hess * -conj_g + g) > 1e-3  && error()
+    #     # else
+    #     #     @warn("skipped 2nd update (already satisfied)")
+    #     end
+    # end
 
 
     # copyto!(cone.scal_hess, scal_hess)
-    copyto!(cone.hess, scal_hess)
+    # copyto!(cone.hess, scal_hess)
     cone.scal_hess_updated = true
     # return cone.scal_hess
+
     return cone.hess
 end
 
