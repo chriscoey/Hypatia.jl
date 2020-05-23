@@ -202,10 +202,6 @@ function correction(
     produuw = cone.produuw # = cone.produ / cone.produw
     produuw_tw = produuw * (produuw - 1)
     aui = cone.aui # @. cone.aui = 2 * cone.alpha / u
-    # derivative of produuw wrt u
-    duuw_du = produuw .* aui * (1 - produuw)
-    # derivative of produuw * (produuw - 1) wrt u
-
 
     third_order = zeros(T, cone.dim, cone.dim, cone.dim)
     # third_order_flat = zeros(T, cone.dim ^ 2, cone.dim)
@@ -216,17 +212,18 @@ function correction(
         for j in 1:m
             # ui uj uk
             for k in 1:m
-                t1 = aui[i] * aui[j] * aui[k] * produuw * (1 - produuw) * (2 * produuw - 1)
+                t1 = aui[i] * aui[k] * produuw * (1 - produuw)
+                t2 = aui[j] * t1 * (2 * produuw - 1)
                 if i == j
-                    t2 = aui[i] * aui[k] * produuw * (1 - produuw) / u[i]
+                    t3 = t1 / u[i]
                     if j == k
-                        third_order[i, i, i] = 3 * t2 + t1 - 2 * ((1 - alpha[i]) / u[i] + produuw * aui[i]) / u[i] / u[i]
+                        third_order[i, i, i] = 3 * t3 + t2 - 2 * ((1 - alpha[i]) / u[i] + produuw * aui[i]) / u[i] / u[i]
                     else
-                        third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = t1 + t2
+                        third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = t2 + t3
                     end
                 elseif i != k && j != k
                     third_order[i, j, k] = third_order[i, k, j] = third_order[j, i, k] = third_order[j, k, i] =
-                        third_order[k, i, j] = third_order[k, j, i] = t1
+                        third_order[k, i, j] = third_order[k, j, i] = t2
                 end
             end
             # ui uj wk

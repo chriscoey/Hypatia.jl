@@ -9,7 +9,7 @@ helper file that calls single_moi, factoring out any code that can be avoided du
 import Dates
 
 # instname = "enpro56"
-instname = "syn10m04m"
+instname = "gp_dave_3"
 csvfile =  "dummy_results.txt"
 solver_name = "hypatia"
 system_solver_name = "qrchol_dense"
