@@ -208,58 +208,66 @@ function correction(
 
 
     third_order = zeros(T, cone.dim, cone.dim, cone.dim)
+    # third_order_flat = zeros(T, cone.dim ^ 2, cone.dim)
+
     # ui
     for i in 1:m
         # ui uj
         for j in 1:m
             # ui uj uk
             for k in 1:m
-                if i == j == k
-                    third_order[i, i, i] = 3 * abs2(aui[i]) / u[i] * produuw * (1 - produuw) + aui[i] ^ 3 * produuw * (1 - produuw) * (2 * produuw - 1) -
-                        2 * (1 - alpha[i]) / u[i] ^ 3 +
-                        produuw * aui[i] / u[i] * (-2 / u[i])
-                elseif i == j
-                    third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] =  aui[i] * aui[k] * produuw * (1 - produuw) * ((2 * produuw - 1) * aui[i] + inv(u[i]))
+                t1 = aui[i] * aui[j] * aui[k] * produuw * (1 - produuw) * (2 * produuw - 1)
+                if i == j
+                    t2 = aui[i] * aui[k] * produuw * (1 - produuw) / u[i]
+                    if j == k
+                        third_order[i, i, i] = 3 * t2 + t1 - 2 * ((1 - alpha[i]) / u[i] + produuw * aui[i]) / u[i] / u[i]
+                    else
+                        third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = t1 + t2
+                    end
                 elseif i != k && j != k
                     third_order[i, j, k] = third_order[i, k, j] = third_order[j, i, k] = third_order[j, k, i] =
-                        third_order[k, i, j] = third_order[k, j, i] = aui[i] * aui[j] * aui[k] * produuw * (1 - produuw) * (2 * produuw - 1)
+                        third_order[k, i, j] = third_order[k, j, i] = t1
                 end
             end
             # ui uj wk
             for k in w_idxs
                 wk = k - m
                 if i == j
-                    third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = 2 * w[wk] * produuw / produw * aui[i] * (2 * produuw * aui[i] + inv(u[i]) - aui[i])
+                    # TODO could also be expressed as:
+                    # third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = t1 + 2 * w[wk] * produuw / produw * aui[i] / u[i] where t1 is the case i != j
+                    third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = 2 * w[wk] * produuw / produw * aui[i] * (aui[i] * (2 * produuw - 1) + inv(u[i]))
                 else
                     third_order[i, j, k] = third_order[i, k, j] = third_order[j, i, k] = third_order[j, k, i] =
-                        third_order[k, i, j] = third_order[k, j, i] = 2 * aui[i] * aui[j] * produuw * w[wk] / produw * (2 * produuw - 1)
+                        third_order[k, i, j] = third_order[k, j, i] = 2 * aui[i] * aui[j] * produuw * (2 * produuw - 1) * w[wk] / produw
                 end
             end
         end
         # ui wj wk
         for j in w_idxs, k in w_idxs
             (wj, wk) = (j, k) .- m
-            third_order[i, j, k] = third_order[i, k, j] = third_order[j, i, k] = third_order[j, k, i] =
-                third_order[k, i, j] = third_order[k, j, i] = -8 * aui[i] * w[wj] * w[wk] * produuw / produw / produw
+            t1 = -8 * aui[i] * w[wj] * w[wk] * produuw / produw / produw
             if j == k
-                # TODO make consistent
-                third_order[i, j, j] -= 2 * aui[i] * produuw / produw
-                third_order[j, i, j] -= 2 * aui[i] * produuw / produw
-                third_order[j, j, i] -= 2 * aui[i] * produuw / produw
+                third_order[i, j, j] = third_order[j, i, j] = third_order[j, j, i] = t1 - 2 * aui[i] * produuw / produw
+            else
+                third_order[i, j, k] = third_order[i, k, j] = third_order[j, i, k] = third_order[j, k, i] =
+                third_order[k, i, j] = third_order[k, j, i] = t1
             end
         end
 
     end
     for i in w_idxs, j in w_idxs, k in w_idxs
         (wi, wj, wk) = (i, j, k) .- m
-        # TODO refactor common summand or stick to this everywhere else and cut loops
-        if i == j == k
-            third_order[i, i, i] = 12 * w[wi] / (produw) ^ 2 + 16 * w[wi] ^ 3 / (produw) ^ 3
-        elseif i == j
-            third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = 16 * abs2(w[wi]) * w[wk] / (produw) ^ 3 + 4 * w[wk] / (produw) ^ 2
+        t1 = 16 * w[wi] * w[wj] * w[wk] / produw / produw / produw
+        if i == j
+            t2 = w[wk] / produw / produw
+            if j == k
+                third_order[i, i, i] = t1 + 12 * t2
+            else
+                third_order[i, i, k] = third_order[i, k, i] = third_order[k, i, i] = t1 + 4 * t2
+            end
         elseif i != k && j != k
             third_order[i, j, k] = third_order[i, k, j] = third_order[j, i, k] = third_order[j, k, i] =
-                third_order[k, i, j] = third_order[k, j, i] = 16 * w[wi] * w[wj] * w[wk] / (produw) ^ 3
+                third_order[k, i, j] = third_order[k, j, i] = t1
         end
     end
     third_order = reshape(third_order, cone.dim^2, cone.dim)
@@ -267,6 +275,7 @@ function correction(
     barrier = cone.barrier
     FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
     @show norm(third_order - FD_3deriv)
+    cone.correction = reshape(third_order * primal_dir, cone.dim, cone.dim) * inv_hess(cone) * dual_dir * -0.5
 
 end
 
