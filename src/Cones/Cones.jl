@@ -83,13 +83,18 @@ function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Cone)
     return prod
 end
 
-function update_hess_fact(cone::Cone{T}) where {T <: Real}
+function update_hess_fact(cone::Cone{T}; recover::Bool = true) where {T <: Real}
     cone.hess_fact_updated && return true
     if !cone.hess_updated
         update_hess(cone)
     end
 
-    if !update_fact(cone.hess_fact_cache, cone.hess)
+    fact_success = update_fact(cone.hess_fact_cache, cone.hess)
+
+    if !fact_success
+        if !recover
+            return false
+        end
         # TODO if Chol, try adding sqrt(eps(T)) to diag and re-factorize
         if T <: BlasReal && cone.hess_fact_cache isa DensePosDefCache{T}
             @warn("switching Hessian cache from Cholesky to Bunch Kaufman")

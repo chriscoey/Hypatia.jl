@@ -242,17 +242,19 @@ function update_lhs(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}
             if hasfield(typeof(cone_k), :hess_fact_cache) # TODO use dispatch or a function
                 @assert !cone_k.scal_hess_updated
                 Cones.update_scal_hess(cone_k, solver.mu)
-                Cones.update_hess_fact(cone_k)
-                if cone_k.hess_fact_cache isa DenseSymCache{T}
-                    cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_cones : hess_cones
-                    push!(cones_list, k)
-                    continue
-                end
+                fact_success = Cones.update_hess_fact(cone_k, recover = false)
+                # if cone_k.hess_fact_cache isa DenseSymCache{T}
+                #     cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_cones : hess_cones
+                #     push!(cones_list, k)
+                #     continue
+                # end
+                cones_list = (fact_success ? hess_sqrt_cones : hess_cones)
+                push!(cones_list, k)
+            else
+                cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_sqrt_cones : hess_sqrt_cones
+                push!(cones_list, k)
             end
-            cones_list = Cones.use_dual_barrier(cone_k) ? inv_hess_sqrt_cones : hess_sqrt_cones
-            push!(cones_list, k)
         end
-
 
         # TODO inv cones
         @assert isempty(inv_hess_cones)
