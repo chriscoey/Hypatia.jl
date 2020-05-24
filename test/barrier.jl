@@ -70,11 +70,11 @@ function test_barrier_oracles(
 
     # check 3rd order corrector agrees with ForwardDiff
     # too slow if cone is too large or not using BlasReals
-    if CO.use_correction(cone) && dim < 8 && T in (Float32, Float64)
+    if CO.use_correction(cone) && dim < 10 && T in (Float32, Float64)
         if cone isa CO.HypoPerLog{T} && dim > 3
             return # TODO fix corrector for larger dim
         end
-
+    @show point
         FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
         # check log-homog property that F'''(point)[point] = -2F''(point)
         @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * fd_hess
@@ -113,8 +113,8 @@ function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T
     @test prod_mat2' * prod_mat2 ≈ inv_hess atol=tol rtol=tol
 
     if CO.use_scaling(cone)
-        dual_grad = CO.dual_grad(cone, one(T))
-        @test dot(dual_point, dual_grad) ≈ -nu atol=1000*tol rtol=1000*tol
+        # dual_grad = CO.dual_grad(cone, one(T))
+        # @test dot(dual_point, dual_grad) ≈ -nu atol=1000*tol rtol=1000*tol
 
         scal_hess = CO.scal_hess(cone, one(T))
         @test scal_hess * point ≈ dual_point

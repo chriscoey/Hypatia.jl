@@ -11,7 +11,7 @@ barrier_testfuns = [
     # # test_epipersquare_barrier,
     test_hypoperlog_barrier,
     # # test_episumperentropy_barrier,
-    # # test_power_barrier,
+    test_power_barrier,
     # # test_hypogeomean_barrier,
     # # test_epinormspectral_barrier,
     # # test_matrixepipersquare_barrier,
@@ -28,7 +28,7 @@ barrier_testfuns = [
 real_types = [
     Float64,
     # Float32,
-    BigFloat,
+    # BigFloat,
     ]
 
 @info("starting barrier tests")
