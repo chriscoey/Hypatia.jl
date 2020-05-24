@@ -13,12 +13,12 @@ import TimerOutputs
 import Hypatia
 const SO = Hypatia.Solvers
 
-set = "exporthantsmall"
+# set = "exporthantsmall"
 # set = "exporthant"
 # set = "exporthantmost"
 # set = "myset"
 # set = "myset2"
-# set = "myset3"
+set = "myset3"
 # set = "failing6"
 # set = "failing7"
 # set = "powersmall"

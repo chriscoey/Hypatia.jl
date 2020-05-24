@@ -105,6 +105,8 @@ use_correction(cone::Power) = true
 
 get_nu(cone::Power) = length(cone.alpha) + 1
 
+rescale_point(cone::Power{T}, s::T) where {T} = (cone.point .*= s)
+
 function set_initial_point(arr::AbstractVector, cone::Power)
     m = length(cone.alpha)
     @. arr[1:m] = sqrt(1 + cone.alpha)
