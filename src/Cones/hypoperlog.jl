@@ -353,6 +353,26 @@ function correction(
 end
 
 
+# attempt correction without assumptions on H/scaling matrix
+function correction(
+    cone::HypoPerLog{T},
+    primal_dir::AbstractVector{T},
+    mu::T,
+    ) where {T <: Real}
+    point = cone.point
+
+    # TODO write
+    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(cone.barrier, x), cone.point)
+    T3 = reshape(FD_3deriv * primal_dir, cone.dim, cone.dim) * primal_dir
+    # scal mat version
+    # @assert cone.scal_hess_updated
+    # cone.correction = -mu .* T3 / 2 - cone.hess * primal_dir
+    # hess version
+    cone.correction = -mu * (T3 / 2 - cone.old_hess * primal_dir)
+
+    return cone.correction
+end
+
 # (z + mu*g)' (mu*H)^-1 (z + mu*g)
 # = (z + mu*g)' (Hiz / mu - s)
 # = z'Hiz / mu + g'Hiz - z's - mu*g's

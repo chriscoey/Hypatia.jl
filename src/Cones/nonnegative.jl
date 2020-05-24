@@ -195,3 +195,19 @@ function correction(cone::Nonnegative, primal_dir::AbstractVector, dual_dir::Abs
     @. cone.correction = primal_dir * dual_dir / cone.point
     return cone.correction
 end
+
+# attempt correction without assumptions about Hessian/scaling matrix
+function correction(
+    cone::Nonnegative{T},
+    primal_dir::AbstractVector{T},
+    mu::T,
+    ) where {T <: Real}
+    point = cone.point
+
+    # scal version
+    # cone.correction = mu ./ (cone.point .^ 3) .* primal_dir .* primal_dir .- cone.dual_point ./ cone.point .* primal_dir
+    # hess version
+    cone.correction = mu ./ (cone.point .^ 3) .* (primal_dir .^ 2) .- mu ./ (cone.point .^ 2) .* primal_dir
+
+    return cone.correction
+end

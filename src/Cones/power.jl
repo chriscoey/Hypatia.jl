@@ -24,6 +24,7 @@ mutable struct Power{T <: Real} <: Cone{T}
     feas_updated::Bool
     grad_updated::Bool
     hess_updated::Bool
+    scal_hess_updated::Bool
     inv_hess_updated::Bool
     hess_fact_updated::Bool
     is_feas::Bool
@@ -73,6 +74,8 @@ mutable struct Power{T <: Real} <: Cone{T}
         return cone
     end
 end
+
+reset_data(cone::Power) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_fact_updated = cone.scal_hess_updated = false)
 
 dimension(cone::Power) = length(cone.alpha) + cone.n
 
@@ -125,6 +128,9 @@ end
 
 function update_dual_feas(cone::Power{T}) where {T <: Real}
     alpha = cone.alpha
+    m = length(cone.alpha)
+    u = cone.dual_point[1:m]
+    w = view(cone.dual_point, (m + 1):cone.dim)
     if all(>(zero(T)), u)
         p = exp(2 * sum(alpha[i] * log(u[i] / alpha[i]) for i in eachindex(alpha)))
         return p - sum(abs2, w) > 0
@@ -269,9 +275,9 @@ function correction(
     end
     third_order = reshape(third_order, cone.dim^2, cone.dim)
 
-    barrier = cone.barrier
-    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
-    @show norm(third_order - FD_3deriv)
+    # barrier = cone.barrier
+    # FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
+    # @show norm(third_order - FD_3deriv)
     cone.correction = reshape(third_order * primal_dir, cone.dim, cone.dim) * inv_hess(cone) * dual_dir * -0.5
 
 end
