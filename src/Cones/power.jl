@@ -30,6 +30,7 @@ mutable struct Power{T <: Real} <: Cone{T}
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
+    old_hess
     inv_hess::Symmetric{T, Matrix{T}}
     hess_fact_cache
     nbhd_tmp::Vector{T}
@@ -190,6 +191,8 @@ function update_hess(cone::Power)
         H[j, j] += offset
     end
 
+    cone.old_hess = Symmetric(copy(H), :U)
+
     cone.hess_updated = true
     return cone.hess
 end
@@ -278,11 +281,13 @@ function correction(
         end
     end
     third_order = reshape(third_order, cone.dim^2, cone.dim)
-    
+
     # barrier = cone.barrier
     # FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
     # @show norm(third_order - FD_3deriv)
-    cone.correction .= reshape(third_order * primal_dir, cone.dim, cone.dim) * inv_hess(cone) * dual_dir * -0.5
+    Hi_z = cone.old_hess \ dual_dir
+    Hi_z .*= -0.5
+    cone.correction .= reshape(third_order * primal_dir, cone.dim, cone.dim) * Hi_z
 
     return cone.correction
 end
