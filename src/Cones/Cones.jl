@@ -205,7 +205,8 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 
 # in_neighborhood_sy(cone::Cone, mu::Real) = true
 
-# in_neighborhood(cone::Cone, mu::Real) = true
+# TODO remove or replace. currently still called in barrier tests
+in_neighborhood(cone::Cone, mu::Real) = true
 # function in_neighborhood(cone::Cone, mu::Real)
 #     g = grad(cone)
 #     cone.dual_grad_inacc = false
