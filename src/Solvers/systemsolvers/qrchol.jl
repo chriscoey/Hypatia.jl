@@ -167,6 +167,7 @@ mutable struct QRCholDenseSystemSolver{T <: Real} <: QRCholSystemSolver{T}
     fact_cache::Union{DensePosDefCache{T}, DenseSymCache{T}} # can use BunchKaufman or Cholesky
     function QRCholDenseSystemSolver{T}(;
         fact_cache::Union{DensePosDefCache{T}, DenseSymCache{T}} = DensePosDefCache{T}(), # NOTE or DenseSymCache{T}()
+        # fact_cache::Union{DensePosDefCache{T}, DenseSymCache{T}} = DenseSymCache{T}(), # NOTE or DenseSymCache{T}()
         ) where {T <: Real}
         system_solver = new{T}()
         system_solver.fact_cache = fact_cache
@@ -331,16 +332,18 @@ function update_lhs(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}
     end
 
     # println()
-    # @show solver.mu
+    # # @show solver.mu
     # @show norm(system_solver.lhs1)
     # @show extrema(eigvals(system_solver.lhs1))
     lmul!(solver.mu, system_solver.lhs1.data)
+    # # system_solver.lhs1 += sqrt(eps(T)) * I # attempt recovery # TODO make more efficient
+    # @show norm(system_solver.lhs1)
     # @show extrema(eigvals(system_solver.lhs1))
 
     # TODO refactor below
     # TODO if cholesky fails, add to diagonal (maybe based on norm of diagonal elements)
     if !isempty(system_solver.lhs1) && !update_fact(system_solver.fact_cache, system_solver.lhs1)
-        # @warn("QRChol factorization failed")
+        @warn("QRChol factorization failed")
         if T <: LinearAlgebra.BlasReal && system_solver.fact_cache isa DensePosDefCache{T}
             @warn("switching QRChol solver from Cholesky to Bunch Kaufman")
             system_solver.fact_cache = DenseSymCache{T}()

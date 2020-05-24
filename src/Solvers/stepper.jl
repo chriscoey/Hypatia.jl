@@ -185,7 +185,7 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     Cones.rescale_point.(cones, irtmu)
     Cones.load_dual_point.(cones, point.dual_views)
     Cones.reset_data.(cones)
-    Cones.is_feas.(cones)
+    @assert all(Cones.is_feas.(cones))
     Cones.grad.(cones)
     Cones.hess.(cones)
 
@@ -214,13 +214,13 @@ function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     Cones.rescale_point.(cones, irtmu)
     Cones.load_dual_point.(cones, point.dual_views)
     Cones.reset_data.(cones)
-    Cones.is_feas.(cones)
+    @assert all(Cones.is_feas.(cones))
     Cones.grad.(cones)
     Cones.hess.(cones)
 
-    # calculate correction direction and keep in dir
-    @timeit timer "rhs_corr" update_rhs_final(stepper, solver, aff_alpha, gamma)
-    @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
+    # calculate final direction and keep in dir
+    @timeit timer "rhs_final" update_rhs_final(stepper, solver, aff_alpha, gamma)
+    @timeit timer "dir_final" get_directions(stepper, solver, iter_ref_steps = 5)
     # @show stepper.dir
 
     # find distance alpha for stepping in combined direction
@@ -383,8 +383,9 @@ function get_directions(stepper::CombinedStepper{T}, solver::Solver{T}; iter_ref
             norm_2 = norm_2_new
         end
 
-        if norm_inf > 1e-4
-            @warn("residual on direction too large: $norm_inf")
+        @assert !isnan(norm_inf)
+        if norm_inf > 1e-5
+            println("residual on direction too large: $norm_inf")
         end
     end
 
@@ -600,7 +601,8 @@ function find_max_alpha(
             rtmu = sqrt(mu_temp)
             irtmu = inv(mu_temp)
 
-            # TODO change back
+            # TODO for feas, as soon as cone is feas, don't test feas again, since line search is backwards
+
             if mu_temp > eps(Float64) && (affine_phase || (taukap_temp > mu_temp * 0.5)) #&& abs(taukap_temp - mu_temp) < mu_temp * 0.1)) # TODO redundant
             # if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-4 # solver.max_nbhd
                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
@@ -614,13 +616,14 @@ function find_max_alpha(
                     Cones.load_dual_point(cone_k, duals_linesearch[k])
                     Cones.reset_data(cone_k)
 
+                    # @show Cones.is_feas(cone_k), Cones.is_dual_feas(cone_k)
                     # fsble_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k) && Cones.in_neighborhood_sy(cone_k, mu_temp))
                     fsble_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k))
                     if fsble_k
                         if affine_phase
                             in_nbhd_k = true
                         else
-                            in_nbhd_k = (dot(primals_linesearch[k], duals_linesearch[k]) / Cones.get_nu(cone_k) > 0.5 * mu_temp)
+                            in_nbhd_k = (dot(primals_linesearch[k], duals_linesearch[k]) > 0.5 * mu_temp * Cones.get_nu(cone_k))
                             # in_nbhd_k = Cones.in_neighborhood(cone_k, mu_temp)
                             # in_nbhd_k = Cones.in_neighborhood_sy(cone_k, mu_temp)
                         end
@@ -662,21 +665,41 @@ end
 # TODO if p = 0, don't print y_feas
 function print_iteration_stats(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     if iszero(solver.num_iters)
-        @printf("\n%5s %12s %12s %9s %9s %9s %9s %9s %9s %9s %9s %9s %9s\n",
-            "iter", "p_obj", "d_obj", "abs_gap", "rel_gap",
-            "x_feas", "y_feas", "z_feas", "tau", "kap", "mu",
-            "gamma", "alpha",
-            )
-        @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e\n",
-            solver.num_iters, solver.primal_obj, solver.dual_obj, solver.gap, solver.rel_gap,
-            solver.x_feas, solver.y_feas, solver.z_feas, solver.tau, solver.kap, solver.mu
-            )
+        if iszero(solver.model.p)
+            @printf("\n%5s %12s %12s %9s %9s %9s %9s %9s %9s %9s %9s %9s\n",
+                "iter", "p_obj", "d_obj", "rel_gap", "abs_gap",
+                "x_feas", "z_feas", "tau", "kap", "mu",
+                "gamma", "alpha",
+                )
+            @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e\n",
+                solver.num_iters, solver.primal_obj, solver.dual_obj, solver.rel_gap, solver.gap,
+                solver.x_feas, solver.z_feas, solver.tau, solver.kap, solver.mu
+                )
+        else
+            @printf("\n%5s %12s %12s %9s %9s %9s %9s %9s %9s %9s %9s %9s %9s\n",
+                "iter", "p_obj", "d_obj", "rel_gap", "abs_gap",
+                "x_feas", "y_feas", "z_feas", "tau", "kap", "mu",
+                "gamma", "alpha",
+                )
+            @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e\n",
+                solver.num_iters, solver.primal_obj, solver.dual_obj, solver.rel_gap, solver.gap,
+                solver.x_feas, solver.y_feas, solver.z_feas, solver.tau, solver.kap, solver.mu
+                )
+        end
     else
-        @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e\n",
-            solver.num_iters, solver.primal_obj, solver.dual_obj, solver.gap, solver.rel_gap,
-            solver.x_feas, solver.y_feas, solver.z_feas, solver.tau, solver.kap, solver.mu,
-            stepper.prev_gamma, stepper.prev_alpha,
-            )
+        if iszero(solver.model.p)
+            @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e\n",
+                solver.num_iters, solver.primal_obj, solver.dual_obj, solver.rel_gap, solver.gap,
+                solver.x_feas, solver.z_feas, solver.tau, solver.kap, solver.mu,
+                stepper.prev_gamma, stepper.prev_alpha,
+                )
+        else
+            @printf("%5d %12.4e %12.4e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e %9.2e\n",
+                solver.num_iters, solver.primal_obj, solver.dual_obj, solver.rel_gap, solver.gap,
+                solver.x_feas, solver.y_feas, solver.z_feas, solver.tau, solver.kap, solver.mu,
+                stepper.prev_gamma, stepper.prev_alpha,
+                )
+        end
     end
     flush(stdout)
     return
