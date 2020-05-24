@@ -443,106 +443,6 @@ function apply_lhs(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: R
     return stepper.res
 end
 
-# function find_max_alpha(
-#     stepper::CombinedStepper{T},
-#     solver::Solver{T},
-#     affine_phase::Bool;
-#     prev_alpha::T,
-#     min_alpha::T,
-#     ) where {T <: Real}
-#     cones = solver.model.cones
-#     cone_times = stepper.cone_times
-#     cone_order = stepper.cone_order
-#     z = solver.point.z
-#     s = solver.point.s
-#     tau = solver.tau
-#     kap = solver.kap
-#     z_dir = stepper.z_dir
-#     s_dir = stepper.s_dir
-#     tau_dir = stepper.dir[stepper.tau_row]
-#     kap_dir = stepper.dir[stepper.kap_row]
-#     z_linesearch = stepper.z_linesearch
-#     s_linesearch = stepper.s_linesearch
-#     primals_linesearch = stepper.primal_views_linesearch
-#     duals_linesearch = stepper.dual_views_linesearch
-#     timer = solver.timer
-#
-#     alpha = one(T)
-#     if tau_dir < zero(T)
-#         alpha = min(alpha, -tau / tau_dir)
-#     end
-#     if kap_dir < zero(T)
-#         alpha = min(alpha, -kap / kap_dir)
-#     end
-#     alpha *= T(0.9999)
-#     @show alpha
-#     @show affine_phase
-#
-#     nup1 = solver.model.nu + 1
-#     while true
-#         in_nbhd = true
-#
-#         @. z_linesearch = z + alpha * z_dir
-#         @. s_linesearch = s + alpha * s_dir
-#         dot_s_z = zero(T)
-#         for k in cone_order
-#             dot_s_z_k = dot(primals_linesearch[k], duals_linesearch[k])
-#             if dot_s_z_k < eps(T)
-#                 @show "in dot_s_z_k", typeof(cones[k])
-#                 in_nbhd = false
-#                 break
-#             end
-#             dot_s_z += dot_s_z_k
-#         end
-#
-#         if in_nbhd
-#             taukap_temp = (tau + alpha * tau_dir) * (kap + alpha * kap_dir)
-#             mu_temp = (dot_s_z + taukap_temp) / nup1
-#
-#             if mu_temp > eps(T) && abs(taukap_temp - mu_temp) < mu_temp * solver.max_nbhd
-#                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
-#                 sortperm!(cone_order, cone_times, initialized = true)
-#
-#                 for k in cone_order
-#                     cone_k = cones[k]
-#                     time_k = time_ns()
-#                     Cones.load_point(cone_k, primals_linesearch[k])
-#                     Cones.load_dual_point(cone_k, duals_linesearch[k])
-#                     Cones.reset_data(cone_k)
-#                     # if affine_phase
-#                         # in_nbhd_k = (Cones.is_feas(cone_k) && Cones.is_dual_feas(cone_k))
-#                     # else
-#                         in_nbhd_k = (Cones.is_feas(cone_k) && Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp))
-#                         # @show Cones.is_feas(cone_k), Cones.in_neighborhood(cone_k, duals_linesearch[k], mu_temp)
-#                     # end
-#                     cone_times[k] = time_ns() - time_k
-#
-#                     if !in_nbhd_k
-#                         @show typeof(cone_k)
-#                         in_nbhd = false
-#                         break
-#                     end
-#                 end
-#
-#                 if in_nbhd
-#                     break
-#                 end
-#             end
-#         end
-#
-#         if alpha < min_alpha
-#             # alpha is very small so finish
-#             alpha = zero(T)
-#             break
-#         end
-#
-#         # iterate is outside the neighborhood: decrease alpha
-#         alpha *= T(0.99)
-#     end
-#
-#     return alpha
-# end
-
 # backtracking line search to find large distance to step in direction while remaining inside cones and inside a given neighborhood
 function find_max_alpha(
     stepper::CombinedStepper{T},
@@ -646,8 +546,8 @@ function find_max_alpha(
                 if in_nbhd
                     break
                 end
-            end # condition on mu, kappa, tau
-        end # if in_nbhd
+            end
+        end
 
         if alpha < min_alpha
             # alpha is very small so finish
@@ -657,12 +557,11 @@ function find_max_alpha(
 
         # iterate is outside the neighborhood: decrease alpha
         alpha *= T(0.95)
-    end # while true
+    end
 
     return alpha
 end
 
-# TODO if p = 0, don't print y_feas
 function print_iteration_stats(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     if iszero(solver.num_iters)
         if iszero(solver.model.p)
@@ -704,22 +603,3 @@ function print_iteration_stats(stepper::CombinedStepper{T}, solver::Solver{T}) w
     flush(stdout)
     return
 end
-
-# TODO experimental for BlockMatrix LHS: if block is a Cone then define mul as hessian product, if block is solver then define mul by mu/tau/tau
-# TODO optimize... maybe need for each cone a 5-arg hess prod
-# import LinearAlgebra.mul!
-#
-# function mul!(y::AbstractVecOrMat{T}, A::Cones.Cone{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-#     # TODO in-place
-#     ytemp = y * beta
-#     Cones.hess_prod!(y, x, A)
-#     rmul!(y, alpha)
-#     y .+= ytemp
-#     return y
-# end
-#
-# function mul!(y::AbstractVecOrMat{T}, solver::Solvers.Solver{T}, x::AbstractVecOrMat{T}, alpha::Number, beta::Number) where {T <: Real}
-#     rmul!(y, beta)
-#     @. y += alpha * x / solver.tau * solver.mu / solver.tau
-#     return y
-# end
