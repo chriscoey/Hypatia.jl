@@ -826,7 +826,7 @@ function power1(T; options...)
     G = Matrix{T}(-I, 3, 3)
     h = zeros(T, 3)
 
-    for use_dual in (false, true)
+    for use_dual in (false,)# true)
         cones = Cone{T}[Cones.Power{T}(ones(T, 2) / 2, 1, use_dual = use_dual)]
 
         r = build_solve_check(c, A, b, G, h, cones; tol = tol, options...)
@@ -845,7 +845,7 @@ function power2(T; options...)
     G = Matrix{T}(-I, 4, 4)
     h = zeros(T, 4)
 
-    for use_dual in (true, false)
+    for use_dual in (false,)# true)
         cones = Cone{T}[Cones.Power{T}(ones(T, 2) / 2, 2, use_dual = use_dual)]
 
         r = build_solve_check(c, A, b, G, h, cones; tol = tol, options...)
@@ -865,7 +865,7 @@ function power3(T; options...)
     G = SparseMatrixCSC(-T(10) * I, l + 2, l + 2)
     h = zeros(T, l + 2)
 
-    for use_dual in (true, false)
+    for use_dual in (false,)# true)
         b = [one(T), zero(T)]
         cones = Cone{T}[Cones.Power{T}(fill(inv(T(l)), l), 2, use_dual = use_dual)]
 
@@ -885,7 +885,7 @@ function power4(T; options...)
     G = [zeros(T, 3, l); Matrix{T}(-I, l, l)]
     h = zeros(T, l + 3)
 
-    for use_dual in (true, false)
+    for use_dual in (false,)# true)
         cones = Cone{T}[Cones.Power{T}(fill(inv(T(l)), l), 3, use_dual = use_dual)]
 
         r = build_solve_check(c, A, b, G, h, cones; tol = tol, options...)

@@ -292,25 +292,25 @@ function calc_residual(solver::Solver{T}) where {T <: Real}
     x_residual = solver.x_residual
     mul!(x_residual, model.G', point.z)
     mul!(x_residual, model.A', point.y, true, true)
-    solver.x_norm_res_t = norm(x_residual)
+    solver.x_norm_res_t = norm(x_residual, Inf)
     @. x_residual += model.c * solver.tau
-    solver.x_norm_res = norm(x_residual) / solver.tau
+    solver.x_norm_res = norm(x_residual, Inf) / solver.tau
     @. x_residual *= -1
 
     # y_residual = A*x - b*tau
     y_residual = solver.y_residual
     mul!(y_residual, model.A, point.x)
-    solver.y_norm_res_t = norm(y_residual)
+    solver.y_norm_res_t = norm(y_residual, Inf)
     @. y_residual -= model.b * solver.tau
-    solver.y_norm_res = norm(y_residual) / solver.tau
+    solver.y_norm_res = norm(y_residual, Inf) / solver.tau
 
     # z_residual = s + G*x - h*tau
     z_residual = solver.z_residual
     mul!(z_residual, model.G, point.x)
     @. z_residual += point.s
-    solver.z_norm_res_t = norm(z_residual)
+    solver.z_norm_res_t = norm(z_residual, Inf)
     @. z_residual -= model.h * solver.tau
-    solver.z_norm_res = norm(z_residual) / solver.tau
+    solver.z_norm_res = norm(z_residual, Inf) / solver.tau
 
     return
 end

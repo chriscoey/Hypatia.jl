@@ -351,7 +351,10 @@ function update_lhs(system_solver::QRCholDenseSystemSolver{T}, solver::Solver{T}
         else
             system_solver.lhs1 += sqrt(eps(T)) * I # attempt recovery # TODO make more efficient
         end
-        update_fact(system_solver.fact_cache, system_solver.lhs1) || @warn("QRChol Bunch-Kaufman factorization failed after recovery")
+        if !update_fact(system_solver.fact_cache, system_solver.lhs1)
+            system_solver.lhs1 += sqrt(eps(T)) * I # attempt recovery # TODO make more efficient
+            update_fact(system_solver.fact_cache, system_solver.lhs1) || @warn("QRChol Bunch-Kaufman factorization failed after recovery")
+        end
     end
 
     # update solution for fixed c,b,h part

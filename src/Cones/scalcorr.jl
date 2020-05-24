@@ -9,12 +9,12 @@ use_correction(cone::Cone) = false
 scal_hess(cone::Cone{T}, mu::T) where {T} = (cone.scal_hess_updated ? cone.hess : update_scal_hess(cone, mu))
 
 use_update_1_default() = true
-use_update_2_default() = false
+# use_update_2_default() = false
 
 
 
-outer_prod(A::AbstractMatrix{T}, B::AbstractMatrix{T}, alpha::Real, beta::Real) where {T <: LinearAlgebra.BlasReal} = BLAS.syrk!('U', 'T', alpha, A, beta, B)
-outer_prod(A::AbstractMatrix{T}, B::AbstractMatrix{T}, alpha::Real, beta::Real) where {T <: Real} = mul!(B, A', A, alpha, beta)
+outer_prod1(a::AbstractVector{T}, B::AbstractMatrix{T}, alpha::Real) where {T <: LinearAlgebra.BlasReal} = BLAS.syr!('U', alpha, a, B)
+outer_prod1(a::AbstractVector{T}, B::AbstractMatrix{T}, alpha::Real) where {T <: Real} = mul!(B, a, a', alpha, true)
 
 
 # no cholesky updates
@@ -22,7 +22,7 @@ function update_scal_hess(
     cone::Cone{T},
     mu::T,
     use_update_1::Bool = use_update_1_default(),
-    use_update_2::Bool = use_update_2_default(),
+    # use_update_2::Bool = use_update_2_default(),
     ) where {T}
     @assert !cone.scal_hess_updated
     s = cone.point
@@ -52,10 +52,12 @@ function update_scal_hess(
             # scal_hess += inv(sz) * Symmetric(z * z') - (mu / nu) * Symmetric(g * g')
             # za = inv(sqrt(sz)) * z
             za = z / sqrt(sz)
-            BLAS.syr!('U', one(T), za, scal_hess.data)
+            # BLAS.syr!('U', one(T), za, scal_hess.data)
+            outer_prod1(za, scal_hess.data, one(T))
             # scal_hess += Symmetric(za * za')
             # gb = inv(sqrt(nu)) * g
-            BLAS.syr!('U', -inv(nu), g, scal_hess.data)
+            # BLAS.syr!('U', -inv(nu), g, scal_hess.data)
+            outer_prod1(g, scal_hess.data, -inv(nu))
             # scal_hess -= Symmetric(gb * gb')
             # if norm(scal_hess * rtmu * s - z) > 1e-4
             #     println("large residual after 1st update on norm(scal_hess * s - z): $(norm(scal_hess * s - z))")

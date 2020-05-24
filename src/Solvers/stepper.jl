@@ -110,69 +110,6 @@ function load(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     return stepper
 end
 
-# function step_old(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
-#     point = solver.point
-#     timer = solver.timer
-#
-#     # update linear system solver factorization and helpers
-#     @timeit timer "update_lhs" update_lhs(solver.system_solver, solver)
-#
-#     # calculate correction direction and keep in dir_corr
-#     @timeit timer "rhs_corr" update_rhs_final(stepper, solver)
-#     @timeit timer "dir_corr" get_directions(stepper, solver, iter_ref_steps = 3)
-#     copyto!(stepper.dir_corr, stepper.dir)
-#
-#     # calculate affine/prediction direction and keep in dir
-#     @timeit timer "rhs_aff" update_rhs_affine(stepper, solver)
-#     @timeit timer "dir_aff" get_directions(stepper, solver, iter_ref_steps = 3)
-#
-#     # calculate correction factor gamma by finding distance aff_alpha for stepping in affine direction
-#     @timeit timer "alpha_aff" stepper.prev_aff_alpha = aff_alpha = find_max_alpha(
-#         stepper, solver, prev_alpha = stepper.prev_aff_alpha, min_alpha = T(1e-2))
-#     stepper.prev_gamma = gamma = abs2(one(T) - aff_alpha) # TODO allow different function (heuristic) as option?
-#
-#     # calculate combined direction and keep in dir
-#     axpby!(gamma, stepper.dir_corr, 1 - gamma, stepper.dir)
-#
-#     # find distance alpha for stepping in combined direction
-#     @timeit timer "alpha_comb" alpha = find_max_alpha(
-#         stepper, solver, prev_alpha = stepper.prev_alpha, min_alpha = T(1e-3))
-#
-#     if iszero(alpha)
-#         # could not step far in combined direction, so attempt a pure correction step
-#         solver.verbose && println("performing correction step")
-#         copyto!(stepper.dir, stepper.dir_corr)
-#
-#         # find distance alpha for stepping in correction direction
-#         @timeit timer "alpha_corr" alpha = find_max_alpha(
-#             stepper, solver, prev_alpha = one(T), min_alpha = T(1e-6))
-#
-#         if iszero(alpha)
-#             @warn("numerical failure: could not step in correction direction; terminating")
-#             solver.status = :NumericalFailure
-#             return false
-#         end
-#     end
-#     stepper.prev_alpha = alpha
-#
-#     # step distance alpha in combined direction
-#     @. point.x += alpha * stepper.x_dir
-#     @. point.y += alpha * stepper.y_dir
-#     @. point.z += alpha * stepper.z_dir
-#     @. point.s += alpha * stepper.s_dir
-#     solver.tau += alpha * stepper.dir[stepper.tau_row]
-#     solver.kap += alpha * stepper.dir[stepper.kap_row]
-#     calc_mu(solver)
-#
-#     if solver.tau <= zero(T) || solver.kap <= zero(T) || solver.mu <= zero(T)
-#         @warn("numerical failure: tau is $(solver.tau), kappa is $(solver.kap), mu is $(solver.mu); terminating")
-#         solver.status = :NumericalFailure
-#         return false
-#     end
-#
-#     return true # step succeeded
-# end
-
 function step(stepper::CombinedStepper{T}, solver::Solver{T}) where {T <: Real}
     cones = solver.model.cones
     point = solver.point
@@ -292,7 +229,7 @@ function update_rhs_corr(stepper::CombinedStepper{T}, solver::Solver{T}, prev_af
         if Cones.use_correction(cone_k)
             # (reuses affine direction)
             # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
-            scal = (cone_k isa Cones.HypoPerLog ? irtmu : one(T))
+            scal = (cone_k isa Cones.HypoPerLog || cone_k isa Cones.Power ? irtmu : one(T))
             stepper.s_rhs_k[k] .-= scal * Cones.correction(cone_k, stepper.primal_dir_k[k], stepper.dual_dir_k[k]) * prev_aff_alpha^2
         end
     end
@@ -320,13 +257,13 @@ function update_rhs_final(stepper::CombinedStepper{T}, solver::Solver{T}, aff_al
     for (k, cone_k) in enumerate(solver.model.cones)
         duals_k = solver.point.dual_views[k]
         grad_k = Cones.grad(cone_k)
-        scal = (cone_k isa Cones.HypoPerLog ? rtmu : solver.mu)
+        scal = (cone_k isa Cones.HypoPerLog || cone_k isa Cones.Power ? rtmu : solver.mu)
         @. stepper.s_rhs_k[k] = -duals_k - (scal * grad_k) * gamma
         if Cones.use_correction(cone_k)
             # (reuses affine direction)
             # TODO check math here for case of cone.use_dual true - should s and z be swapped then?
             # stepper.s_rhs_k[k] .-= cone_k.correction
-            scal = (cone_k isa Cones.HypoPerLog ? irtmu : one(T))
+            scal = (cone_k isa Cones.HypoPerLog || cone_k isa Cones.Power ? irtmu : one(T))
             stepper.s_rhs_k[k] .-= scal * cone_k.correction * aff_alpha^2 # TODO this is heuristicy currently and just tries to reduce the amount of correction depending on how far we actually can step. redo in math, use linearity of the third-order corrector in s_dir and z_dir
         end
     end

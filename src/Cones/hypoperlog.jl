@@ -353,87 +353,87 @@ function correction(
 end
 
 
-# attempt correction without assumptions on H/scaling matrix
-function correction(
-    cone::HypoPerLog{T},
-    primal_dir::AbstractVector{T},
-    mu::T,
-    ) where {T <: Real}
-    point = cone.point
+# # attempt correction without assumptions on H/scaling matrix
+# function correction(
+#     cone::HypoPerLog{T},
+#     primal_dir::AbstractVector{T},
+#     mu::T,
+#     ) where {T <: Real}
+#     point = cone.point
+#
+#     # TODO write
+#     FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(cone.barrier, x), cone.point)
+#     T3 = reshape(FD_3deriv * primal_dir, cone.dim, cone.dim) * primal_dir
+#     # scal mat version
+#     # @assert cone.scal_hess_updated
+#     # cone.correction = -mu .* T3 / 2 - cone.hess * primal_dir
+#     # hess version
+#     cone.correction = -mu * (T3 / 2 - cone.old_hess * primal_dir)
+#
+#     return cone.correction
+# end
 
-    # TODO write
-    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(cone.barrier, x), cone.point)
-    T3 = reshape(FD_3deriv * primal_dir, cone.dim, cone.dim) * primal_dir
-    # scal mat version
-    # @assert cone.scal_hess_updated
-    # cone.correction = -mu .* T3 / 2 - cone.hess * primal_dir
-    # hess version
-    cone.correction = -mu * (T3 / 2 - cone.old_hess * primal_dir)
-
-    return cone.correction
-end
-
-# (z + mu*g)' (mu*H)^-1 (z + mu*g)
-# = (z + mu*g)' (Hiz / mu - s)
-# = z'Hiz / mu + g'Hiz - z's - mu*g's
-# = z'Hiz / mu - 2*s'z + mu*nu
-# < mu * beta^2
-function in_neighborhood_sy(cone::HypoPerLog{T}, mu::T) where {T <: Real}
-    # mu_cone = dot(cone.point, cone.dual_point) / cone.nu
-    # @show mu_cone / mu
-    # mu = mu_cone
-
-    # nbhd_tmp = cone.nbhd_tmp
-    # g = grad(cone)
-    # @. nbhd_tmp = cone.dual_point + mu * g
-
-    (u, v, w) = cone.point
-
-    # # TODO compare below two ways to do inverse hess prod
-    # Hi_z = similar(dual_dir) # TODO prealloc
-    # update_hess_fact(cone)
-    # inv_hess_prod!(Hi_z, dual_dir, cone)
-
-    # TODO refac inv hess prod here
-    lwv = log(w / v)
-    vlwv = v * lwv
-    vlwvu = vlwv - u
-    denom = vlwvu + 2 * v
-    wvdenom = w * v / denom
-    vvdenom = (vlwvu + v) / denom
-    Hi = zeros(T, 3, 3)
-    Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
-    Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
-    Hi[1, 3] = wvdenom * (2 * vlwv - u)
-    Hi[2, 2] = v * vvdenom * v
-    Hi[2, 3] = wvdenom * v
-    Hi[3, 3] = w * vvdenom * w
-    Hi = Symmetric(Hi, :U)
-
-    # @show norm(Hi * g + cone.point)
-
-    # nbhdsqr = dot(nbhd_tmp, Hi * nbhd_tmp)
-
-    z = cone.dual_point
-    s = cone.point
-    nbhdsqr2mu = dot(z, Hi, z) / mu - 2 * dot(s, z) + mu * cone.nu
-    # @show nbhdsqr / mu - nbhdsqr2mu
-
-    # if nbhdsqr2mu <= 0
-    #     # @show nbhdsqr
-    #     return false
-    # end
-    # nbhd = sqrt(nbhdsqr)
-    # sy_eta = 0.99
-    # sy_eta = 0.5
-    # sy_eta = 0.99
-    sy_eta = 2
-    return (nbhdsqr2mu < mu * sy_eta^2)
-
-    # @show nbhd / (mu * sy_eta)
-    # return (nbhd < mu * sy_eta)
-    return true
-end
+# # (z + mu*g)' (mu*H)^-1 (z + mu*g)
+# # = (z + mu*g)' (Hiz / mu - s)
+# # = z'Hiz / mu + g'Hiz - z's - mu*g's
+# # = z'Hiz / mu - 2*s'z + mu*nu
+# # < mu * beta^2
+# function in_neighborhood_sy(cone::HypoPerLog{T}, mu::T) where {T <: Real}
+#     # mu_cone = dot(cone.point, cone.dual_point) / cone.nu
+#     # @show mu_cone / mu
+#     # mu = mu_cone
+#
+#     # nbhd_tmp = cone.nbhd_tmp
+#     # g = grad(cone)
+#     # @. nbhd_tmp = cone.dual_point + mu * g
+#
+#     (u, v, w) = cone.point
+#
+#     # # TODO compare below two ways to do inverse hess prod
+#     # Hi_z = similar(dual_dir) # TODO prealloc
+#     # update_hess_fact(cone)
+#     # inv_hess_prod!(Hi_z, dual_dir, cone)
+#
+#     # TODO refac inv hess prod here
+#     lwv = log(w / v)
+#     vlwv = v * lwv
+#     vlwvu = vlwv - u
+#     denom = vlwvu + 2 * v
+#     wvdenom = w * v / denom
+#     vvdenom = (vlwvu + v) / denom
+#     Hi = zeros(T, 3, 3)
+#     Hi[1, 1] = 2 * (abs2(vlwv - v) + vlwv * (v - u)) + abs2(u) - v / denom * abs2(vlwv - 2 * v)
+#     Hi[1, 2] = (abs2(vlwv) + u * (v - vlwv)) / denom * v
+#     Hi[1, 3] = wvdenom * (2 * vlwv - u)
+#     Hi[2, 2] = v * vvdenom * v
+#     Hi[2, 3] = wvdenom * v
+#     Hi[3, 3] = w * vvdenom * w
+#     Hi = Symmetric(Hi, :U)
+#
+#     # @show norm(Hi * g + cone.point)
+#
+#     # nbhdsqr = dot(nbhd_tmp, Hi * nbhd_tmp)
+#
+#     z = cone.dual_point
+#     s = cone.point
+#     nbhdsqr2mu = dot(z, Hi, z) / mu - 2 * dot(s, z) + mu * cone.nu
+#     # @show nbhdsqr / mu - nbhdsqr2mu
+#
+#     # if nbhdsqr2mu <= 0
+#     #     # @show nbhdsqr
+#     #     return false
+#     # end
+#     # nbhd = sqrt(nbhdsqr)
+#     # sy_eta = 0.99
+#     # sy_eta = 0.5
+#     # sy_eta = 0.99
+#     sy_eta = 2
+#     return (nbhdsqr2mu < mu * sy_eta^2)
+#
+#     # @show nbhd / (mu * sy_eta)
+#     # return (nbhd < mu * sy_eta)
+#     return true
+# end
 
 
 

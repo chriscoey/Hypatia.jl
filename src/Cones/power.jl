@@ -52,6 +52,7 @@ mutable struct Power{T <: Real} <: Cone{T}
         max_neighborhood::Real = default_max_neighborhood(),
         hess_fact_cache = hessian_cache(T),
         ) where {T <: Real}
+        @assert !use_dual
         @assert n >= 1
         dim = length(alpha) + n
         @assert dim >= 3
@@ -96,6 +97,8 @@ function setup_data(cone::Power{T}) where {T <: Real}
     cone.correction = zeros(T, dim)
     return
 end
+
+use_scaling(cone::Power) = true
 
 use_correction(cone::Power) = true
 
@@ -196,6 +199,7 @@ function correction(
     primal_dir::AbstractVector{T},
     dual_dir::AbstractVector{T},
     ) where {T <: Real}
+    @assert cone.hess_updated
 
     m = length(cone.alpha)
     u = cone.point[1:m]
@@ -274,12 +278,13 @@ function correction(
         end
     end
     third_order = reshape(third_order, cone.dim^2, cone.dim)
-
+    
     # barrier = cone.barrier
     # FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
     # @show norm(third_order - FD_3deriv)
-    cone.correction = reshape(third_order * primal_dir, cone.dim, cone.dim) * inv_hess(cone) * dual_dir * -0.5
+    cone.correction .= reshape(third_order * primal_dir, cone.dim, cone.dim) * inv_hess(cone) * dual_dir * -0.5
 
+    return cone.correction
 end
 
 # TODO update and benchmark to decide whether this improves speed/numerics

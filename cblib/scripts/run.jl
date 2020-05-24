@@ -13,12 +13,15 @@ import TimerOutputs
 import Hypatia
 const SO = Hypatia.Solvers
 
-# set = "exporthantsmall"
+set = "exporthantsmall"
 # set = "exporthant"
-set = "exporthantmost"
+# set = "exporthantmost"
 # set = "myset"
+# set = "myset2"
+# set = "myset3"
 # set = "failing6"
 # set = "failing7"
+# set = "powersmall"
 
 cblib_dir = joinpath(ENV["HOME"], "cblib/cblib.zib.de/download/all")
 
@@ -41,6 +44,7 @@ options = (
 
 convert_cone(cone::Hypatia.Cones.Nonnegative, out_type::Type) = Hypatia.Cones.Nonnegative{out_type}(cone.dim)
 convert_cone(cone::Hypatia.Cones.HypoPerLog, out_type::Type) = Hypatia.Cones.HypoPerLog{out_type}(cone.dim)
+convert_cone(cone::Hypatia.Cones.Power, out_type::Type) = Hypatia.Cones.Power{out_type}(out_type.(cone.alpha), cone.n)
 
 setfile = joinpath(@__DIR__, "../sets", set * ".txt")
 if !isfile(setfile)
@@ -57,7 +61,7 @@ for l in readlines(setfile)
     end
 end
 
-println("\nstarting benchmark run\n")
+println("\nstarting run\n")
 
 opt_count = 0
 all_iter_counts = Int[]
