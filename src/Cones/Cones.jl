@@ -24,7 +24,7 @@ import Hypatia.inv_sqrt_prod
 import Hypatia.invert
 
 # default_max_neighborhood() = 0.5 # TODO skajaa ye
-default_max_neighborhood() = 0.1 # TODO mosek
+default_max_neighborhood() = 0.5 # TODO mosek
 default_use_heuristic_neighborhood() = false
 
 # hessian_cache(T::Type{<:BlasReal}) = DenseSymCache{T}() # use Bunch Kaufman for BlasReals from start
@@ -205,8 +205,9 @@ use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 
 # in_neighborhood_sy(cone::Cone, mu::Real) = true
 
-# TODO remove or replace. currently still called in barrier tests
-in_neighborhood(cone::Cone, mu::Real) = true
+function in_neighborhood(cone::Cone, mu::Real, s::Real)
+    return dot(cone.point, cone.dual_point) > mu * Cones.get_nu(cone) * default_max_neighborhood() * s
+end
 # function in_neighborhood(cone::Cone, mu::Real)
 #     g = grad(cone)
 #     cone.dual_grad_inacc = false

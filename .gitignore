@@ -9,3 +9,4 @@ scratch.jl
 benchmark/outputs/*
 exporthanteasy/*
 exporthanthard/*
+exporthantsmall/*

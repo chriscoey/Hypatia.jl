@@ -440,7 +440,7 @@ function find_max_alpha(
 
             # TODO for feas, as soon as cone is feas, don't test feas again, since line search is backwards
 
-            if mu_temp > eps(Float64) && (affine_phase || (taukap_temp > mu_temp * 0.5)) #&& abs(taukap_temp - mu_temp) < mu_temp * 0.1)) # TODO redundant
+            if mu_temp > eps(Float64) && (affine_phase || (taukap_temp > mu_temp * Cones.default_max_neighborhood())) #&& abs(taukap_temp - mu_temp) < mu_temp * 0.1)) # TODO redundant
             # if mu_temp > eps(T) && taukap_temp > mu_temp * 1e-4 # solver.max_nbhd
                 # order the cones by how long it takes to check neighborhood condition and iterate in that order, to improve efficiency
                 # sortperm!(cone_order, cone_times, initialized = true)
@@ -460,8 +460,7 @@ function find_max_alpha(
                         if affine_phase
                             in_nbhd_k = true
                         else
-                            in_nbhd_k = (dot(primals_linesearch[k], duals_linesearch[k]) > 0.5 * mu_temp * Cones.get_nu(cone_k))
-                            # in_nbhd_k = Cones.in_neighborhood(cone_k, mu_temp)
+                            in_nbhd_k = Cones.in_neighborhood(cone_k, mu_temp, irtmu)
                             # in_nbhd_k = Cones.in_neighborhood_sy(cone_k, mu_temp)
                         end
                         # in_nbhd_k = (affine_phase ? true : Cones.in_neighborhood_sy(cone_k, mu_temp) && Cones.in_neighborhood(cone_k, mu_temp))
