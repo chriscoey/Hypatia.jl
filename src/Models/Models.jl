@@ -94,7 +94,7 @@ mutable struct Model{T <: Real}
         h::Vector{T},
         cones::Vector{Cones.Cone{T}};
         obj_offset::T = zero(T),
-        rescale::Bool = false, # rescale problem data # TODO un-scale in residuals (optional) and before returning solution
+        rescale::Bool = true, # rescale problem data # TODO un-scale in residuals (optional) and before returning solution
         ) where {T <: Real}
         model = new{T}()
 
