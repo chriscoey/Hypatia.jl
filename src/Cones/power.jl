@@ -8,7 +8,6 @@ where sum_i(alpha_i) = 1, alpha_i > 0
 barrier from "On self-concordant barriers for generalized power cones" by Roy & Xiao 2018
 -log(prod_i((u_i)^(2 * alpha_i)) - norm_2(w)^2) - sum_i((1 - alpha_i)*log(u_i))
 =#
-using ForwardDiff # TODO remove
 
 mutable struct Power{T <: Real} <: Cone{T}
     use_dual_barrier::Bool

@@ -44,7 +44,7 @@ function test_barrier_oracles(
         @test dot(point, minus_grad) ≈ norm(point) * norm(minus_grad) atol=init_tol rtol=init_tol
         @test point ≈ minus_grad atol=init_tol rtol=init_tol
         # @test CO.in_neighborhood(cone, minus_grad, one(T))
-        @test CO.in_neighborhood(cone, zero(T))
+        @test CO.in_neighborhood(cone, zero(T), one(T))
     end
     init_only && return
 
@@ -74,7 +74,6 @@ function test_barrier_oracles(
         if cone isa CO.HypoPerLog{T} && dim > 3
             return # TODO fix corrector for larger dim
         end
-    @show point
         FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
         # check log-homog property that F'''(point)[point] = -2F''(point)
         @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * fd_hess
@@ -127,7 +126,7 @@ function test_grad_hess(cone::CO.Cone{T}, point::Vector{T}, dual_point::Vector{T
 
     mock_dual_point = -grad + T(1e-3) * randn(length(grad))
     CO.load_dual_point(cone, mock_dual_point)
-    @test CO.in_neighborhood(cone, zero(T))
+    @test CO.in_neighborhood(cone, zero(T), one(T))
 
     return
 end
