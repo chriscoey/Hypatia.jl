@@ -31,6 +31,7 @@ mutable struct EpiSumPerEntropy{T <: Real} <: Cone{T}
     is_feas::Bool
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
+    old_hess
     inv_hess::Symmetric{T, Matrix{T}}
     hess_fact_cache
     nbhd_tmp::Vector{T}
@@ -42,6 +43,7 @@ mutable struct EpiSumPerEntropy{T <: Real} <: Cone{T}
     z::T
     sigma::Vector{T}
 
+    correction::Vector{T}
     barrier::Function
 
     function EpiSumPerEntropy{T}(
@@ -86,6 +88,7 @@ function setup_data(cone::EpiSumPerEntropy{T}) where {T <: Real}
     cone.nbhd_tmp2 = zeros(T, dim)
     cone.tau = zeros(T, cone.w_dim)
     cone.sigma = zeros(T, cone.w_dim)
+    cone.correction = zeros(T, dim)
     return
 end
 
@@ -192,6 +195,8 @@ function update_hess(cone::EpiSumPerEntropy)
         end
     end
 
+    cone.old_hess = Symmetric(copy(H), :U)
+
     cone.hess_updated = true
     return cone.hess
 end
@@ -205,23 +210,31 @@ function correction(
     tau = cone.tau
     sigma = cone.sigma
     z = cone.z
+    w_dim = cone.w_dim
+    u = cone.point[1]
+    v_idxs = cone.v_idxs
+    w_idxs = cone.w_idxs
+    point = cone.point
+    @views v = point[v_idxs]
+    @views w = point[w_idxs]
 
     third = zeros(T, cone.dim, cone.dim, cone.dim)
 
     # Tuuu
     third[1, 1, 1] = -2 / z ^ 3
     # Tuuv
-    third[1, 1, 2:(1 + w_dim)] = third[1, 2:(1 + w_dim), 1] = third[2:(1 + w_dim), 1, 1] = -2 * sigma / abs2(z)
+    third[1, 1, v_idxs] = third[1, v_idxs, 1] = third[v_idxs, 1, 1] = -2 * sigma / abs2(z)
     # Tuuw
-    third[1, 1, (2 + w_dim):end] = third[1, (2 + w_dim):end, 1] = third[(2 + w_dim):end, 1, 1] = -2 * tau / abs2(z)
+    third[1, 1, w_idxs] = third[1, w_idxs, 1] = third[w_idxs, 1, 1] = -2 * tau / abs2(z)
     # Tuvv
-    third[1, 2:(1 + w_dim), 2:(1 + w_dim)] = third[2:(1 + w_dim), 1, 2:(1 + w_dim)] = third[2:(1 + w_dim), 2:(1 + w_dim), 1] = -2 * sigma * sigma' / z - Diagonal(sigma ./ v / z)
+    third[1, v_idxs, v_idxs] = third[v_idxs, 1, v_idxs] = third[v_idxs, v_idxs, 1] = -2 * sigma * sigma' / z - Diagonal(sigma ./ v / z)
     # Tuvw
-    third[1, 2:(1 + w_dim), (2 + w_dim):end] = third[2:(1 + w_dim), 1, (2 + w_dim):end] = third[2:(1 + w_dim), (2 + w_dim):end, 1] =
-        third[1, (2 + w_dim):end, 2:(1 + w_dim)] = third[(2 + w_dim):end, 1, 2:(1 + w_dim)] = third[(2 + w_dim):end, 2:(1 + w_dim), 1] =
+    third[1, v_idxs, w_idxs] = third[v_idxs, 1, w_idxs] = third[v_idxs, w_idxs, 1] =
         -2 * sigma * tau' / z + Diagonal(inv.(v) / abs2(z))
+    third[1, w_idxs, v_idxs] = third[w_idxs, 1, v_idxs] = third[w_idxs, v_idxs, 1] =
+        -2 * tau * sigma' / z + Diagonal(inv.(v) / abs2(z))
     # Tuww
-    third[1, (2 + w_dim):end, (2 + w_dim):end] = third[(2 + w_dim):end, 1, (2 + w_dim):end] = third[(2 + w_dim):end, (2 + w_dim):end, 1] = -2 * tau * tau' / z - Diagonal(inv.(w) / abs2(z))
+    third[1, w_idxs, w_idxs] = third[w_idxs, 1, w_idxs] = third[w_idxs, w_idxs, 1] = -2 * tau * tau' / z - Diagonal(inv.(w) / abs2(z))
     # Tvvv
     for i in 1:w_dim, j in 1:w_dim, k in 1:w_dim
         (ti, tj, tk) = (i + 1, j + 1, k + 1)
@@ -256,7 +269,7 @@ function correction(
             # vi vj wj, symmetric to vi vj wi
             third[ti, tj, tk] = third[ti, tk, tj] = third[tj, ti, tk] = third[tj, tk, ti] =
                 third[tk, ti, tj] = third[tk, tj, ti] = t1 + sigma[j] / v[i] / z
-        elseif i != k && j != k
+        elseif j != k
             # vi vj wk
             third[ti, tj, tk] = third[ti, tk, tj] = third[tj, ti, tk] = third[tj, tk, ti] =
                 third[tk, ti, tj] = third[tk, tj, ti] = t1
@@ -273,14 +286,14 @@ function correction(
                 third[ti, tj, tj] = third[tj, ti, tj] = third[tj, tj, ti] = t1 + 2 * tau[i] / z / v[i] - 1 / v[i] / abs2(z)
             else
                 # vi wj wj
-                third[ti, ti, tk] = third[ti, tk, ti] = third[tk, ti, ti] = t1 - sigma[i] / w[j] / z
+                third[ti, tj, tj] = third[tj, ti, tj] = third[tj, tj, ti] = t1 - sigma[i] / w[j] / z
             end
         elseif i == j
-            # vi wi wk, symmetric to vk vj wk
+            # vi wi wk, symmetric to vi wj wi
             third[ti, tj, tk] = third[ti, tk, tj] = third[tj, ti, tk] = third[tj, tk, ti] =
                 third[tk, ti, tj] = third[tk, tj, ti] = t1 + tau[k] / z / v[i]
-        else
-            # vi vj wk
+        elseif i != k
+            # vi wj wk
             third[ti, tj, tk] = third[ti, tk, tj] = third[tj, ti, tk] = third[tj, tk, ti] =
                 third[tk, ti, tj] = third[tk, tj, ti] = t1
         end
@@ -304,9 +317,9 @@ function correction(
 
     third_order = reshape(third, cone.dim^2, cone.dim)
 
-    barrier = cone.barrier
-    FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
-    @show norm(third_order - FD_3deriv)
+    # barrier = cone.barrier
+    # FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), cone.point)
+    # @show norm(third_order - FD_3deriv)
     Hi_z = cone.old_hess \ dual_dir
     Hi_z .*= -0.5
     cone.correction .= reshape(third_order * primal_dir, cone.dim, cone.dim) * Hi_z

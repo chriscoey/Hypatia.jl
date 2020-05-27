@@ -70,18 +70,22 @@ function test_barrier_oracles(
 
     # check 3rd order corrector agrees with ForwardDiff
     # too slow if cone is too large or not using BlasReals
-    if CO.use_correction(cone) && dim < 10 && T in (Float32, Float64)
+    if CO.use_correction(cone)
         if cone isa CO.HypoPerLog{T} && dim > 3
             return # TODO fix corrector for larger dim
         end
-        FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
-        # check log-homog property that F'''(point)[point] = -2F''(point)
-        @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * fd_hess
         # check correction term agrees with directional 3rd derivative
         (primal_dir, dual_dir) = perturb_scale(zeros(T, dim), zeros(T, dim), noise, one(T))
         Hinv_z = CO.inv_hess_prod!(similar(dual_dir), dual_dir, cone)
-        FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_z / -2
-        @test FD_corr ≈ CO.correction(cone, primal_dir, dual_dir) atol=tol rtol=tol
+        corr = CO.correction(cone, primal_dir, dual_dir)
+        # TODO increase dim limit, not sure why so slow
+        if dim < 5 && T in (Float32, Float64)
+            FD_3deriv = ForwardDiff.jacobian(x -> ForwardDiff.hessian(barrier, x), point)
+            # check log-homog property that F'''(point)[point] = -2F''(point)
+            @test reshape(FD_3deriv * point, dim, dim) ≈ -2 * fd_hess
+            FD_corr = reshape(FD_3deriv * primal_dir, dim, dim) * Hinv_z / -2
+            @test FD_corr ≈ corr atol=tol rtol=tol
+        end
     end
 
     return
