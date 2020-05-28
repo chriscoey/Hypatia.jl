@@ -257,19 +257,25 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Epi
     Hvw = [vi * abs2(wi) / (z + 2 * wi) for (vi, wi) in zip(v, w)]
     Hww = [(z + wi) * abs2(wi) / (z + 2 * wi) for wi in w]
 
-    # Hi = inv(cone.old_hess)
-
-    Hi = zeros(T, dim, dim)
-    Hi[1, 1] = Huu
-    Hi[1, 2:end] = Hu
-    # Hi[v_idxs, v_idxs] = Hvv
-    # Hi[w_idxs, w_idxs] = Hww
+    @. @views prod[1, :] = arr[1, :] * Huu
+    @views mul!(prod[1, :], arr[2:end, :]', Hu, true, true)
+    @. @views prod[2:end, :] = Hu * arr[1, :]'
     for (i, v_idx, w_idx) in zip(1:w_dim, v_idxs, w_idxs)
-        Hi[v_idx, v_idx] = Hvv[i]
-        Hi[w_idx, w_idx] = Hww[i]
-        Hi[v_idx, w_idx] = Hvw[i]
+        @. @views prod[2i, :] += Hvv[i] * arr[2i, :] + Hvw[i] * arr[2i + 1, :]
+        @. @views prod[2i + 1, :] += Hww[i] * arr[2i + 1, :] + Hvw[i] * arr[2i, :]
     end
-    prod = Symmetric(Hi) * arr
+
+    # Hi = zeros(T, dim, dim)
+    # Hi[1, 1] = Huu
+    # Hi[1, 2:end] = Hu
+    # for (i, v_idx, w_idx) in zip(1:w_dim, v_idxs, w_idxs)
+    #     Hi[v_idx, v_idx] = Hvv[i]
+    #     Hi[w_idx, w_idx] = Hww[i]
+    #     Hi[v_idx, w_idx] = Hvw[i]
+    # end
+    # prod2 = Symmetric(Hi) * arr
+
+    return prod
 
     return prod
 end
