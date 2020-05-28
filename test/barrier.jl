@@ -225,16 +225,16 @@ end
 
 function test_episumperentropy_barrier(T::Type{<:Real})
     for w_dim in [3, 4, 6]
+        dim = 1 + 2 * w_dim
         function barrier(s)
-            (u, v, w) = (s[1], s[2:(w_dim + 1)], s[(w_dim + 2):dim])
+            (u, v, w) = (s[1], s[2:2:(dim - 1)], s[3:2:dim])
             return -log(u - sum(wi * log(wi / vi) for (vi, wi) in zip(v, w))) - sum(log(vi) + log(wi) for (vi, wi) in zip(v, w))
         end
-        dim = 1 + 2 * w_dim
         test_barrier_oracles(CO.EpiSumPerEntropy{T}(dim), barrier, init_tol = 1e-5)
     end
     for w_dim in [15, 65, 75, 100, 500]
         function barrier(s)
-            (u, v, w) = (s[1], s[2:(w_dim + 1)], s[(w_dim + 2):dim])
+            (u, v, w) = (s[1], s[2:2:(dim - 1)], s[3:2:dim])
             return -log(u - sum(wi * log(wi / vi) for (vi, wi) in zip(v, w))) - sum(log(vi) + log(wi) for (vi, wi) in zip(v, w))
         end
         dim = 1 + 2 * w_dim
