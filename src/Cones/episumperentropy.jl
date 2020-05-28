@@ -12,7 +12,6 @@ TODO
 - update examples for non-contiguous v/w
 - keep continguous copies?
 =#
-using ForwardDiff # TODO remove
 
 mutable struct EpiSumPerEntropy{T <: Real} <: Cone{T}
     use_dual_barrier::Bool
@@ -45,6 +44,7 @@ mutable struct EpiSumPerEntropy{T <: Real} <: Cone{T}
     tau::Vector{T}
     z::T
     sigma::Vector{T}
+    Hu::Vector{T} # first row of inverse Hessian
 
     correction::Vector{T}
     barrier::Function
@@ -94,6 +94,7 @@ function setup_data(cone::EpiSumPerEntropy{T}) where {T <: Real}
     cone.nbhd_tmp2 = zeros(T, dim)
     cone.tau = zeros(T, cone.w_dim)
     cone.sigma = zeros(T, cone.w_dim)
+    cone.Hu = zeros(T, dim - 1)
     cone.correction = zeros(T, dim)
     return
 end
@@ -231,7 +232,7 @@ function update_inv_hess_prod(cone::EpiSumPerEntropy)
     return
 end
 
-function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiSumPerEntropy{T}) where {T} # TODO remove T when not allcoating
+function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiSumPerEntropy)
     cone.inv_hess_prod_updated || update_inv_hess_prod(cone)
     dim = cone.dim
     w_dim = cone.w_dim
@@ -242,40 +243,27 @@ function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Epi
     @views v = point[v_idxs]
     @views w = point[w_idxs]
     z = cone.z
+    Hu = cone.Hu
+    logprod = u - z # TODO cache in feas check?
+    denom = z .+ 2 * w # TODO preallocate
 
-    Hu = zeros(T, dim - 1)
-    Hww = zeros(T, dim - 1)
     for (i, v_idx, w_idx) in zip(1:w_dim, v_idxs, w_idxs)
-        temp1 = sum(w[j] * log(w[j] / v[j]) for j in 1:w_dim if j != i)
-        temp2 = log(w[i] / v[i])
-        Hu[v_idx - 1] = -(u - temp1 - 2 * w[i] * temp2) * w[i] * v[i] / (z + 2 * w[i])
-        Hu[w_idx - 1] = abs2(w[i]) * (temp2 * z + u - temp1) / (z + 2 * w[i])
+        temp1 = logprod - w[i] * log(w[i] / v[i]) # TODO cache in feas check?
+        temp2 = log(w[i] / v[i])# TODO cache in feas check?
+        Hu[v_idx - 1] = -(u - temp1 - 2 * w[i] * temp2) * w[i] * v[i] / denom[i]
+        Hu[w_idx - 1] = abs2(w[i]) * (temp2 * z + u - temp1) / denom[i]
     end
     Huu = abs2(z) * (1 - dot(Hu, cone.old_hess[1, 2:end]))
-
-    Hvv = [(z + wi) * abs2(vi) / (z + 2 * wi) for (vi, wi) in zip(v, w)]
-    Hvw = [vi * abs2(wi) / (z + 2 * wi) for (vi, wi) in zip(v, w)]
-    Hww = [(z + wi) * abs2(wi) / (z + 2 * wi) for wi in w]
 
     @. @views prod[1, :] = arr[1, :] * Huu
     @views mul!(prod[1, :], arr[2:end, :]', Hu, true, true)
     @. @views prod[2:end, :] = Hu * arr[1, :]'
-    for (i, v_idx, w_idx) in zip(1:w_dim, v_idxs, w_idxs)
-        @. @views prod[2i, :] += Hvv[i] * arr[2i, :] + Hvw[i] * arr[2i + 1, :]
-        @. @views prod[2i + 1, :] += Hww[i] * arr[2i + 1, :] + Hvw[i] * arr[2i, :]
+    for i in 1:w_dim
+        zw = z + w[i]
+        Hvw = v[i] * abs2(w[i])
+        @. @views prod[2i, :] += (zw * abs2(v[i]) * arr[2i, :] + Hvw * arr[2i + 1, :]) / denom[i]
+        @. @views prod[2i + 1, :] += (zw * abs2(w[i]) * arr[2i + 1, :] + Hvw * arr[2i, :]) / denom[i]
     end
-
-    # Hi = zeros(T, dim, dim)
-    # Hi[1, 1] = Huu
-    # Hi[1, 2:end] = Hu
-    # for (i, v_idx, w_idx) in zip(1:w_dim, v_idxs, w_idxs)
-    #     Hi[v_idx, v_idx] = Hvv[i]
-    #     Hi[w_idx, w_idx] = Hww[i]
-    #     Hi[v_idx, w_idx] = Hvw[i]
-    # end
-    # prod2 = Symmetric(Hi) * arr
-
-    return prod
 
     return prod
 end
