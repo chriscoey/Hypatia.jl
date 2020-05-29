@@ -16,8 +16,8 @@ include(joinpath(@__DIR__, "nativesets.jl"))
 
 all_reals = [
     Float64,
-    Float32,
-    BigFloat,
+    # Float32,
+    # BigFloat,
     ]
 default_reals = [
     Float64,
@@ -25,25 +25,25 @@ default_reals = [
 
 # system solvers tests options
 system_solvers_instance_names = vcat(
-    inst_preproc,
-    inst_infeas,
+    # inst_preproc,
+    # inst_infeas,
     # inst_cones_few, # NOTE subset of inst_cones_many
     inst_cones_many,
     )
 system_solvers = Dict(
     "NaiveDense" => all_reals,
-    "NaiveSparse" => default_reals,
-    # "NaiveIndirect" => all_reals, # TODO fix
-    "NaiveElimDense" => all_reals,
-    "NaiveElimSparse" => default_reals,
-    "SymIndefDense" => all_reals,
-    "SymIndefSparse" => default_reals,
-    "QRCholDense" => all_reals,
+    # "NaiveSparse" => default_reals,
+    # # "NaiveIndirect" => all_reals, # TODO fix
+    # "NaiveElimDense" => all_reals,
+    # "NaiveElimSparse" => default_reals,
+    # "SymIndefDense" => all_reals,
+    # "SymIndefSparse" => default_reals,
+    # "QRCholDense" => all_reals,
     )
 
 # preprocessing test options
 preprocess_instance_names = vcat(
-    inst_preproc,
+    # inst_preproc,
     # inst_infeas,
     # inst_cones_few, # NOTE subset of inst_cones_many
     # inst_cones_many,
@@ -60,7 +60,7 @@ preprocess_flags = [
 init_use_indirect_instance_names = vcat(
     # inst_preproc,
     # inst_infeas,
-    inst_cones_few, # NOTE subset of inst_cones_many
+    # inst_cones_few, # NOTE subset of inst_cones_many
     # inst_cones_many,
     )
 init_use_indirect_system_solver = "SymIndefDense"
@@ -75,7 +75,7 @@ init_use_indirect_flags = [
 reduce_instance_names = vcat(
     # inst_preproc,
     # inst_infeas,
-    inst_cones_few, # NOTE subset of inst_cones_many
+    # inst_cones_few, # NOTE subset of inst_cones_many
     # inst_cones_many,
     )
 reduce_system_solver = "QRCholDense"
@@ -89,8 +89,8 @@ reduce_flags = [
 # other solver options
 timer = TimerOutput()
 other_options = (
-    # verbose = true,
-    verbose = false,
+    verbose = true,
+    # verbose = false,
     iter_limit = 250,
     time_limit = 6e1,
     timer = timer,
@@ -140,10 +140,10 @@ all_tests_time = time()
         run_instance_options(T, inst_name, reduce_system_solver, "$inst_name reduce = $reduce $T"; reduce = reduce, reduce_options...)
     end
 
-    @printf("\nnative tests total time: %8.2e seconds\n\n", time() - all_tests_time)
-    show(perf, allrows = true, allcols = true)
-    println("\n")
-    show(timer)
-    println("\n")
+    # @printf("\nnative tests total time: %8.2e seconds\n\n", time() - all_tests_time)
+    # show(perf, allrows = true, allcols = true)
+    # println("\n")
+    # show(timer)
+    # println("\n")
 end
 ;

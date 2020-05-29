@@ -23,7 +23,8 @@ import Hypatia.sqrt_prod
 import Hypatia.inv_sqrt_prod
 import Hypatia.invert
 
-default_max_neighborhood() = 0.5
+# default_max_neighborhood() = 0.5 # TODO skajaa ye
+default_max_neighborhood() = 0.5 # TODO mosek
 default_use_heuristic_neighborhood() = false
 
 # hessian_cache(T::Type{<:BlasReal}) = DenseSymCache{T}() # use Bunch Kaufman for BlasReals from start
@@ -50,16 +51,23 @@ include("wsosinterpnonnegative.jl")
 include("wsosinterppossemideftri.jl")
 include("wsosinterpepinormeucl.jl")
 
+include("scalcorr.jl")
+include("newton.jl")
+
 use_dual_barrier(cone::Cone) = cone.use_dual_barrier
-use_3order_corr(cone::Cone) = false
 load_point(cone::Cone, point::AbstractVector) = copyto!(cone.point, point)
+rescale_point(cone::Cone{T}, s::T) where {T} = nothing
+load_dual_point(cone::Cone, point::AbstractVector) = copyto!(cone.dual_point, point)
 dimension(cone::Cone) = cone.dim
 set_timer(cone::Cone, timer::TimerOutput) = (cone.timer = timer)
 
 is_feas(cone::Cone) = (cone.feas_updated ? cone.is_feas : update_feas(cone))
+is_dual_feas(cone::Cone) = update_dual_feas(cone) # TODO field? like above
 grad(cone::Cone) = (cone.grad_updated ? cone.grad : update_grad(cone))
+dual_grad(cone::Cone, mu::Real) = (cone.dual_grad_updated ? cone.dual_grad : update_dual_grad(cone, mu))
 hess(cone::Cone) = (cone.hess_updated ? cone.hess : update_hess(cone))
 inv_hess(cone::Cone) = (cone.inv_hess_updated ? cone.inv_hess : update_inv_hess(cone))
+barrier(cone::Cone) = cone.barrier
 
 # fallbacks
 
@@ -75,15 +83,21 @@ function hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::Cone)
     return prod
 end
 
-function update_hess_fact(cone::Cone{T}) where {T <: Real}
+function update_hess_fact(cone::Cone{T}; recover::Bool = true) where {T <: Real}
     cone.hess_fact_updated && return true
     if !cone.hess_updated
         update_hess(cone)
     end
 
-    if !update_fact(cone.hess_fact_cache, cone.hess)
+    fact_success = update_fact(cone.hess_fact_cache, cone.hess)
+
+    if !fact_success
+        if !recover
+            return false
+        end
+        # TODO if Chol, try adding sqrt(eps(T)) to diag and re-factorize
         if T <: BlasReal && cone.hess_fact_cache isa DensePosDefCache{T}
-            # @warn("switching Hessian cache from Cholesky to Bunch Kaufman")
+            @warn("switching Hessian cache from Cholesky to Bunch Kaufman")
             cone.hess_fact_cache = DenseSymCache{T}()
             load_matrix(cone.hess_fact_cache, cone.hess)
         else
@@ -95,7 +109,7 @@ function update_hess_fact(cone::Cone{T}) where {T <: Real}
             end
         end
         if !update_fact(cone.hess_fact_cache, cone.hess)
-            # @warn("Hessian Bunch-Kaufman factorization failed after recovery")
+            @warn("Hessian Bunch-Kaufman factorization failed after recovery")
             return false
         end
     end
@@ -154,37 +168,55 @@ inv_hess_nz_idxs_col_tril(cone::Cone, j::Int) = j:dimension(cone)
 
 use_heuristic_neighborhood(cone::Cone) = cone.use_heuristic_neighborhood
 
-function in_neighborhood(cone::Cone{T}, dual_point::AbstractVector, mu::Real) where {T <: Real}
-    # norm(H^(-1/2) * (z + mu * grad))
-    nbhd_tmp = cone.nbhd_tmp
-    g = grad(cone)
-    @. nbhd_tmp = dual_point + mu * g
+# # function in_neighborhood(cone::Cone{T}, dual_point::AbstractVector, mu::Real) where {T <: Real}
+# function in_neighborhood(cone::Cone{T}, mu::Real) where {T <: Real}
+#     # norm(H^(-1/2) * (z + mu * grad))
+#     nbhd_tmp = cone.nbhd_tmp
+#     g = grad(cone)
+#     # @. nbhd_tmp = dual_point + mu * g
+#     @. nbhd_tmp = cone.dual_point + mu * g
+#
+#     if use_heuristic_neighborhood(cone)
+#         error("shouldn't be using heuristic nbhd")
+#         nbhd = norm(nbhd_tmp, Inf) / norm(g, Inf)
+#         # nbhd = maximum(abs(dj / gj) for (dj, gj) in zip(nbhd_tmp, g)) # TODO try this neighborhood
+#     else
+#         has_hess_fact_cache = hasfield(typeof(cone), :hess_fact_cache)
+#         if has_hess_fact_cache && !update_hess_fact(cone)
+#             return false
+#         end
+#         nbhd_tmp2 = cone.nbhd_tmp2
+#         if has_hess_fact_cache && cone.hess_fact_cache isa DenseSymCache{T}
+#             inv_hess_prod!(nbhd_tmp2, nbhd_tmp, cone)
+#             nbhd_sqr = dot(nbhd_tmp2, nbhd_tmp)
+#             if nbhd_sqr < -eps(T) # TODO possibly loosen
+#                 # @warn("numerical failure: cone neighborhood is $nbhd_sqr")
+#                 return false
+#             end
+#             nbhd = sqrt(abs(nbhd_sqr))
+#         else
+#             inv_hess_sqrt_prod!(nbhd_tmp2, nbhd_tmp, cone)
+#             nbhd = norm(nbhd_tmp2)
+#         end
+#     end
+#
+#     return (nbhd < mu * cone.max_neighborhood)
+# end
 
-    if use_heuristic_neighborhood(cone)
-        nbhd = norm(nbhd_tmp, Inf) / norm(g, Inf)
-        # nbhd = maximum(abs(dj / gj) for (dj, gj) in zip(nbhd_tmp, g)) # TODO try this neighborhood
-    else
-        has_hess_fact_cache = hasfield(typeof(cone), :hess_fact_cache)
-        if has_hess_fact_cache && !update_hess_fact(cone)
-            return false
-        end
-        nbhd_tmp2 = cone.nbhd_tmp2
-        if has_hess_fact_cache && cone.hess_fact_cache isa DenseSymCache{T}
-            inv_hess_prod!(nbhd_tmp2, nbhd_tmp, cone)
-            nbhd_sqr = dot(nbhd_tmp2, nbhd_tmp)
-            if nbhd_sqr < -eps(T) # TODO possibly loosen
-                # @warn("numerical failure: cone neighborhood is $nbhd_sqr")
-                return false
-            end
-            nbhd = sqrt(abs(nbhd_sqr))
-        else
-            inv_hess_sqrt_prod!(nbhd_tmp2, nbhd_tmp, cone)
-            nbhd = norm(nbhd_tmp2)
-        end
-    end
+# in_neighborhood_sy(cone::Cone, mu::Real) = true
 
-    return (nbhd < mu * cone.max_neighborhood)
+function in_neighborhood(cone::Cone, mu::Real, s::Real)
+    return dot(cone.point, cone.dual_point) > mu * Cones.get_nu(cone) * default_max_neighborhood() * s
 end
+# function in_neighborhood(cone::Cone, mu::Real)
+#     g = grad(cone)
+#     cone.dual_grad_inacc = false
+#     conj_g = dual_grad(cone, mu)
+#     if cone.dual_grad_inacc
+#         return false
+#     end
+#     return (get_nu(cone) > 0.3 * mu * dot(g, conj_g))
+# end
 
 # utilities for arrays
 

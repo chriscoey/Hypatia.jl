@@ -107,12 +107,7 @@ mutable struct Solver{T <: Real}
     y_conv_tol::T
     z_conv_tol::T
     prev_is_slow::Bool
-    prev2_is_slow::Bool
-    prev_gap::T
-    prev_rel_gap::T
-    prev_x_feas::T
-    prev_y_feas::T
-    prev_z_feas::T
+    prev_worst_res::T
 
     function Solver{T}(;
         verbose::Bool = true,
@@ -217,6 +212,7 @@ function solve(solver::Solver{T}) where {T <: Real}
             @warn("initial mu is $(solver.mu) but should be 1 (this could indicate a problem with cone barrier oracles)")
         end
         Cones.load_point.(model.cones, point.primal_views)
+        Cones.load_dual_point.(model.cones, point.dual_views)
     end
 
     # setup iteration helpers
@@ -228,12 +224,7 @@ function solve(solver::Solver{T}) where {T <: Real}
     solver.y_conv_tol = inv(max(one(T), norm(model.b)))
     solver.z_conv_tol = inv(max(one(T), norm(model.h)))
     solver.prev_is_slow = false
-    solver.prev2_is_slow = false
-    solver.prev_gap = NaN
-    solver.prev_rel_gap = NaN
-    solver.prev_x_feas = NaN
-    solver.prev_y_feas = NaN
-    solver.prev_z_feas = NaN
+    solver.prev_worst_res = Inf
 
     stepper = solver.stepper
     @timeit solver.timer "setup_stepper" load(stepper, solver)
@@ -262,6 +253,11 @@ function solve(solver::Solver{T}) where {T <: Real}
 
         @timeit solver.timer "step" step(stepper, solver) || break
         solver.num_iters += 1
+
+
+        # if solver.num_iters > 1
+        #     error()
+        # end
     end
 
     # calculate result and iteration statistics and finish
@@ -270,6 +266,7 @@ function solve(solver::Solver{T}) where {T <: Real}
     point.z ./= solver.tau
     point.s ./= solver.tau
     Cones.load_point.(solver.model.cones, point.primal_views)
+    Cones.load_dual_point.(model.cones, point.dual_views)
 
     solver.solve_time = time() - start_time
 
@@ -295,25 +292,25 @@ function calc_residual(solver::Solver{T}) where {T <: Real}
     x_residual = solver.x_residual
     mul!(x_residual, model.G', point.z)
     mul!(x_residual, model.A', point.y, true, true)
-    solver.x_norm_res_t = norm(x_residual)
+    solver.x_norm_res_t = norm(x_residual, Inf)
     @. x_residual += model.c * solver.tau
-    solver.x_norm_res = norm(x_residual) / solver.tau
+    solver.x_norm_res = norm(x_residual, Inf) / solver.tau
     @. x_residual *= -1
 
     # y_residual = A*x - b*tau
     y_residual = solver.y_residual
     mul!(y_residual, model.A, point.x)
-    solver.y_norm_res_t = norm(y_residual)
+    solver.y_norm_res_t = norm(y_residual, Inf)
     @. y_residual -= model.b * solver.tau
-    solver.y_norm_res = norm(y_residual) / solver.tau
+    solver.y_norm_res = norm(y_residual, Inf) / solver.tau
 
     # z_residual = s + G*x - h*tau
     z_residual = solver.z_residual
     mul!(z_residual, model.G, point.x)
     @. z_residual += point.s
-    solver.z_norm_res_t = norm(z_residual)
+    solver.z_norm_res_t = norm(z_residual, Inf)
     @. z_residual -= model.h * solver.tau
-    solver.z_norm_res = norm(z_residual) / solver.tau
+    solver.z_norm_res = norm(z_residual, Inf) / solver.tau
 
     return
 end
@@ -321,12 +318,6 @@ end
 function calc_convergence_params(solver::Solver{T}) where {T <: Real}
     model = solver.model
     point = solver.point
-
-    solver.prev_gap = solver.gap
-    solver.prev_rel_gap = solver.rel_gap
-    solver.prev_x_feas = solver.x_feas
-    solver.prev_y_feas = solver.y_feas
-    solver.prev_z_feas = solver.z_feas
 
     solver.primal_obj_t = dot(model.c, point.x)
     solver.dual_obj_t = -dot(model.b, point.y) - dot(model.h, point.z)
@@ -379,25 +370,18 @@ function check_convergence(solver::Solver{T}) where {T <: Real}
         return true
     end
 
-    max_improve = zero(T)
-    for (curr, prev) in ((solver.gap, solver.prev_gap), (solver.rel_gap, solver.prev_rel_gap),
-        (solver.x_feas, solver.prev_x_feas), (solver.y_feas, solver.prev_y_feas), (solver.z_feas, solver.prev_z_feas))
-        if isnan(prev) || isnan(curr)
-            continue
-        end
-        max_improve = max(max_improve, (prev - curr) / (abs(prev) + eps(T)))
-    end
-    if max_improve < solver.tol_slow
-        if solver.prev_is_slow && solver.prev2_is_slow
+    prev_worst_res = solver.prev_worst_res
+    worst_res = solver.prev_worst_res = max(solver.gap, solver.x_feas, solver.y_feas, solver.z_feas)
+    if (prev_worst_res - worst_res) / prev_worst_res < solver.tol_slow
+        if solver.prev_is_slow
             solver.verbose && println("slow progress in consecutive iterations; terminating")
             solver.status = :SlowProgress
             return true
         else
-            solver.prev2_is_slow = solver.prev_is_slow
             solver.prev_is_slow = true
+            solver.verbose && println("worst residual did not improve significantly")
         end
     else
-        solver.prev2_is_slow = solver.prev_is_slow
         solver.prev_is_slow = false
     end
 

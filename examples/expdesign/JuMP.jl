@@ -67,6 +67,16 @@ example_tests(::Type{ExpDesignJuMP{Float64}}, ::SlowInstances) = begin
     ((100, 200, 200, 10, false, false, true),),
     ]
 end
+example_tests(::Type{ExpDesignJuMP{Float64}}, ::ExpInstances) = begin
+    options = (tol_feas = 1e-5, tol_rel_opt = 1e-4, tol_abs_opt = 1e-4)
+    return [
+    ((3, 5, 7, 2, true, false, false), ClassicConeOptimizer),
+    ((25, 75, 125, 10, true, false, false), ClassicConeOptimizer),
+    # uncomment when geomean -> exp bridge is in
+    # ((3, 5, 7, 2, false, true, false), ClassicConeOptimizer),
+    # ((25, 75, 125, 10, false, true, false), ClassicConeOptimizer),
+    ]
+end
 
 function build(inst::ExpDesignJuMP{T}) where {T <: Float64} # TODO generic reals
     (q, p, n, n_max) = (inst.q, inst.p, inst.n, inst.n_max)

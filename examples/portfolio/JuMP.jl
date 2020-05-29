@@ -45,6 +45,13 @@ example_tests(::Type{PortfolioJuMP{Float64}}, ::SlowInstances) = [
     ((3000, true, true),),
     ]
 
+example_tests(::Type{PortfolioJuMP{Float64}}, ::PolyhedralInstances) = [
+    ((10, false, true),),
+    ((20, false, true),),
+    # ((30, false, true),),
+    ((40, false, true),),
+    ]
+
 function build(inst::PortfolioJuMP{T}) where {T <: Float64} # TODO generic reals
     num_stocks = inst.num_stocks
     returns = rand(num_stocks)
@@ -63,7 +70,8 @@ function build(inst::PortfolioJuMP{T}) where {T <: Float64} # TODO generic reals
         JuMP.@constraint(model, vcat(gamma, aff_expr) in JuMP.SecondOrderCone())
     end
     if inst.epinorminf_constrs
-        JuMP.@constraint(model, vcat(gamma * sqrt(num_stocks), aff_expr) in MOI.NormOneCone(num_stocks + 1))
+        # TODO bring back NormOneCone later
+        # JuMP.@constraint(model, vcat(gamma * sqrt(num_stocks), aff_expr) in MOI.NormOneCone(num_stocks + 1))
         JuMP.@constraint(model, vcat(gamma, aff_expr) in MOI.NormInfinityCone(num_stocks + 1))
     end
 

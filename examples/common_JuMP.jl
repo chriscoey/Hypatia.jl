@@ -8,6 +8,7 @@ include(joinpath(@__DIR__, "common.jl"))
 
 import JuMP
 const MOI = JuMP.MOI
+import Hypatia # for dumping instances
 
 # SOCone, PSDCone, ExpCone, PowerCone only
 MOI.Utilities.@model(ClassicConeOptimizer,
@@ -52,6 +53,60 @@ MOI.Utilities.@model(ExpConeOptimizer,
     )
 
 abstract type ExampleInstanceJuMP{T <: Real} <: ExampleInstance{T} end
+
+function write_and_run(
+    E::Type{<:ExampleInstanceJuMP{Float64}},
+    inst_data::Tuple,
+    extender = nothing,
+    solver_options = (); # ignored
+    out_type::Type = BigFloat,
+    rseed::Int = 1
+    )
+    Random.seed!(rseed)
+    inst = E(inst_data...)
+    model = build(inst)
+
+    if !isnothing(extender)
+        # use MOI automated extended formulation
+        opt = MOI.Bridges.full_bridge_optimizer(MOI.Utilities.CachingOptimizer(extender{Float64}(), Hypatia.Optimizer()), Float64)
+    end
+    JuMP.set_optimizer(model, () -> opt)
+
+    MOI.Utilities.attach_optimizer(JuMP.backend(model))
+    caching_opt = JuMP.backend(model).optimizer.model
+    hyp_opt = Hypatia.Optimizer(; solver_options...)
+    MOI.copy_to(hyp_opt, caching_opt.model)
+
+    # open("try_$(out_type).jl", "w") do io
+        model = hyp_opt.model
+        # hack just for signomial example
+        new_cones = Hypatia.Cones.Cone{out_type}[]
+        for c in model.cones
+            if c isa Hypatia.Cones.Nonnegative
+                push!(new_cones, Hypatia.Cones.Nonnegative{out_type}(c.dim))
+            elseif c isa Hypatia.Cones.HypoPerLog
+                push!(new_cones, Hypatia.Cones.HypoPerLog{out_type}(c.dim))
+            else
+                error()
+            end
+        end
+        new_model = Hypatia.Models.Model{out_type}(
+            out_type.(model.c),
+            out_type.(model.A),
+            out_type.(model.b),
+            out_type.(model.G),
+            out_type.(model.h),
+            new_cones,
+            )
+        # println(io, "return ", new_model)
+    # end
+
+    solver = Solvers.Solver{out_type}()
+    Solvers.load(solver, new_model)
+    Solvers.solve(solver)
+    return
+
+end
 
 # fallback: just check optimal status
 function test_extra(inst::ExampleInstanceJuMP{T}, model::JuMP.Model) where T

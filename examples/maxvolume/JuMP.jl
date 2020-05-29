@@ -39,6 +39,11 @@ example_tests(::Type{MaxVolumeJuMP{Float64}}, ::SlowInstances) = [
     ((2000, false, true),),
     ((2000, true, true),),
     ]
+example_tests(::Type{MaxVolumeJuMP{Float64}}, ::ExpInstances) = [
+    ((10, false, true), ClassicConeOptimizer),
+    ((100, false, true), ClassicConeOptimizer),
+    ((1000, true, true), ClassicConeOptimizer),
+    ]
 
 function build(inst::MaxVolumeJuMP{T}) where {T <: Float64} # TODO generic reals
     n = inst.n

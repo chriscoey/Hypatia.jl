@@ -16,17 +16,22 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     n::Int
     is_complex::Bool
     point::Vector{T}
+    dual_point::Vector{T}
     timer::TimerOutput
 
     feas_updated::Bool
     grad_updated::Bool
+    dual_grad_updated::Bool
     hess_updated::Bool
     inv_hess_updated::Bool
     hess_inv_hess_updated::Bool
+    scal_hess_updated::Bool
     is_feas::Bool
     grad::Vector{T}
+    dual_grad::Vector{T}
     hess::Symmetric{T, SparseMatrixCSC{T, Int}}
     inv_hess::Symmetric{T, Matrix{T}}
+    scal_hess::Symmetric{T, Matrix{T}}
     nbhd_tmp::Vector{T}
     nbhd_tmp2::Vector{T}
 
@@ -45,6 +50,14 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
     schur::T
     rtdiag::Vector{T}
 
+    barrier::Function
+    newton_cone
+    newton_point::Vector{T}
+    newton_grad::Vector{T}
+    newton_stepdir::Vector{T}
+    newton_hess::Matrix{T}
+    newton_norm::T
+
     function EpiNormInf{T, R}(
         dim::Int;
         use_dual::Bool = false,
@@ -57,21 +70,26 @@ mutable struct EpiNormInf{T <: Real, R <: RealOrComplex{T}} <: Cone{T}
         cone.dim = dim
         cone.is_complex = (R <: Complex)
         cone.n = (cone.is_complex ? div(dim - 1, 2) : dim - 1)
+
+        cone.barrier = (x -> -sum(log(abs2(x[1]) - abs2(wi)) for wi in x[2:end]) + (cone.n - 1) * log(x[1]))
         return cone
     end
 end
 
 use_heuristic_neighborhood(cone::EpiNormInf) = false
 
-reset_data(cone::EpiNormInf) = (cone.feas_updated = cone.grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_inv_hess_updated = false)
+reset_data(cone::EpiNormInf) = (cone.feas_updated = cone.grad_updated = cone.dual_grad_updated = cone.hess_updated = cone.inv_hess_updated = cone.hess_inv_hess_updated = cone.scal_hess_updated = false)
 
 # TODO only allocate the fields we use
 function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
     reset_data(cone)
     dim = cone.dim
     cone.point = zeros(T, dim)
+    cone.dual_point = zeros(T, dim)
     cone.grad = zeros(T, dim)
+    cone.dual_grad = zeros(T, dim)
     cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
+    cone.scal_hess = Symmetric(zeros(T, dim, dim), :U)
     cone.nbhd_tmp = zeros(T, dim)
     cone.nbhd_tmp2 = zeros(T, dim)
     n = cone.n
@@ -89,8 +107,18 @@ function setup_data(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where 
         cone.edgeR = zeros(R, n)
         cone.invedgeR = zeros(R, n)
     end
+
+    cone.newton_cone = deepcopy(cone)
+    cone.newton_point = zeros(T, dim)
+    cone.newton_grad = zeros(T, dim)
+    cone.newton_stepdir = zeros(T, dim)
+    cone.newton_hess = zeros(T, dim, dim)
     return
 end
+
+use_scaling(cone::EpiNormInf) = true
+
+use_correction(cone::EpiNormInf) = true
 
 get_nu(cone::EpiNormInf) = cone.n + 1
 
@@ -109,6 +137,11 @@ function update_feas(cone::EpiNormInf)
 
     cone.feas_updated = true
     return cone.is_feas
+end
+
+function update_dual_feas(cone::EpiNormInf)
+    u = cone.dual_point[1]
+    return (u > 0 && u > norm(view(cone.dual_point, 2:cone.dim), 1)) # TODO fix for complex
 end
 
 function update_grad(cone::EpiNormInf{T, R}) where {R <: RealOrComplex{T}} where {T <: Real}
@@ -353,6 +386,53 @@ function inv_hess_sqrt_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone
     end
 
     return prod
+end
+
+# TODO complex
+# TODO in-place, inbounds
+function correction(cone::EpiNormInf{T}, primal_dir::AbstractVector{T}, dual_dir::AbstractVector{T}) where {T}
+    dim = cone.dim
+    point = cone.point
+    u = cone.point[1]
+    w = cone.w
+    den = cone.den
+
+    Hinv_z = inv_hess_prod!(similar(dual_dir), dual_dir, cone)
+
+    # third order derivatives
+    uuu = 4 * u * sum((3 - 4 * u / z * u) / z / z for z in den) + 2 * (cone.n - 1) / u / u / u
+    # TODO get below from cone.wden and cone.uden (can do with broadcast)
+    uuw = zeros(cone.n)
+    uww = zeros(cone.n)
+    www = zeros(cone.n)
+    for i in 1:cone.n
+        wi = w[i]
+        deni = den[i]
+        wideni4 = 4 * wi / deni
+        udeni4 = 4 * u / deni
+        www[i] = wideni4 * (3 + wideni4 * wi) / deni
+        uww[i] = -udeni4 * (1 + wideni4 * wi) / deni
+        uuw[i] = wideni4 * (-1 + udeni4 * u) / deni
+    end
+
+    # third order derivative multiplied by s
+    u_dir = primal_dir[1]
+    Hiz1 = Hinv_z[1]
+    corr = zeros(T, dim)
+    @views corr1 = (uuu * u_dir + dot(uuw, primal_dir[2:end])) * Hiz1
+    for i in 1:cone.n
+        j = i + 1
+        Hizj = Hinv_z[j]
+        pdj = primal_dir[j]
+        uwwi = uww[i]
+        edgei = uuw[i] * u_dir + uwwi * pdj
+        corr1 += edgei * Hizj
+        corr[j] = edgei * Hiz1 + (uwwi * u_dir + www[i] * pdj) * Hizj
+    end
+    corr[1] = corr1
+    @. corr /= -2
+
+    return corr
 end
 
 hess_nz_count(cone::EpiNormInf{<:Real, <:Real}) = 3 * cone.dim - 2

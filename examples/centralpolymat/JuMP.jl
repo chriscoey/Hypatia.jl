@@ -62,6 +62,20 @@ example_tests(::Type{CentralPolyMatJuMP{Float64}}, ::SlowInstances) = begin
     ((6, 3, false), nothing, options),
     ]
 end
+example_tests(::Type{CentralPolyMatJuMP{Float64}}, ::ExpInstances) = begin
+    options = (tol_feas = 1e-7, tol_rel_opt = 1e-6, tol_abs_opt = 1e-6)
+    return [
+    ((1, 10, true), ClassicConeOptimizer, options),
+    ((2, 3, true), ClassicConeOptimizer, options),
+    ((2, 5, true), ClassicConeOptimizer, options),
+    ((7, 2, true), ClassicConeOptimizer, options),
+    # TODO uncomment when geomean -> exp bridge is in
+    # ((1, 10, false), ClassicConeOptimizer, options),
+    # ((2, 3, false), ClassicConeOptimizer, options),
+    # ((2, 5, false), ClassicConeOptimizer, options),
+    # ((7, 2, false), ClassicConeOptimizer, options),
+    ]
+end
 
 function build(inst::CentralPolyMatJuMP{T}) where {T <: Float64} # TODO generic reals
     (n, halfdeg) = (inst.n, inst.halfdeg)
