@@ -34,7 +34,7 @@ mutable struct EpiSumPerEntropy{T <: Real} <: Cone{T}
     grad::Vector{T}
     hess::Symmetric{T, Matrix{T}}
     old_hess
-    inv_hess # ::Symmetric{T, SparseMatrixCSC{T, Int}}
+    inv_hess::Symmetric{T, SparseMatrixCSC{T, Int}}
     hess_fact_cache
     nbhd_tmp::Vector{T}
     nbhd_tmp2::Vector{T}
@@ -68,8 +68,6 @@ mutable struct EpiSumPerEntropy{T <: Real} <: Cone{T}
         cone.max_neighborhood = max_neighborhood
         cone.dim = dim
         cone.w_dim = div(dim - 1, 2)
-        # cone.v_idxs = 2:(cone.w_dim + 1)
-        # cone.w_idxs = (cone.w_dim + 2):dim
         cone.v_idxs = 2:2:(dim - 1)
         cone.w_idxs = 3:2:dim
         cone.hess_fact_cache = hess_fact_cache
@@ -94,7 +92,6 @@ function setup_data(cone::EpiSumPerEntropy{T}) where {T <: Real}
     cone.grad = zeros(T, dim)
     cone.hess = Symmetric(zeros(T, dim, dim), :U)
     cone.old_hess = Symmetric(zeros(T, dim, dim), :U)
-    cone.inv_hess = Symmetric(zeros(T, dim, dim), :U)
     load_matrix(cone.hess_fact_cache, cone.hess)
     cone.nbhd_tmp = zeros(T, dim)
     cone.nbhd_tmp2 = zeros(T, dim)
@@ -271,49 +268,53 @@ function inv_hess_vals(cone)
     return
 end
 
-# function update_inv_hess(cone::EpiSumPerEntropy)
-#     inv_hess_vals(cone)
-#     w_dim = cone.w_dim
-#
-#     if !isdefined(cone, :inv_hess)
-#         # initialize sparse idxs for upper triangle of Hessian
-#         dim = cone.dim
-#         H_nnz_tri = 2 * dim - 1 + w_dim
-#         I = Vector{Int}(undef, H_nnz_tri)
-#         J = Vector{Int}(undef, H_nnz_tri)
-#         idxs1 = 1:dim
-#         I[idxs1] .= 1
-#         J[idxs1] .= idxs1
-#         idxs2 = (dim + 1):(2 * dim - 1)
-#         I[idxs2] .= 2:dim
-#         J[idxs2] .= 2:dim
-#         idxs3 = (2 * dim):H_nnz_tri
-#         I[idxs3] .= 2:2:dim
-#         J[idxs3] .= 3:2:dim
-#         V = ones(T, H_nnz_tri)
-#         cone.hess = Symmetric(sparse(I, J, V, dim, dim), :U)
-#     end
-#
-#     # modify nonzeros of sparse data structure of upper triangle of Hessian
-#     H_nzval = cone.hess.data.nzval
-#     H_nzval[1] = cone.Huu
-#     nz_idx = 2
-#     diag_idx = 1
-#     @inbounds for j in 1:n
-#         H_nzval[nz_idx] = cone.Hvv[diag_idx]
-#         H_nzval[nz_idx + 1] = cone.Hww[diag_idx]
-#         nz_idx += 2
-#         diag_idx += 1
-        # H_nzval[nz_idx] = cone.Huu[diag_idx]
-        # H_nzval[nz_idx + 1] = cone.Hvw[j]
-        # H_nzval[nz_idx + 2] = cone.Hvw[diag_idx]
-        # nz_idx += 3
-#         end
-#     end
-#
-#     cone.inv_hess_updated = true
-#     return cone.inv_hess
-# end
+function update_inv_hess(cone::EpiSumPerEntropy{T}) where {T}
+    inv_hess_vals(cone)
+    dim = cone.dim
+    w_dim = cone.w_dim
+
+    if !isdefined(cone, :inv_hess)
+        # initialize sparse idxs for upper triangle of Hessian
+        dim = cone.dim
+        H_nnz_tri = 2 * dim - 1 + w_dim
+        I = Vector{Int}(undef, H_nnz_tri)
+        J = Vector{Int}(undef, H_nnz_tri)
+        idxs1 = 1:dim
+        I[idxs1] .= 1
+        J[idxs1] .= idxs1
+        idxs2 = (dim + 1):(2 * dim - 1)
+        I[idxs2] .= 2:dim
+        J[idxs2] .= 2:dim
+        idxs3 = (2 * dim):H_nnz_tri
+        I[idxs3] .= 2:2:dim
+        J[idxs3] .= 3:2:dim
+        V = ones(T, H_nnz_tri)
+        cone.inv_hess = Symmetric(sparse(I, J, V, dim, dim), :U)
+    end
+
+    # modify nonzeros of sparse data structure of upper triangle of Hessian
+    H_nzval = cone.inv_hess.data.nzval
+    H_nzval[1] = cone.Huu
+    vw_idx = 1
+    nz_idx = 2
+    dim_idx = 1
+    @inbounds for j in 1:w_dim
+        H_nzval[nz_idx] = cone.Hu[dim_idx]
+        H_nzval[nz_idx + 1] = cone.Hvv[vw_idx] / cone.denom[vw_idx]
+        nz_idx += 2
+        dim_idx += 1
+        H_nzval[nz_idx] = cone.Hu[dim_idx]
+        H_nzval[nz_idx + 1] = cone.Hvw[vw_idx] / cone.denom[vw_idx]
+        # @show typeof(cone.Hvw)
+        H_nzval[nz_idx + 2] = cone.Hww[vw_idx] / cone.denom[vw_idx]
+        nz_idx += 3
+        vw_idx += 1
+        dim_idx += 1
+    end
+
+    cone.inv_hess_updated = true
+    return cone.inv_hess
+end
 
 function inv_hess_prod!(prod::AbstractVecOrMat, arr::AbstractVecOrMat, cone::EpiSumPerEntropy)
     # updates for nonzero values in the inverse Hessian
