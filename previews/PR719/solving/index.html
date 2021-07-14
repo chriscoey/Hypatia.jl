@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Solving · Hypatia</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.0/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Hypatia</span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../cones/">Cones</a></li><li><a class="tocitem" href="../modeling/">Modeling</a></li><li class="is-active"><a class="tocitem" href>Solving</a><ul class="internal"><li><a class="tocitem" href="#Native-interface"><span>Native interface</span></a></li><li><a class="tocitem" href="#MathOptInterface-and-JuMP"><span>MathOptInterface and JuMP</span></a></li></ul></li><li><a class="tocitem" href="../examples/">Examples</a></li><li><a class="tocitem" href="../scripts/">Scripts</a></li><li><span class="tocitem">API reference</span><ul><li><a class="tocitem" href="../api/hypatia/">Hypatia module</a></li><li><a class="tocitem" href="../api/cones/">Cones module</a></li><li><a class="tocitem" href="../api/models/">Models module</a></li><li><a class="tocitem" href="../api/solvers/">Solvers module</a></li><li><a class="tocitem" href="../api/polyutils/">PolyUtils module</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Solving</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Solving</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/chriscoey/Hypatia.jl/blob/master/docs/src/solving.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Solving-conic-models"><a class="docs-heading-anchor" href="#Solving-conic-models">Solving conic models</a><a id="Solving-conic-models-1"></a><a class="docs-heading-anchor-permalink" href="#Solving-conic-models" title="Permalink"></a></h1><p>Hypatia can be accessed through a low-level native Julia interface or through open-source modeling tools such as <a href="https://github.com/jump-dev/JuMP.jl">JuMP</a> and <a href="https://github.com/jump-dev/Convex.jl">Convex.jl</a>. The native interface is more expressive, allowing Hypatia to solve conic models expressed with generic real floating point types and structured matrices or linear operators, for example. However, it is typically sufficient and more convenient to use JuMP.</p><h2 id="Native-interface"><a class="docs-heading-anchor" href="#Native-interface">Native interface</a><a id="Native-interface-1"></a><a class="docs-heading-anchor-permalink" href="#Native-interface" title="Permalink"></a></h2><p>Hypatia&#39;s <a href="../api/solvers/#Hypatia.Solvers"><code>Solvers</code></a> module provides a <a href="../api/solvers/#Hypatia.Solvers.Solver"><code>Solver</code></a> type with low-level functions for solving models and querying solve information and conic certificates; see <a href="../api/solvers/#Solvers-module">Solvers module</a>.</p><p>Below is a simple example of a spectral norm optimization problem:</p><pre><code class="language-julia">using LinearAlgebra
+import Hypatia
+import Hypatia.Cones
+import Hypatia.Solvers
+
+T = BigFloat
+(Xn, Xm) = (3, 4)
+dim = Xn * Xm
+c = vcat(one(T), zeros(T, dim))
+A = hcat(zeros(T, dim, 1), Matrix{T}(I, dim, dim))
+b = rand(T, dim)
+G = -one(T) * I
+h = vcat(zero(T), rand(T, dim))
+cones = [Cones.EpiNormSpectral{T, T}(Xn, Xm),]
+model = Hypatia.Models.Model{T}(c, A, b, G, h, cones);</code></pre><p>Now we call optimize and query the solution:</p><pre><code class="language-julia">julia&gt; solver = Solvers.Solver{T}(verbose = true);
+
+julia&gt; Solvers.load(solver, model);
+
+julia&gt; Solvers.solve(solver);
+
+ iter        p_obj        d_obj |  abs_gap    x_feas    z_feas |      tau       kap        mu |  dir_res  step     alpha
+    0   2.0000e+00   0.0000e+00 | 4.00e+00  5.00e-01  6.14e-01 | 1.00e+00  1.00e+00  1.00e+00 |
+    1   2.5147e+00   2.2824e+00 | 1.07e+00  2.24e-01  2.74e-01 | 6.71e-01  7.44e-01  3.14e-01 | 3.45e-77  co-a  7.00e-01
+    2   3.0958e+00   3.0966e+00 | 3.39e-01  7.40e-02  9.08e-02 | 6.08e-01  2.70e-01  1.01e-01 | 1.73e-77  co-a  7.00e-01
+...
+   33   3.2962e+00   3.2962e+00 | 1.33e-30  1.86e-30  2.29e-30 | 2.21e-01  1.88e-30  3.50e-31 | 4.85e-50  co-a  5.00e-01
+   34   3.2962e+00   3.2962e+00 | 2.29e-31  2.77e-31  3.40e-31 | 2.23e-01  1.56e-31  5.28e-32 | 2.70e-48  co-a  8.50e-01
+   35   3.2962e+00   3.2962e+00 | 7.32e-32  1.21e-31  1.49e-31 | 2.04e-01  1.15e-31  1.93e-32 | 2.52e-49  co-a  6.00e-01
+optimal solution found; terminating
+
+status is Optimal after 35 iterations and 1.417 seconds
+
+julia&gt; Solvers.get_status(solver)
+Optimal::Status = 3
+
+julia&gt; Solvers.get_primal_obj(solver)
+3.296219213377718379486912616497183695150874915748434424139285907044225666610375
+
+julia&gt; Solvers.get_dual_obj(solver)
+3.29621921337771837948691261649702242580041815859477664034990154727149325280482
+
+julia&gt; Solvers.get_x(solver)
+13-element Vector{BigFloat}:
+ 3.296219213377718379486912616497183695150874915748434424139285907044225666610375
+ 0.2014951884389319019635492500560556305705409904059068283971229702024509946542355
+ 0.2974304558864173403751380894865665103907350340298129119333915978313596204101965
+...
+ 0.5076818262444516526146124557277599761994226912376378984924714206880970861448005
+ 0.4719189060586783692091058031965586401783925037880741775651825386863356120491953
+ 0.6377366379371803537625028513405673487028387050401566067448589228065218202592247</code></pre><h2 id="MathOptInterface-and-JuMP"><a class="docs-heading-anchor" href="#MathOptInterface-and-JuMP">MathOptInterface and JuMP</a><a id="MathOptInterface-and-JuMP-1"></a><a class="docs-heading-anchor-permalink" href="#MathOptInterface-and-JuMP" title="Permalink"></a></h2><p><a href="https://github.com/jump-dev/JuMP.jl">JuMP</a> is generally more user-friendly than Hypatia&#39;s native interface, though it may make sense to try the more-expressive native interface for large dense or structured models. Hypatia exports MathOptInterface wrappers for Hypatia&#39;s solver (see <a href="../api/hypatia/#Hypatia.Optimizer"><code>Optimizer</code></a>) and predefined cones (see <a href="../api/hypatia/#MathOptInterface-cones">MathOptInterface cones</a>).</p><p>Below is a simple example from D-optimal experiment design:</p><pre><code class="language-julia">using LinearAlgebra
+using JuMP
+using Hypatia
+
+opt = Hypatia.Optimizer(verbose = false)
+model = Model(() -&gt; opt)
+@variable(model, x[1:3] &gt;= 0)
+@constraint(model, sum(x) == 5)
+@variable(model, hypo)
+@objective(model, Max, hypo)
+V = rand(2, 3)
+Q = V * diagm(x) * V&#39;
+aff = vcat(hypo, [Q[i, j] for i in 1:2 for j in 1:i]...)
+@constraint(model, aff in MOI.RootDetConeTriangle(2))</code></pre><p>The model is now:</p><pre><code class="language-julia">julia&gt; model
+A JuMP Model
+Maximization problem with:
+Variables: 4
+Objective function type: VariableRef
+`AffExpr`-in-`MathOptInterface.EqualTo{Float64}`: 1 constraint
+`Vector{AffExpr}`-in-`MathOptInterface.RootDetConeTriangle`: 1 constraint
+`VariableRef`-in-`MathOptInterface.GreaterThan{Float64}`: 3 constraints
+Model mode: AUTOMATIC
+CachingOptimizer state: EMPTY_OPTIMIZER
+Solver name: Hypatia
+Names registered in the model: hypo, x</code></pre><p>Now we call optimize and query the solution:</p><pre><code class="language-julia">julia&gt; optimize!(model)
+
+julia&gt; termination_status(model)
+OPTIMAL::TerminationStatusCode = 1
+
+julia&gt; objective_value(model)
+1.4303650845824805
+
+julia&gt; value.(x)
+3-element Vector{Float64}:
+ 2.499999987496876
+ 2.499999992300735
+ 2.0202389761081463e-8</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../modeling/">« Modeling</a><a class="docs-footer-nextpage" href="../examples/">Examples »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Monday 24 May 2021 22:32">Monday 24 May 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
