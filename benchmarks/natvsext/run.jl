@@ -9,6 +9,7 @@ import DataFrames
 import CSV
 import Hypatia
 using MosekTools
+using ECOS
 
 include(joinpath(@__DIR__, "../../examples/Examples.jl"))
 using Main.Examples
@@ -17,7 +18,7 @@ using Distributed
 include(joinpath(@__DIR__, "spawn.jl"))
 
 # path to write results DataFrame to CSV
-results_path = joinpath(mkpath(joinpath(@__DIR__, "raw")), "bench.csv")
+results_path = joinpath(mkpath(joinpath(@__DIR__, "raw")), "ecos.csv")
 
 # option to keep setting up larger models, only if solver is Hypatia,
 # even if last solve was killed
@@ -58,6 +59,13 @@ mosek_solver = ("Mosek", Mosek.Optimizer, (
     MSK_DPAR_INTPNT_CO_TOL_INFEAS = tol_tight,
     ))
 
+ecos_solver = ("Ecos", ECOS.Optimizer, (
+    verbose = 3 * verbose,
+    reltol = tol_loose,
+    abstol = tol_tight,
+    feastol = tol_tight,
+    ))
+
 # instance sets and solvers to run
 inst_sets = [
     #= natural formulations paper =#
@@ -72,6 +80,7 @@ inst_sets = [
     ("nat", hyp_solver),
     ("ext", hyp_solver),
     ("ext", mosek_solver),
+    ("ext", ecos_solver),
     ("logdet", hyp_solver),
     ("sepspec", hyp_solver),
     ("direct", hyp_solver),
@@ -94,10 +103,10 @@ JuMP_examples = [
     # "nearestpolymat",
     # "polynorm",
     #= spectral function cones paper =#
-    "centralpolymat",
-    "classicalquantum",
-    "covarianceest",
-    "experimentdesign",
+    # "centralpolymat",
+    # "classicalquantum",
+    # "covarianceest",
+    # "experimentdesign",
     "nonparametricdistr",
     ]
 
