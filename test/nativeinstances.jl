@@ -20,9 +20,10 @@ import Hypatia.Solvers
 
 # for epipersepspectral instances
 sep_spectral_funs = [
-    Cones.InvSSF(),
     Cones.NegLogSSF(),
     Cones.NegEntropySSF(),
+    Cones.NegSqrtSSF(),
+    Cones.NegPower01SSF(3//10),
     Cones.Power12SSF(1.5),
     ]
 
@@ -2076,7 +2077,6 @@ function epipersepspectral_matrix3(T; options...)
         R = (is_complex ? Complex{T} : T)
         dim = 2 + Cones.svec_length(R, d)
         c = zeros(T, dim)
-        c[1] = 1
         A = zeros(T, 1, dim)
         A[1, 2] = 1
         b = zeros(T, 1)
@@ -2090,7 +2090,7 @@ function epipersepspectral_matrix3(T; options...)
             r = build_solve_check(c, A, b, G, h, cones, tol; options...)
             @test r.status == Solvers.Optimal
             @test r.primal_obj ≈ 0 atol=tol rtol=tol
-            @test r.x[1:2] ≈ [0, 0] atol=tol rtol=tol
+            @test r.x[2] ≈ 0 atol=tol rtol=tol
         end
     end
 end

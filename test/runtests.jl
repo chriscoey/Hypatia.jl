@@ -11,7 +11,7 @@ test_files = [
     "cone",
     "native",
     "moi",
-    "examples",
+    # "examples",
     # require optional dependencies:
     # "pardiso",
     # "hsl",

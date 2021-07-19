@@ -86,8 +86,9 @@ VectorCSqr
 MatrixCSqr
 vector_dim
 SepSpectralFun
-InvSSF
 NegLogSSF
 NegEntropySSF
+NegSqrtSSF
+NegPower01SSF
 Power12SSF
 ```

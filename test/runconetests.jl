@@ -55,9 +55,10 @@ function cone_types(T::Type{<:Real})
 end
 
 sep_spectral_funs = [
-    Cones.InvSSF(),
     Cones.NegLogSSF(),
     Cones.NegEntropySSF(),
+    Cones.NegSqrtSSF(),
+    Cones.NegPower01SSF(3//10),
     Cones.Power12SSF(1.5),
     ]
 
@@ -90,7 +91,7 @@ end
 #     @printf("%8.2e seconds\n", test_time)
 # end
 # end
-#
+
 # println("\nstarting time/allocation measurements")
 # @testset "allocation tests" begin
 # real_types = [
